@@ -450,10 +450,12 @@ main { max-width: 1500px; }
 .buscador { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; color: var(--muted); }
 .buscador input { flex: 1; border: none; outline: none; font-size: 16px; font-family: inherit; padding: 6px 0; color: var(--text); background: transparent; }
 .prod-lista { margin-top: 10px; max-height: calc(100vh - 220px); overflow: auto; display: flex; flex-direction: column; gap: 4px; }
-.prod { display: grid; grid-template-columns: 110px 1fr 46px 100px; gap: 8px; align-items: center; text-align: left; border: 1px solid transparent; background: #f8fafc; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; }
+.prod { display: grid; grid-template-columns: 44px 100px 1fr 46px 100px; gap: 8px; align-items: center; text-align: left; border: 1px solid transparent; background: #f8fafc; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; }
 .prod:hover { border-color: var(--primary); background: var(--primary-bg); }
 .prod .sku { font-weight: 700; font-size: 13px; } .prod .desc { font-size: 13px; } .prod .desc i { color: var(--muted); font-style: normal; }
 .prod .stk { font-size: 12px; color: var(--muted); text-align: right; } .prod .stk.sin { color: var(--red); font-weight: 700; } .prod .pre { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.foto { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #e2e8f0; cursor: zoom-in; flex: none; display: block; } .foto.sin { cursor: default; background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f1f5f9 4px, #f1f5f9 8px); } .foto.chica { width: 34px; height: 34px; }
+.art { display: flex; align-items: center; gap: 8px; }
 .cli { display: flex; align-items: center; gap: 8px; margin: 10px 0; padding: 8px 10px; border: 1px dashed var(--border); border-radius: 10px; cursor: pointer; color: var(--text); } .cli:hover { background: var(--gray-light); } .cli .ico { color: var(--muted); }
 .renglones table { box-shadow: none; } .renglones td { padding: 6px 6px; } .renglones input { width: 48px; border: 1px solid var(--border); border-radius: 6px; padding: 4px; text-align: right; font-family: inherit; font-size: 14px; }
 .renglones td.cant { white-space: nowrap; } tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
@@ -533,9 +535,9 @@ main { max-width: 1500px; }
         </div>
         <div class="pos-ticket">
           <div class="pils tipos" id="v-tipos">
-            <button class="pil on" data-t="FC:B" onclick="vTipo('FC','B')" title="Factura B (consumidor final / monotributo)">Factura B</button>
+            <button class="pil on" data-t="FC:B" onclick="vTipo('FC','B')" title="Factura B (consumidor final, monotributista, exento, no responsable)">Factura B</button>
             <button class="pil" data-t="FC:A" onclick="vTipo('FC','A')" title="Factura A (responsable inscripto, con CUIT)">Factura A</button>
-            <button class="pil" data-t="MA:X" onclick="vTipo('MA','X')" title="Comprobante interno, sin factura">Sin factura</button>
+            <button class="pil" data-t="MA:X" onclick="vTipo('MA','X')" title="Factura manual: comprobante interno X, no va a ARCA">Factura manual</button>
           </div>
           <div class="cli" id="v-cli" onclick="abrirCliente()" title="Cambiar el cliente"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span id="v-cli-nombre">Consumidor Final</span><span class="mini" id="v-cli-det"></span></div>
           <div class="renglones" id="v-renglones"><div class="empty chico">Todavía no agregaste nada.</div></div>
@@ -556,7 +558,7 @@ main { max-width: 1500px; }
       <div class="filters">
         <label>Desde <input type="date" id="c-desde" onchange="cargarComprobantes()"></label>
         <label>Hasta <input type="date" id="c-hasta" onchange="cargarComprobantes()"></label>
-        <label>Tipo <select id="c-tipo" onchange="cargarComprobantes()"><option value="">Todos</option><option value="FC">Facturas</option><option value="NC">Notas de crédito</option><option value="MA">Sin factura</option></select></label>
+        <label>Tipo <select id="c-tipo" onchange="cargarComprobantes()"><option value="">Todos</option><option value="FC">Facturas</option><option value="NC">Notas de crédito</option><option value="MA">Facturas manuales</option></select></label>
         <label>Buscar <input id="c-q" placeholder="cliente, número, SKU" oninput="cDebounce()"></label>
         <span class="stat" id="c-stat"></span>
       </div>
@@ -659,11 +661,13 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-wo
 
 
 // ═══ POS · estado ══════════════════════════════════════════════════════
-let PERFIL = null, LOCAL = null, ARTS = [], ARTS_AT = 0, MEDIOS = [], PV = [];
+let PERFIL = null, LOCAL = null, ARTS = [], ARTS_AT = 0, MEDIOS = [], PV = [], IMGS = {};
 const T = { tipo: 'FC', letra: 'B', items: [], cliente: null, nc_de: null };
 const LOCALES = { alcorta: 'Alcorta', unicenter: 'Unicenter', oficina: 'Oficina' };
-const COND = { CF: 'Consumidor Final', RI: 'Resp. Inscripto', MT: 'Monotributo', EX: 'Exento' };
-const TIPO_NOM = { FC: 'Factura', NC: 'Nota de crédito', MA: 'Comprobante' };
+const COND = { CF: 'Consumidor Final', MT: 'Monotributista', EX: 'IVA Exento', NR: 'No Responsable', RI: 'Responsable Inscripto' };
+// Letra según condición: RI → A; el resto → B (todos menos CF llevan CUIT).
+const LETRA_COND = { CF: 'B', MT: 'B', EX: 'B', NR: 'B', RI: 'A' };
+const TIPO_NOM = { FC: 'Factura', NC: 'Nota de crédito', MA: 'Factura manual' };
 const fmtNum = (pv, n) => String(pv).padStart(4, '0') + '-' + String(n).padStart(8, '0');
 const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(n) ? 0 : n; };
 const r2 = n => Math.round(n * 100) / 100;
@@ -709,8 +713,11 @@ async function cargarArticulos() {
     out.push(...(data || [])); if (!data || data.length < 1000) break; desde += 1000;
   }
   ARTS = out; ARTS_AT = Date.now();
+  if (!Object.keys(IMGS).length) { let d2 = 0; for (;;) { const { data } = await sb.from('stock_imagenes').select('sku,url').range(d2, d2 + 999); (data || []).forEach(r => { IMGS[r.sku] = r.url; }); if (!data || data.length < 1000) break; d2 += 1000; } }
   document.getElementById('v-stat').textContent = ARTS.length ? ARTS.length.toLocaleString('es-AR') + ' artículos' : '';
 }
+function foto(sku, cls) { const u = IMGS[sku]; return u ? `<img class="foto ${cls || ''}" src="${esc(u)}" alt="" loading="lazy" onclick="event.stopPropagation(); verFoto('${esc(u)}')" title="Ver más grande">` : `<span class="foto sin ${cls || ''}" aria-hidden="true"></span>`; }
+function verFoto(u) { modal(`<div class="m-head"><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div><img src="${esc(u)}" style="max-width:100%;max-height:75vh;display:block;margin:0 auto;border-radius:8px">`); }
 function onTab(k) { if (k === 'comprobantes') cargarComprobantes(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
 
 // ═══ Vender · productos ════════════════════════════════════════════════
@@ -725,7 +732,7 @@ function vBuscar() {
   res.sort((a, b) => (a.sku === q ? -1 : b.sku === q ? 1 : 0) || (a.sku.startsWith(q) ? -1 : b.sku.startsWith(q) ? 1 : 0) || (b.stock - a.stock));
   box.innerHTML = res.length ? res.slice(0, 60).map(a => `
     <button class="prod" onclick="vAgregar('${esc(a.sku)}')" title="Agregar al ticket">
-      <span class="sku">${esc(a.sku)}</span><span class="desc">${esc(a.descripcion)}${a.descripcion_adicional ? ' <i>' + esc(a.descripcion_adicional) + '</i>' : ''}</span>
+      ${foto(a.sku)}<span class="sku">${esc(a.sku)}</span><span class="desc">${esc(a.descripcion)}${a.descripcion_adicional ? ' <i>' + esc(a.descripcion_adicional) + '</i>' : ''}</span>
       <span class="stk ${a.stock <= 0 ? 'sin' : ''}" title="Stock en ${esc(LOCALES[LOCAL])}">${Number(a.stock)}</span><span class="pre">${plata(a.precio)}</span></button>`).join('')
     + (res.length > 60 ? `<div class="mini" style="padding:8px">… y ${res.length - 60} más: afiná la búsqueda.</div>` : '')
     : '<div class="empty">No encontré nada con «' + esc(q) + '».</div>';
@@ -762,7 +769,7 @@ function vRender() {
   const box = document.getElementById('v-renglones');
   box.innerHTML = T.items.length ? `<table><thead><tr><th>Artículo</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto %</th><th class="num">Importe</th><th></th></tr></thead><tbody>` +
     T.items.map((it, i) => `<tr${it.stock <= 0 ? ' class="sinstock" title="Sin stock en este local"' : ''}>
-      <td><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></td>
+      <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td>
       <td class="num cant"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal"><button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button></td>
       <td class="num"><input value="${it.precio_unit}" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:92px" title="Precio unitario (IVA incluido)"></td>
       <td class="num"><input value="${it.descuento_pct}" onchange="vSet(${i},'descuento_pct',this.value)" inputmode="decimal" style="width:52px"></td>
@@ -815,7 +822,9 @@ function elegirCliente(c) {
 function guardarCliente() {
   const n = document.getElementById('cl-nombre');
   T.cliente = { nombre: n.value.trim() || 'Consumidor Final', doc_tipo: document.getElementById('cl-tipo').value, doc: document.getElementById('cl-doc').value.replace(/\D/g, ''), cond_iva: document.getElementById('cl-cond').value, globalid: n.dataset.globalid || null };
-  if (T.cliente.cond_iva === 'RI' && T.cliente.doc_tipo === 'CUIT' && T.tipo === 'FC' && T.letra === 'B') vTipo('FC', 'A');
+  if (T.cliente.cond_iva !== 'CF' && !T.cliente.doc) { toast('Para ' + COND[T.cliente.cond_iva] + ' hace falta el CUIT del cliente', 'error'); return; }
+  if (T.cliente.cond_iva !== 'CF') T.cliente.doc_tipo = 'CUIT';
+  if (T.tipo === 'FC' && T.letra !== LETRA_COND[T.cliente.cond_iva]) vTipo('FC', LETRA_COND[T.cliente.cond_iva]);
   vRender(); cerrarModal();
 }
 
@@ -823,6 +832,7 @@ function guardarCliente() {
 function abrirCobro(nc) {
   const t = vTotales(); if (!T.items.length) return;
   if (T.letra === 'A' && !(T.cliente && T.cliente.cond_iva === 'RI' && T.cliente.doc)) { toast('La factura A necesita un cliente Responsable Inscripto con CUIT', 'error'); abrirCliente(); return; }
+  if (T.letra === 'B' && T.cliente && T.cliente.cond_iva === 'RI') { toast('A un Responsable Inscripto se le hace factura A', 'error'); vTipo('FC', 'A'); return; }
   const medios = MEDIOS.filter(m => !m.solo_oficina || LOCAL === 'oficina');
   const titulo = nc ? 'Devolver ' + plata(t.tot) : 'Cobrar ' + plata(t.tot);
   modal(`<div class="m-head"><h3>${titulo}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
@@ -832,7 +842,7 @@ function abrirCobro(nc) {
       <input class="imp" inputmode="decimal" placeholder="0" oninput="pRender()" data-m="${m.clave}">
       ${m.pide_referencia ? `<input class="ref" placeholder="Nº cupón / referencia" data-m="${m.clave}">` : ''}</div>`).join('')}</div>
     <div class="totales"><div class="fila"><span>Pagado</span><b id="p-pagado">$ 0</b></div><div class="fila total"><span id="p-falta-lb">Falta</span><b id="p-falta">${plata(t.tot)}</b></div></div>
-    <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="p-ok" onclick="emitir(${nc ? 'true' : 'false'})" disabled>${nc ? 'Emitir nota de crédito' : 'Emitir ' + (T.tipo === 'MA' ? 'comprobante' : 'factura ' + T.letra)}</button></div>`);
+    <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="p-ok" onclick="emitir(${nc ? 'true' : 'false'})" disabled>${nc ? 'Emitir nota de crédito' : 'Emitir ' + (T.tipo === 'MA' ? 'factura manual' : 'factura ' + T.letra)}</button></div>`);
   const first = document.querySelector('#p-medios .imp'); if (first) first.focus();
 }
 function pPagos() { return [...document.querySelectorAll('#p-medios .imp')].map(i => ({ medio: i.dataset.m, importe: r2(num(i.value)), referencia: (document.querySelector(`#p-medios .ref[data-m="${i.dataset.m}"]`) || {}).value || null })).filter(p => p.importe > 0); }
@@ -859,7 +869,7 @@ async function emitir(esNC) {
     pagos };
   const { data, error } = await sb.rpc('pos_emitir', { p });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); btn.disabled = false; return; }
-  cerrarModal(); toast((esNC ? 'Nota de crédito ' : (T.tipo === 'MA' ? 'Comprobante ' : 'Factura ' + T.letra + ' ')) + data.numero_fmt + ' emitida', 'success');
+  cerrarModal(); toast((esNC ? 'Nota de crédito ' : (T.tipo === 'MA' ? 'Factura manual ' : 'Factura ' + T.letra + ' ')) + data.numero_fmt + ' emitida', 'success');
   vVaciar(); verComprobante(data.id, true);
 }
 
@@ -883,7 +893,7 @@ async function cargarComprobantes() {
       <td>${esc(c.cliente_nombre)}<div class="mini">${c.cliente_doc ? (c.cliente_doc_tipo || '') + ' ' + c.cliente_doc : ''}</div></td>
       <td class="mini">${esc(c.vendedora_nombre || '')}</td>
       <td class="num"><b>${c.signo < 0 ? '- ' : ''}${plata(c.total)}</b></td>
-      <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'pendiente' ? '<span class="chip amber" title="Todavía no se pidió el CAE a ARCA (próxima fase)">Sin CAE</span>' : c.cae_estado === 'ok' ? '<span class="chip green">CAE</span>' : '<span class="chip gray">Interno</span>'}</td>
+      <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'pendiente' ? '<span class="chip amber" title="Todavía no se pidió el CAE a ARCA (próxima fase)">Sin CAE</span>' : c.cae_estado === 'ok' ? '<span class="chip green">CAE</span>' : '<span class="chip gray">Manual</span>'}</td>
       <td style="white-space:nowrap"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>
         ${c.tipo !== 'NC' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' ? `<button class="btn ico peligro" onclick="anular(${c.id})" title="Anular" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
@@ -901,7 +911,7 @@ function ticketHTML(x) {
   const fiscal = c.letra !== 'X';
   return `<div class="ticket">
     <div class="tk-h"><div class="tk-marca">Claudia Adorno</div><div class="mini">Claudia Adorno SRL · CUIT 30-70967311-0<br>${esc(LOCALES[c.local])}</div></div>
-    <div class="tk-tipo"><b>${TIPO_NOM[c.tipo]} ${c.letra}</b> <span>${fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(c.vendedora_nombre || '')}</div>${!fiscal ? '<div class="mini">Comprobante no válido como factura</div>' : c.cae_estado !== 'ok' ? '<div class="mini">CAE pendiente</div>' : `<div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div>`}</div>
+    <div class="tk-tipo"><b>${TIPO_NOM[c.tipo]} ${c.letra}</b> <span>${fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(c.vendedora_nombre || '')}</div>${!fiscal ? '<div class="mini">Documento no válido como factura</div>' : c.cae_estado !== 'ok' ? '<div class="mini">CAE pendiente</div>' : `<div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div>`}</div>
     <div class="tk-cli">${esc(c.cliente_nombre)}${c.cliente_doc ? '<br>' + esc(c.cliente_doc_tipo || '') + ' ' + esc(c.cliente_doc) : ''}<br>${COND[c.cliente_cond_iva] || ''}</div>
     ${c.relacionado_id ? `<div class="mini">Devuelve el comprobante #${c.relacionado_id}</div>` : ''}
     <table class="tk-det">${det.map(d => `<tr><td colspan="2">${esc(d.descripcion)}<div class="mini">${esc(d.sku)}${d.descuento_pct > 0 ? ' · dto ' + d.descuento_pct + '%' : ''}</div></td></tr><tr><td>${Number(d.cantidad)} × ${plata2(d.precio_unit)}</td><td class="num">${plata2(d.total)}</td></tr>`).join('')}</table>
@@ -967,7 +977,7 @@ async function cargarCaja() {
   const em = (comps || []).filter(c => c.estado === 'emitido');
   const tot = em.reduce((s, c) => s + c.signo * Number(c.total), 0);
   const fisc = em.filter(c => c.letra !== 'X').reduce((s, c) => s + c.signo * Number(c.total), 0);
-  const kp = [['Total del día', plata(tot)], ['Facturado', plata(fisc)], ['Sin factura', plata(tot - fisc)], ['Tickets', em.filter(c => c.tipo !== 'NC').length], ['Notas de crédito', em.filter(c => c.tipo === 'NC').length]];
+  const kp = [['Total del día', plata(tot)], ['Facturado', plata(fisc)], ['Factura manual', plata(tot - fisc)], ['Tickets', em.filter(c => c.tipo !== 'NC').length], ['Notas de crédito', em.filter(c => c.tipo === 'NC').length]];
   document.getElementById('k-kpis').innerHTML = kp.map(([l, v]) => `<div class="kpi"><div class="lb">${l}</div><div class="v">${v}</div></div>`).join('');
   document.getElementById('k-stat').textContent = (comps || []).filter(c => c.estado === 'anulado').length ? (comps.filter(c => c.estado === 'anulado').length + ' anulados (no cuentan)') : '';
   const filas = (caja || []).filter(r => Number(r.importe) || Number(r.cantidad));
@@ -993,6 +1003,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=2"></script>
+<script src="manual.js?v=3"></script>
 </body>
 </html>
