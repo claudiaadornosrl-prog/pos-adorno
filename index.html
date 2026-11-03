@@ -499,9 +499,9 @@ main { max-width: 1500px; }
 .cl-res { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow: auto; }
 .cl-it { display: flex; gap: 10px; align-items: center; text-align: left; background: #f8fafc; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; } .cl-it:hover { border-color: var(--primary); } .cl-it .ico { color: var(--muted); }
 .medios { display: flex; flex-direction: column; gap: 6px; }
-.medio { display: grid; grid-template-columns: 1fr 110px 130px; gap: 6px; align-items: center; } .medio .pil { text-align: left; padding: 6px 10px; }
+.medio { display: grid; grid-template-columns: 1fr 110px 130px 32px; gap: 6px; align-items: center; margin-bottom: 4px; } .medio .med { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-family: inherit; font-size: 14px; background: white; min-width: 0; }
 .medio input { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-family: inherit; font-size: 15px; min-width: 0; } .medio .imp { text-align: right; } .medio .imp:not(:placeholder-shown) { border-color: var(--primary); background: var(--primary-bg); }
-@media (max-width: 600px) { .medio { grid-template-columns: 1fr 100px; } .medio .ref { grid-column: 1 / -1; } .medio > span { display: none; } }
+@media (max-width: 600px) { .medio { grid-template-columns: 1fr 96px 32px; } .medio .ref { grid-column: 1 / -1; } }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
 .kpi { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; border-top: 3px solid var(--primary); } .kpi .lb { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; } .kpi .v { font-size: 22px; font-weight: 700; margin-top: 2px; }
 .tk-wrap { display: flex; justify-content: center; background: #f1f5f9; padding: 14px; border-radius: 10px; }
@@ -591,7 +591,7 @@ main { max-width: 1500px; }
             <div class="fila"><span>Descuento general <input id="v-desc" type="number" min="0" max="100" step="0.5" value="0" oninput="vRender()" style="width:62px"> %</span><b id="v-descm">$ 0</b></div>
             <div class="fila total"><span>TOTAL</span><b id="v-total">$ 0</b></div>
           </div>
-          <div class="pagos-tk"><div class="mini" id="v-pagos-lb">Forma de pago · tocá el medio para cargarle lo que falta, se pueden combinar</div><div class="medios" id="v-pagos"></div>
+          <div class="pagos-tk"><div class="mini" id="v-pagos-lb">Forma de pago</div><div class="medios" id="v-pagos"></div><button class="btn chico" onclick="pAgregar()" style="margin-top:6px">+ otra forma de pago</button>
             <div class="fila"><span>Pagado</span><b id="p-pagado">$ 0</b></div><div class="fila falta"><span id="p-falta-lb">Falta</span><b id="p-falta">$ 0</b></div></div>
           <div class="acciones">
             <button class="btn ico" onclick="vVaciar()" title="Vaciar el ticket" aria-label="Vaciar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
@@ -1054,15 +1054,28 @@ function preguntarCliente() {
 }
 
 // ═══ Cobro y emisión ═══════════════════════════════════════════════════
-// Medios de pago a la vista en el ticket (se montan una vez; vRender solo actualiza totales y botón)
-function pMontar() {
-  const medios = MEDIOS.filter(m => !m.solo_oficina || LOCAL === 'oficina');
-  document.getElementById('v-pagos').innerHTML = medios.map(m => `<div class="medio" data-m="${m.clave}">
-      <button class="pil" onclick="pFalta('${m.clave}')" title="Cargar lo que falta en ${esc(m.nombre)}">${esc(m.nombre)}</button>
-      <input class="imp" inputmode="decimal" placeholder="0" oninput="pRender()" data-m="${m.clave}">
-      ${m.pide_referencia ? `<input class="ref" placeholder="Nº cupón / ref." data-m="${m.clave}">` : '<span></span>'}</div>`).join('');
+// Forma de pago en el ticket: renglones con desplegable de medio + importe + referencia; "+ otra forma de pago" suma renglones
+function pMedios() { return MEDIOS.filter(m => !m.solo_oficina || LOCAL === 'oficina'); }
+function pMontar() { document.getElementById('v-pagos').innerHTML = ''; pAgregar(); }
+function pAgregar(medio) {
+  const box = document.getElementById('v-pagos'); const n = box.children.length; const t = vTotales();
+  const falta = Math.max(0, r2(t.tot - pPagos().reduce((s, p) => s + p.importe, 0)));
+  const ms = pMedios(); const sel = medio || (n === 0 ? (ms[0] || {}).clave : '');
+  const div = document.createElement('div'); div.className = 'medio';
+  div.innerHTML = `<select class="med" onchange="pMedio(this)">${n ? '<option value="">Elegí el medio…</option>' : ''}${ms.map(m => `<option value="${m.clave}"${m.clave === sel ? ' selected' : ''}>${esc(m.nombre)}</option>`).join('')}</select>
+    <input class="imp" inputmode="decimal" placeholder="0" oninput="pRender()" title="Importe"${n && falta ? ` value="${falta}"` : ''}>
+    <input class="ref" placeholder="Nº cupón / ref." style="display:none">
+    <button class="btn ico chico" onclick="pQuitar(this)" title="Sacar este renglón" aria-label="Sacar">${_i('x')}</button>`;
+  box.appendChild(div); pMedio(div.querySelector('.med'));
+  if (n) div.querySelector('.imp').focus(); else pRender();
 }
-function pLimpiar() { document.querySelectorAll('#v-pagos input').forEach(i => i.value = ''); }
+function pMedio(sel) {
+  const m = MEDIOS.find(x => x.clave === sel.value); const row = sel.closest('.medio');
+  row.querySelector('.ref').style.display = m && m.pide_referencia ? '' : 'none';
+  row.dataset.m = sel.value; pRender();
+}
+function pQuitar(btn) { const box = document.getElementById('v-pagos'); btn.closest('.medio').remove(); if (!box.children.length) pAgregar(); pRender(); }
+function pLimpiar() { pMontar(); }
 function emitirTicket() {
   const t = vTotales(); if (!T.items.length) return;
   const nc = T.tipo === 'NC';
@@ -1076,18 +1089,18 @@ function emitirTicket() {
   if (!nc && T.letra === 'B' && T.cliente && T.cliente.cond_iva === 'RI') { toast('A un Responsable Inscripto se le hace factura A', 'error'); vTipo('FC', 'A'); return; }
   emitir(nc);
 }
-function pPagos() { return [...document.querySelectorAll('#v-pagos .imp')].map(i => ({ medio: i.dataset.m, importe: r2(num(i.value)), referencia: (document.querySelector(`#v-pagos .ref[data-m="${i.dataset.m}"]`) || {}).value || null })).filter(p => p.importe > 0); }
+function pPagos() { return [...document.querySelectorAll('#v-pagos .medio')].map(r => ({ medio: r.querySelector('.med').value, importe: r2(num(r.querySelector('.imp').value)), referencia: r.querySelector('.ref').value || null })).filter(p => p.medio && p.importe > 0); }
 function pRender() {
-  const t = vTotales(); const pag = r2(pPagos().reduce((s, p) => s + p.importe, 0)); const falta = r2(t.tot - pag);
+  const t = vTotales();
+  // un solo renglón sin importe → se le sugiere el total (la vendedora lo puede cambiar)
+  const rows = document.querySelectorAll('#v-pagos .medio'); if (rows.length === 1 && T.items.length) { const imp = rows[0].querySelector('.imp'); if (document.activeElement !== imp && !imp.dataset.tocado) imp.value = t.tot || ''; imp.oninput = () => { imp.dataset.tocado = 1; pRender(); }; }
+  const pag = r2(pPagos().reduce((s, p) => s + p.importe, 0)); const falta = r2(t.tot - pag);
   document.getElementById('p-pagado').textContent = plata(pag);
   document.getElementById('p-falta-lb').textContent = falta < 0 ? 'Vuelto' : 'Falta';
   document.getElementById('p-falta').textContent = plata(Math.abs(falta));
   document.getElementById('v-cobrar').disabled = !T.items.length || (T.tipo === 'NC' && !T.nc_de) || (T.tipo !== 'PR' && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo')));
 }
-function pFalta(m) {
-  const t = vTotales(); const otros = pPagos().filter(p => p.medio !== m).reduce((s, p) => s + p.importe, 0);
-  const inp = document.querySelector(`#v-pagos .imp[data-m="${m}"]`); inp.value = Math.max(0, r2(t.tot - otros)); pRender(); inp.focus();
-}
+function pFalta() { const t = vTotales(); const rows = [...document.querySelectorAll('#v-pagos .medio')]; const vacio = rows.find(r => !num(r.querySelector('.imp').value)); if (!vacio) return; const otros = pPagos().reduce((s, p) => s + p.importe, 0); vacio.querySelector('.imp').value = Math.max(0, r2(t.tot - otros)); pRender(); }
 async function emitir(esNC) {
   const btn = document.getElementById('v-cobrar'); btn.disabled = true;
   const t = vTotales(); let pagos = pPagos();
@@ -1292,6 +1305,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=8"></script>
+<script src="manual.js?v=9"></script>
 </body>
 </html>
