@@ -692,8 +692,11 @@ async function init() {
 }
 function pintarLocal() {
   const el = document.getElementById('h-local');
-  el.innerHTML = PERFIL.es_admin
-    ? `<select onchange="cambiarLocal(this.value)">${Object.entries(LOCALES).map(([k, v]) => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${v}</option>`).join('')}</select>`
+  // Admin: cualquier local. Vendedora/encargada: su local o Oficina (nunca el otro local).
+  const permitidos = PERFIL.es_admin ? Object.keys(LOCALES) : [...new Set([PERFIL.local, 'oficina'])];
+  if (!permitidos.includes(LOCAL)) LOCAL = permitidos[0];
+  el.innerHTML = permitidos.length > 1
+    ? `<select onchange="cambiarLocal(this.value)" title="Desde qué local facturás">${permitidos.map(k => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${LOCALES[k]}</option>`).join('')}</select>`
     : `<span>${esc(LOCALES[LOCAL] || LOCAL)}</span>`;
 }
 async function cambiarLocal(l) { LOCAL = l; localStorage.setItem('pos_local', l); vVaciar(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
@@ -990,6 +993,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=1"></script>
+<script src="manual.js?v=2"></script>
 </body>
 </html>
