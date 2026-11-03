@@ -846,7 +846,7 @@ function vRender() {
   document.getElementById('v-descm').textContent = t.desc ? '- ' + plata(t.desc) : '$ 0';
   document.getElementById('v-total').textContent = plata(t.tot);
   document.getElementById('v-cobrar-lb').textContent = T.tipo === 'PR' ? 'Guardar presupuesto' : T.tipo === 'NC' ? 'Emitir NC ' + (T.letra === 'X' ? 'manual' : T.letra) : T.tipo === 'MA' ? 'Emitir factura manual' : 'Emitir factura ' + T.letra;
-  document.getElementById('v-pagos-lb').textContent = T.tipo === 'NC' ? 'Cómo se le devuelve la plata al cliente' : 'Forma de pago · tocá el medio para cargarle lo que falta, se pueden combinar';
+  document.getElementById('v-pagos-lb').textContent = T.tipo === 'NC' ? 'Cómo se le devuelve la plata al cliente' : 'Forma de pago · elegí el medio; para pagos combinados sumá otro renglón';
   cliRender(t); pRender();
 }
 
