@@ -443,6 +443,9 @@ main { max-width: 1500px; }
 .pils { display: flex; gap: 6px; flex-wrap: wrap; }
 .pil { border: 1px solid var(--border); background: white; border-radius: 999px; padding: 7px 14px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
 .pil.on { background: var(--primary); border-color: var(--primary); color: white; } .pil:hover:not(.on) { background: var(--gray-light); }
+.pil.nc { border-style: dashed; } .pil.nc.on { background: #b45309; border-color: #b45309; border-style: solid; } .pil.pr.on { background: #475569; border-color: #475569; } .pil-sep { width: 1px; background: var(--border); margin: 2px 4px; }
+.ncbox { margin-top: 8px; padding: 8px 10px; border: 2px solid #f59e0b; border-radius: 10px; background: #fffbeb; } .ncbox .cli-sin input { font-size: 15px; } .ncbox #v-nc-sel { margin-top: 4px; }
+.pagos-tk { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; } .pagos-tk > .mini { margin-bottom: 6px; } .pagos-tk .fila { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; } .pagos-tk .fila.falta { font-weight: 700; color: var(--primary-dark); }
 .pos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 @media (max-width: 900px) { .pos { grid-template-columns: 1fr; } }
 .pos-prod, .pos-ticket { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
@@ -496,9 +499,9 @@ main { max-width: 1500px; }
 .cl-res { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow: auto; }
 .cl-it { display: flex; gap: 10px; align-items: center; text-align: left; background: #f8fafc; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; } .cl-it:hover { border-color: var(--primary); } .cl-it .ico { color: var(--muted); }
 .medios { display: flex; flex-direction: column; gap: 6px; }
-.medio { display: grid; grid-template-columns: 1fr 130px 160px; gap: 8px; align-items: center; } .medio .pil { text-align: left; }
-.medio input { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-family: inherit; font-size: 15px; } .medio .imp { text-align: right; }
-@media (max-width: 600px) { .medio { grid-template-columns: 1fr 110px; } .medio .ref { grid-column: 1 / -1; } }
+.medio { display: grid; grid-template-columns: 1fr 110px 130px; gap: 6px; align-items: center; } .medio .pil { text-align: left; padding: 6px 10px; }
+.medio input { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-family: inherit; font-size: 15px; min-width: 0; } .medio .imp { text-align: right; } .medio .imp:not(:placeholder-shown) { border-color: var(--primary); background: var(--primary-bg); }
+@media (max-width: 600px) { .medio { grid-template-columns: 1fr 100px; } .medio .ref { grid-column: 1 / -1; } .medio > span { display: none; } }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
 .kpi { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; border-top: 3px solid var(--primary); } .kpi .lb { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; } .kpi .v { font-size: 22px; font-weight: 700; margin-top: 2px; }
 .tk-wrap { display: flex; justify-content: center; background: #f1f5f9; padding: 14px; border-radius: 10px; }
@@ -564,6 +567,17 @@ main { max-width: 1500px; }
             <button class="pil on" data-t="FC:B" onclick="vTipo('FC','B')" title="Factura B (consumidor final, monotributista, exento, no responsable)">Factura B</button>
             <button class="pil" data-t="FC:A" onclick="vTipo('FC','A')" title="Factura A (responsable inscripto, con CUIT)">Factura A</button>
             <button class="pil" data-t="MA:X" onclick="vTipo('MA','X')" title="Factura manual: comprobante interno X, no va a ARCA">Factura manual</button>
+            <span class="pil-sep"></span>
+            <button class="pil nc" data-t="NC:B" onclick="vTipo('NC','B')" title="Nota de crédito B: devolución de una factura B">Nota de crédito B</button>
+            <button class="pil nc" data-t="NC:A" onclick="vTipo('NC','A')" title="Nota de crédito A: devolución de una factura A">Nota de crédito A</button>
+            <button class="pil nc" data-t="NC:X" onclick="vTipo('NC','X')" title="Devolución de una factura manual (comprobante interno)" style="display:none">NC manual</button>
+            <span class="pil-sep"></span>
+            <button class="pil pr" data-t="PR:X" onclick="vTipo('PR','X')" title="Presupuesto: no es venta, no va a ARCA ni a la caja; después se factura desde Comprobantes">Presupuesto</button>
+          </div>
+          <div class="ncbox" id="v-nc" style="display:none">
+            <div class="cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="v-nc-q" placeholder="Qué factura devuelve: número (35-2) o cliente" autocomplete="off" oninput="ncDebounce()" onkeydown="if(event.key==='Enter'){event.preventDefault();ncBuscar();}"></div>
+            <div id="v-nc-res" class="cl-res"></div>
+            <div id="v-nc-sel" class="mini"></div>
           </div>
           <div class="cli" id="v-cli">
             <div class="cli-sin" id="v-cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-cli-doc" placeholder="Cliente: DNI o CUIT · o escaneá el DNI" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();cliBuscar();}"><button class="btn ico chico" onclick="buscarPorNombre()" title="Buscar por nombre" aria-label="Buscar por nombre"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button></div>
@@ -577,10 +591,12 @@ main { max-width: 1500px; }
             <div class="fila"><span>Descuento general <input id="v-desc" type="number" min="0" max="100" step="0.5" value="0" oninput="vRender()" style="width:62px"> %</span><b id="v-descm">$ 0</b></div>
             <div class="fila total"><span>TOTAL</span><b id="v-total">$ 0</b></div>
           </div>
+          <div class="pagos-tk"><div class="mini" id="v-pagos-lb">Forma de pago · tocá el medio para cargarle lo que falta, se pueden combinar</div><div class="medios" id="v-pagos"></div>
+            <div class="fila"><span>Pagado</span><b id="p-pagado">$ 0</b></div><div class="fila falta"><span id="p-falta-lb">Falta</span><b id="p-falta">$ 0</b></div></div>
           <div class="acciones">
             <button class="btn ico" onclick="vVaciar()" title="Vaciar el ticket" aria-label="Vaciar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
             <input id="v-obs" placeholder="Observación (opcional)">
-            <button class="btn-cobrar" id="v-cobrar" onclick="abrirCobro()" title="Cobrar y emitir el comprobante"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span>Cobrar</span></button>
+            <button class="btn-cobrar" id="v-cobrar" onclick="emitirTicket()" title="Emitir el comprobante"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span id="v-cobrar-lb">Emitir</span></button>
           </div>
         </div>
       </div>
@@ -589,7 +605,7 @@ main { max-width: 1500px; }
       <div class="filters">
         <label>Desde <input type="date" id="c-desde" onchange="cargarComprobantes()"></label>
         <label>Hasta <input type="date" id="c-hasta" onchange="cargarComprobantes()"></label>
-        <label>Tipo <select id="c-tipo" onchange="cargarComprobantes()"><option value="">Todos</option><option value="FC">Facturas</option><option value="NC">Notas de crédito</option><option value="MA">Facturas manuales</option></select></label>
+        <label>Tipo <select id="c-tipo" onchange="cargarComprobantes()"><option value="">Todos</option><option value="FC">Facturas</option><option value="NC">Notas de crédito</option><option value="MA">Facturas manuales</option><option value="PR">Presupuestos</option></select></label>
         <label>Buscar <input id="c-q" placeholder="cliente, número, SKU" oninput="cDebounce()"></label>
         <span class="stat" id="c-stat"></span>
       </div>
@@ -703,12 +719,12 @@ const LOCALES = { alcorta: 'Alcorta', unicenter: 'Unicenter', oficina: 'Oficina'
 const COND = { CF: 'Consumidor Final', MT: 'Monotributista', EX: 'IVA Exento', NR: 'No Responsable', NA: 'IVA No Alcanzado', RI: 'Responsable Inscripto' };
 // Letra según condición: RI → A; el resto → B (todos menos CF llevan CUIT).
 const LETRA_COND = { CF: 'B', MT: 'B', EX: 'B', NR: 'B', NA: 'B', RI: 'A' };
-const TIPO_NOM = { FC: 'Factura', NC: 'Nota de crédito', MA: 'Factura manual' };
+const TIPO_NOM = { FC: 'Factura', NC: 'Nota de crédito', MA: 'Factura manual', PR: 'Presupuesto' };
 const fmtNum = (pv, n) => String(pv).padStart(4, '0') + '-' + String(n).padStart(8, '0');
 const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(n) ? 0 : n; };
 const r2 = n => Math.round(n * 100) / 100;
 const fechaAR = s => s ? s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4) : '';
-function _i(k) { return ({ plus: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>', minus: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>', x: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>', ver: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', nc: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>', anular: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>', print: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>', ok: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>', edit: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' })[k]; }
+function _i(k) { return ({ plus: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>', minus: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>', x: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>', ver: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', nc: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>', anular: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>', print: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>', ok: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>', edit: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>', cobrar: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>' })[k]; }
 
 async function init() {
   const { data: p, error } = await sb.rpc('pos_mi_perfil');
@@ -725,6 +741,7 @@ async function init() {
     sb.from('pos_puntos_venta').select('*').order('local'),
     sb.from('pos_parametros').select('*').eq('clave', 'tope_cf_arca').maybeSingle()]);
   MEDIOS = m || []; PV = pv || [];
+  pMontar();
   if (tp) { TOPE.valor = Number(tp.valor_num) || TOPE.valor; TOPE.at = tp.actualizado_at; TOPE.error = tp.error; }
   await cargarArticulos();
   vRender();
@@ -741,7 +758,7 @@ function pintarLocal() {
     ? `<select onchange="cambiarLocal(this.value)" title="Desde qué local facturás">${permitidos.map(k => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${LOCALES[k]}</option>`).join('')}</select>`
     : `<span>${esc(LOCALES[LOCAL] || LOCAL)}</span>`;
 }
-async function cambiarLocal(l) { LOCAL = l; localStorage.setItem('pos_local', l); vVaciar(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
+async function cambiarLocal(l) { LOCAL = l; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
 async function cargarArticulos() {
   // Catálogo del local en memoria (≈5.000 filas): búsqueda instantánea y escaneo sin ir a la base.
   const out = []; let desde = 0;
@@ -790,15 +807,23 @@ function vAgregar(sku) {
   if (it) it.cantidad += 1; else T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: Number(a.precio) || 0, descuento_pct: 0, stock: Number(a.stock) });
   vRender(); document.getElementById('v-q').focus();
 }
-function vCant(i, d) { const it = T.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (it.cantidad === 0) T.items.splice(i, 1); vRender(); }
-function vSet(i, campo, v) { T.items[i][campo] = Math.max(0, num(v)); if (campo === 'cantidad' && !T.items[i].cantidad) T.items.splice(i, 1); vRender(); }
+function vCant(i, d) { const it = T.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (it.max && it.cantidad > it.max) it.cantidad = it.max; if (it.cantidad === 0) T.items.splice(i, 1); vRender(); }
 function vQuitar(i) { T.items.splice(i, 1); vRender(); }
-function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; document.getElementById('v-desc').value = 0; document.getElementById('v-obs').value = ''; vTipo('FC', 'B'); vRender(); }
+function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; document.getElementById('v-desc').value = 0; document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 function vTipo(tipo, letra) {
+  const eraNC = T.tipo === 'NC';
   T.tipo = tipo; T.letra = letra;
   document.querySelectorAll('#v-tipos .pil').forEach(b => b.classList.toggle('on', b.dataset.t === tipo + ':' + letra));
+  const nc = tipo === 'NC';
+  document.getElementById('v-nc').style.display = nc ? '' : 'none';
+  document.querySelector('#v-tipos .pil[data-t="NC:X"]').style.display = (nc && letra === 'X') ? '' : 'none';
+  document.querySelector('.pagos-tk').style.display = tipo === 'PR' ? 'none' : '';
+  if (nc !== eraNC) { T.items = []; T.nc_de = null; T.sin_cliente = nc; if (nc) T.cliente = null; document.getElementById('v-nc-sel').textContent = ''; document.getElementById('v-nc-res').innerHTML = ''; pLimpiar(); }
+  if (nc && !T.nc_de) setTimeout(() => document.getElementById('v-nc-q').focus(), 30);
   vRender();
 }
+// Devolver más de lo vendido no se puede: los renglones de una NC guardan el máximo
+function vSet(i, campo, v) { const it = T.items[i]; it[campo] = Math.max(0, num(v)); if (campo === 'cantidad' && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; } if (campo === 'cantidad' && !it.cantidad) T.items.splice(i, 1); vRender(); }
 function vTotales() {
   const d = Math.min(100, Math.max(0, num(document.getElementById('v-desc').value)));
   let sub = 0, tot = 0;
@@ -820,8 +845,9 @@ function vRender() {
   document.getElementById('v-subtotal').textContent = plata(t.sub);
   document.getElementById('v-descm').textContent = t.desc ? '- ' + plata(t.desc) : '$ 0';
   document.getElementById('v-total').textContent = plata(t.tot);
-  document.getElementById('v-cobrar').disabled = !T.items.length;
-  cliRender(t);
+  document.getElementById('v-cobrar-lb').textContent = T.tipo === 'PR' ? 'Guardar presupuesto' : T.tipo === 'NC' ? 'Emitir NC ' + (T.letra === 'X' ? 'manual' : T.letra) : T.tipo === 'MA' ? 'Emitir factura manual' : 'Emitir factura ' + T.letra;
+  document.getElementById('v-pagos-lb').textContent = T.tipo === 'NC' ? 'Cómo se le devuelve la plata al cliente' : 'Forma de pago · tocá el medio para cargarle lo que falta, se pueden combinar';
+  cliRender(t); pRender();
 }
 
 // ═══ Cliente ════════════════════════════════════════════════════════════
@@ -1024,44 +1050,46 @@ function cliRender(t) {
 function preguntarCliente() {
   modal(`<div class="m-head"><h3>No cargaste cliente</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <p style="margin:8px 0 14px">Pedile el DNI al cliente así queda en nuestra base. A ARCA la factura va como Consumidor Final igual.</p>
-    <div class="m-foot"><button class="btn" onclick="cerrarModal();T.sin_cliente=true;abrirCobro()">Seguir como Consumidor Final</button><span class="spacer"></span><button class="btn primary" onclick="cerrarModal();document.getElementById('v-cli-doc').focus()">Cargar cliente</button></div>`);
+    <div class="m-foot"><button class="btn" onclick="cerrarModal();T.sin_cliente=true;emitirTicket()">Seguir como Consumidor Final</button><span class="spacer"></span><button class="btn primary" onclick="cerrarModal();document.getElementById('v-cli-doc').focus()">Cargar cliente</button></div>`);
 }
 
 // ═══ Cobro y emisión ═══════════════════════════════════════════════════
-function abrirCobro(nc) {
+// Medios de pago a la vista en el ticket (se montan una vez; vRender solo actualiza totales y botón)
+function pMontar() {
+  const medios = MEDIOS.filter(m => !m.solo_oficina || LOCAL === 'oficina');
+  document.getElementById('v-pagos').innerHTML = medios.map(m => `<div class="medio" data-m="${m.clave}">
+      <button class="pil" onclick="pFalta('${m.clave}')" title="Cargar lo que falta en ${esc(m.nombre)}">${esc(m.nombre)}</button>
+      <input class="imp" inputmode="decimal" placeholder="0" oninput="pRender()" data-m="${m.clave}">
+      ${m.pide_referencia ? `<input class="ref" placeholder="Nº cupón / ref." data-m="${m.clave}">` : '<span></span>'}</div>`).join('');
+}
+function pLimpiar() { document.querySelectorAll('#v-pagos input').forEach(i => i.value = ''); }
+function emitirTicket() {
   const t = vTotales(); if (!T.items.length) return;
+  const nc = T.tipo === 'NC';
+  if (nc && !T.nc_de) { toast('Elegí qué factura devuelve', 'error'); document.getElementById('v-nc-q').focus(); return; }
+  if (T.tipo === 'PR') return emitir(false);   // presupuesto: sin pagos, el cliente es opcional
   if (!nc && !T.cliente && !T.sin_cliente) {
     if (T.letra !== 'X' && t.tot >= TOPE.valor) { toast('Por el importe, ARCA exige identificar al cliente: cargá su DNI o CUIT', 'error'); document.getElementById('v-cli-doc').focus(); return; }
     return preguntarCliente();
   }
-  if (T.letra === 'A' && !(T.cliente && T.cliente.cond_iva === 'RI' && T.cliente.doc)) { toast('La factura A necesita un cliente Responsable Inscripto con CUIT', 'error'); document.getElementById('v-cli-doc').focus(); return; }
-  if (T.letra === 'B' && T.cliente && T.cliente.cond_iva === 'RI') { toast('A un Responsable Inscripto se le hace factura A', 'error'); vTipo('FC', 'A'); return; }
-  const medios = MEDIOS.filter(m => !m.solo_oficina || LOCAL === 'oficina');
-  const titulo = nc ? 'Devolver ' + plata(t.tot) : 'Cobrar ' + plata(t.tot);
-  modal(`<div class="m-head"><h3>${titulo}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="mini" style="margin-bottom:8px">${nc ? 'Cómo se le devuelve la plata al cliente.' : 'Tocá un medio para cargarle lo que falta; podés combinar varios.'}</div>
-    <div class="medios" id="p-medios">${medios.map(m => `<div class="medio" data-m="${m.clave}">
-      <button class="pil" onclick="pFalta('${m.clave}')" title="Cargar lo que falta en ${esc(m.nombre)}">${esc(m.nombre)}</button>
-      <input class="imp" inputmode="decimal" placeholder="0" oninput="pRender()" data-m="${m.clave}">
-      ${m.pide_referencia ? `<input class="ref" placeholder="Nº cupón / referencia" data-m="${m.clave}">` : ''}</div>`).join('')}</div>
-    <div class="totales"><div class="fila"><span>Pagado</span><b id="p-pagado">$ 0</b></div><div class="fila total"><span id="p-falta-lb">Falta</span><b id="p-falta">${plata(t.tot)}</b></div></div>
-    <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="p-ok" onclick="emitir(${nc ? 'true' : 'false'})" disabled>${nc ? 'Emitir nota de crédito' : 'Emitir ' + (T.tipo === 'MA' ? 'factura manual' : 'factura ' + T.letra)}</button></div>`);
-  const first = document.querySelector('#p-medios .imp'); if (first) first.focus();
+  if (!nc && T.letra === 'A' && !(T.cliente && T.cliente.cond_iva === 'RI' && T.cliente.doc)) { toast('La factura A necesita un cliente Responsable Inscripto con CUIT', 'error'); document.getElementById('v-cli-doc').focus(); return; }
+  if (!nc && T.letra === 'B' && T.cliente && T.cliente.cond_iva === 'RI') { toast('A un Responsable Inscripto se le hace factura A', 'error'); vTipo('FC', 'A'); return; }
+  emitir(nc);
 }
-function pPagos() { return [...document.querySelectorAll('#p-medios .imp')].map(i => ({ medio: i.dataset.m, importe: r2(num(i.value)), referencia: (document.querySelector(`#p-medios .ref[data-m="${i.dataset.m}"]`) || {}).value || null })).filter(p => p.importe > 0); }
+function pPagos() { return [...document.querySelectorAll('#v-pagos .imp')].map(i => ({ medio: i.dataset.m, importe: r2(num(i.value)), referencia: (document.querySelector(`#v-pagos .ref[data-m="${i.dataset.m}"]`) || {}).value || null })).filter(p => p.importe > 0); }
 function pRender() {
   const t = vTotales(); const pag = r2(pPagos().reduce((s, p) => s + p.importe, 0)); const falta = r2(t.tot - pag);
   document.getElementById('p-pagado').textContent = plata(pag);
   document.getElementById('p-falta-lb').textContent = falta < 0 ? 'Vuelto' : 'Falta';
   document.getElementById('p-falta').textContent = plata(Math.abs(falta));
-  document.getElementById('p-ok').disabled = Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo'));
+  document.getElementById('v-cobrar').disabled = !T.items.length || (T.tipo === 'NC' && !T.nc_de) || (T.tipo !== 'PR' && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo')));
 }
 function pFalta(m) {
   const t = vTotales(); const otros = pPagos().filter(p => p.medio !== m).reduce((s, p) => s + p.importe, 0);
-  const inp = document.querySelector(`#p-medios .imp[data-m="${m}"]`); inp.value = Math.max(0, r2(t.tot - otros)); pRender(); inp.focus();
+  const inp = document.querySelector(`#v-pagos .imp[data-m="${m}"]`); inp.value = Math.max(0, r2(t.tot - otros)); pRender(); inp.focus();
 }
 async function emitir(esNC) {
-  const btn = document.getElementById('p-ok'); btn.disabled = true;
+  const btn = document.getElementById('v-cobrar'); btn.disabled = true;
   const t = vTotales(); let pagos = pPagos();
   // Vuelto: si pagó de más en efectivo, el efectivo que queda es total - resto
   const pag = pagos.reduce((s, p) => s + p.importe, 0);
@@ -1069,10 +1097,10 @@ async function emitir(esNC) {
   const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.pct, obs: document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: cliPayload(),
     items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_pct, iva_pct: 21 })),
-    pagos };
+    pagos: T.tipo === 'PR' ? [] : pagos };
   const { data, error } = await sb.rpc('pos_emitir', { p });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); btn.disabled = false; return; }
-  cerrarModal(); toast((esNC ? 'Nota de crédito ' : (T.tipo === 'MA' ? 'Factura manual ' : 'Factura ' + T.letra + ' ')) + data.numero_fmt + ' emitida', 'success');
+  toast((esNC ? 'Nota de crédito ' : T.tipo === 'PR' ? 'Presupuesto ' : (T.tipo === 'MA' ? 'Factura manual ' : 'Factura ' + T.letra + ' ')) + data.numero_fmt + (T.tipo === 'PR' ? ' guardado' : ' emitida'), 'success');
   vVaciar(); verComprobante(data.id, true);
 }
 
@@ -1096,9 +1124,9 @@ async function cargarComprobantes() {
       <td>${esc(c.cliente_nombre)}<div class="mini">${c.cliente_doc ? (c.cliente_doc_tipo || '') + ' ' + c.cliente_doc : ''}${c.cliente_informado === false && c.cliente_interno ? '<span title="Cliente registrado en nuestra base; a ARCA fue como Consumidor Final">👤 ' + esc(c.cliente_interno) + '</span>' : (!c.cliente_globalid && !c.cliente_doc && c.tipo !== 'NC' ? '<span title="Se vendió sin cargar cliente">sin cliente</span>' : '')}</div></td>
       <td class="mini">${esc(c.vendedora_nombre || '')}</td>
       <td class="num"><b>${c.signo < 0 ? '- ' : ''}${plata(c.total)}</b></td>
-      <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'pendiente' ? '<span class="chip amber" title="Esperando el CAE de ARCA">CAE…</span>' : c.cae_estado === 'ok' ? '<span class="chip green" title="CAE ' + esc(c.cae) + '">CAE</span>' : c.cae_estado === 'error' ? '<span class="chip red" title="' + esc(c.cae_error || '') + '">CAE rechazado</span>' : '<span class="chip gray">Manual</span>'}</td>
+      <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'pendiente' ? '<span class="chip amber" title="Esperando el CAE de ARCA">CAE…</span>' : c.cae_estado === 'ok' ? '<span class="chip green" title="CAE ' + esc(c.cae) + '">CAE</span>' : c.cae_estado === 'error' ? '<span class="chip red" title="' + esc(c.cae_error || '') + '">CAE rechazado</span>' : c.tipo === 'PR' ? '<span class="chip amber">Presupuesto</span>' : '<span class="chip gray">Manual</span>'}</td>
       <td style="white-space:nowrap"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>
-        ${c.tipo !== 'NC' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
+        ${c.tipo === 'PR' && c.estado === 'emitido' ? `<button class="btn ico" onclick="prFacturar(${c.id})" title="Facturar este presupuesto" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo !== 'NC' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && c.cae_estado === 'error' ? `<button class="btn ico" onclick="reintentarCAE(${c.id})" title="Pedir el CAE de nuevo a ARCA" aria-label="Reintentar CAE">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' ? `<button class="btn ico peligro" onclick="anular(${c.id})" title="Anular" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty">No hay comprobantes en ese rango.</div>';
@@ -1115,7 +1143,7 @@ function ticketHTML(x) {
   const fiscal = c.letra !== 'X';
   return `<div class="ticket">
     <div class="tk-h"><div class="tk-marca">Claudia Adorno</div><div class="mini">Claudia Adorno SRL · CUIT 30-70967311-0<br>${esc(LOCALES[c.local])}</div></div>
-    <div class="tk-tipo"><b>${TIPO_NOM[c.tipo]} ${c.letra}</b> <span>${fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(c.vendedora_nombre || '')}</div>${!fiscal ? '<div class="mini">Documento no válido como factura</div>' : c.cae_estado === 'ok' ? `<div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div>` : c.cae_estado === 'error' ? `<div class="mini tk-err">CAE rechazado: ${esc(c.cae_error || '')}</div>` : '<div class="mini">CAE pendiente…</div>'}</div>
+    <div class="tk-tipo"><b>${TIPO_NOM[c.tipo]} ${c.letra}</b> <span>${fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(c.vendedora_nombre || '')}</div>${c.tipo === 'PR' ? '<div class="mini">Presupuesto · no válido como factura · precios sujetos a cambio</div>' : !fiscal ? '<div class="mini">Documento no válido como factura</div>' : c.cae_estado === 'ok' ? `<div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div>` : c.cae_estado === 'error' ? `<div class="mini tk-err">CAE rechazado: ${esc(c.cae_error || '')}</div>` : '<div class="mini">CAE pendiente…</div>'}</div>
     <div class="tk-cli">${esc(c.cliente_nombre)}${c.cliente_doc ? '<br>' + esc(c.cliente_doc_tipo || '') + ' ' + esc(c.cliente_doc) : ''}<br>${COND[c.cliente_cond_iva] || ''}</div>
     ${c.relacionado_id ? `<div class="mini">Devuelve el comprobante #${c.relacionado_id}</div>` : ''}
     <table class="tk-det">${det.map(d => `<tr><td colspan="2">${esc(d.descripcion)}<div class="mini">${esc(d.sku)}${d.descuento_pct > 0 ? ' · dto ' + d.descuento_pct + '%' : ''}</div></td></tr><tr><td>${Number(d.cantidad)} × ${plata2(d.precio_unit)}</td><td class="num">${plata2(d.total)}</td></tr>`).join('')}</table>
@@ -1177,29 +1205,48 @@ async function imprimir(id) {
   await pintarQR(document.getElementById('print-area'));
   window.print();
 }
-async function iniciarNC(id) {
+// Nota de crédito desde Vender: pastilla NC → buscar la factura que devuelve → sus renglones entran al ticket
+let _ncT; function ncDebounce() { clearTimeout(_ncT); _ncT = setTimeout(ncBuscar, 400); }
+async function ncBuscar() {
+  const q = document.getElementById('v-nc-q').value.trim(); const box = document.getElementById('v-nc-res'); if (q.length < 2) { box.innerHTML = ''; return; }
+  let qry = sb.from('pos_comprobantes').select('*').eq('local', LOCAL).eq('estado', 'emitido').eq('tipo', T.letra === 'X' ? 'MA' : 'FC').order('id', { ascending: false }).limit(10);
+  if (T.letra !== 'X') qry = qry.eq('letra', T.letra);
+  const m = /^(\d{1,4})\s*-\s*(\d{1,8})$/.exec(q);
+  if (m) qry = qry.eq('punto_venta', Number(m[1])).eq('numero', Number(m[2]));
+  else if (/^\d+$/.test(q)) qry = qry.or(`numero.eq.${q},cliente_doc.ilike.%${q}%`);
+  else qry = qry.or(`cliente_nombre.ilike.%${q}%,cliente_interno.ilike.%${q}%`);
+  const { data, error } = await qry; if (error) { box.innerHTML = `<div class="mini">${esc(error.message)}</div>`; return; }
+  box.innerHTML = (data || []).map(c => `<button class="cl-it" onclick="ncElegir(${c.id})">${_i('nc')}<span><b>${TIPO_NOM[c.tipo]} ${c.letra} ${fmtNum(c.punto_venta, c.numero)}</b> · ${plata(c.total)}<div class="mini">${fechaAR(c.fecha)} · ${esc(c.cliente_interno || c.cliente_nombre)}${c.cliente_doc ? ' · ' + esc(c.cliente_doc) : ''} · ${esc(c.vendedora_nombre || '')}</div></span></button>`).join('') || '<div class="mini">No encontré facturas así en este local.</div>';
+}
+async function ncElegir(id) {
   const x = await traerComprobante(id); if (!x.c) return;
   const { data: ya } = await sb.from('pos_comprobantes').select('total').eq('relacionado_id', id).eq('estado', 'emitido');
   const devuelto = (ya || []).reduce((s, r) => s + Number(r.total), 0);
-  modal(`<div class="m-head"><h3>Nota de crédito de ${TIPO_NOM[x.c.tipo]} ${x.c.letra} ${fmtNum(x.c.punto_venta, x.c.numero)}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="mini" style="margin-bottom:8px">Marcá qué devuelve el cliente y cuánto. ${devuelto ? 'Ya se devolvieron ' + plata(devuelto) + ' de ' + plata(x.c.total) + '.' : ''}</div>
-    <table><thead><tr><th></th><th>Artículo</th><th class="num">Vendido</th><th class="num">Devuelve</th><th class="num">Precio</th></tr></thead><tbody>
-    ${x.det.map((d, i) => `<tr><td><input type="checkbox" id="nc-ok-${i}" checked></td><td><b>${esc(d.sku)}</b><div class="mini">${esc(d.descripcion)}</div></td><td class="num">${Number(d.cantidad)}</td><td class="num"><input id="nc-c-${i}" value="${Number(d.cantidad)}" inputmode="decimal" style="width:60px"></td><td class="num">${plata(d.precio_unit)}</td></tr>`).join('')}</tbody></table>
-    <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" onclick="armarNC(${id})">Seguir: cómo se devuelve la plata</button></div>`);
-  window._ncBase = x;
-}
-function armarNC(id) {
-  const x = window._ncBase; const items = []; let mal = null;
-  x.det.forEach((d, i) => { if (!document.getElementById('nc-ok-' + i).checked) return; const c = num(document.getElementById('nc-c-' + i).value); if (c <= 0) return;
-    if (c > Number(d.cantidad)) { mal = d.sku; return; }
-    items.push({ sku: d.sku, descripcion: d.descripcion, cantidad: c, precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), stock: 1 }); });
-  if (mal) { toast('No se puede devolver más de lo vendido (' + mal + ')', 'error'); return; }
-  if (!items.length) { toast('Elegí al menos un artículo', 'error'); return; }
-  T.items = items; T.tipo = 'NC'; T.letra = x.c.letra; T.nc_de = id;
+  if (devuelto >= Number(x.c.total) - 1) { toast('Esa factura ya se devolvió entera', 'error'); return; }
+  T.tipo = 'NC'; T.letra = x.c.letra; T.nc_de = id;
+  document.querySelectorAll('#v-tipos .pil').forEach(b => b.classList.toggle('on', b.dataset.t === 'NC:' + x.c.letra));
+  T.items = x.det.map(d => ({ sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), max: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), stock: 1 }));
   T.cliente = (x.c.cliente_globalid || x.c.cliente_doc) ? { nombre: x.c.cliente_interno || x.c.cliente_nombre, doc_tipo: x.c.cliente_doc_tipo, doc: x.c.cliente_doc, cond_iva: x.c.cliente_cond_iva, globalid: x.c.cliente_globalid, facturar_a_nombre: x.c.cliente_informado !== false } : null;
-  T.sin_cliente = true;  // la NC lleva el mismo receptor que la factura: no se pregunta
+  T.sin_cliente = true;  // la NC lleva el mismo receptor que la factura
   document.getElementById('v-desc').value = Number(x.c.descuento_pct) || 0;
-  cerrarModal(); abrirCobro(true);
+  document.getElementById('v-nc-q').value = ''; document.getElementById('v-nc-res').innerHTML = '';
+  document.getElementById('v-nc-sel').innerHTML = `Devuelve <b>${TIPO_NOM[x.c.tipo]} ${x.c.letra} ${fmtNum(x.c.punto_venta, x.c.numero)}</b> del ${fechaAR(x.c.fecha)} por ${plata(x.c.total)}${devuelto ? ' (ya se devolvieron ' + plata(devuelto) + ')' : ''}. Sacá o bajá la cantidad de lo que no vuelve.`;
+  pLimpiar(); vRender();
+}
+// Presupuesto → factura: sus renglones y su cliente entran al ticket como Factura B (se puede cambiar la pastilla)
+async function prFacturar(id) {
+  const x = await traerComprobante(id); if (!x.c) return;
+  switchTab('vender'); vTipo('FC', 'B');
+  T.items = x.det.map(d => { const a = ARTS.find(z => z.sku === d.sku); return { sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), stock: a ? Number(a.stock) : 1 }; });
+  T.cliente = (x.c.cliente_globalid || x.c.cliente_doc) ? { nombre: x.c.cliente_nombre, doc_tipo: x.c.cliente_doc_tipo, doc: x.c.cliente_doc, cond_iva: x.c.cliente_cond_iva, globalid: x.c.cliente_globalid, facturar_a_nombre: false } : null;
+  if (T.cliente && T.cliente.cond_iva !== 'CF') vTipo('FC', LETRA_COND[T.cliente.cond_iva]);
+  document.getElementById('v-desc').value = Number(x.c.descuento_pct) || 0;
+  document.getElementById('v-obs').value = 'Según presupuesto ' + fmtNum(x.c.punto_venta, x.c.numero);
+  vRender(); toast('Presupuesto cargado en el ticket: revisá precios y cobrá', 'success');
+}
+async function iniciarNC(id) {
+  const { data: c } = await sb.from('pos_comprobantes').select('letra').eq('id', id).single(); if (!c) return;
+  switchTab('vender'); vTipo('NC', c.letra); ncElegir(id);
 }
 async function anular(id) {
   const motivo = prompt('Motivo de la anulación (queda registrado):'); if (motivo === null) return;
@@ -1237,7 +1284,7 @@ async function cargarAjustes() {
     (mp || []).map(m => `<tr><td>${esc(m.nombre)}</td><td class="mini">${esc(m.jjco || '')}</td><td class="mini">${esc(m.columna_ventas || '')}</td><td><input type="checkbox"${m.pide_referencia ? ' checked' : ''} onchange="guardarMP('${m.clave}','pide_referencia',this.checked)"></td><td><input type="checkbox"${m.activo ? ' checked' : ''} onchange="guardarMP('${m.clave}','activo',this.checked)"></td></tr>`).join('') + '</tbody></table>';
 }
 async function guardarPV(id, campo, v) { const { error } = await sb.from('pos_puntos_venta').update({ [campo]: v }).eq('id', id); if (error) return toast(error.message, 'error'); toast('Guardado', 'success'); const { data } = await sb.from('pos_puntos_venta').select('*'); PV = data || []; }
-async function guardarMP(clave, campo, v) { const { error } = await sb.from('pos_medios_pago').update({ [campo]: v }).eq('clave', clave); if (error) return toast(error.message, 'error'); toast('Guardado', 'success'); const { data } = await sb.from('pos_medios_pago').select('*').eq('activo', true).order('orden'); MEDIOS = data || []; }
+async function guardarMP(clave, campo, v) { const { error } = await sb.from('pos_medios_pago').update({ [campo]: v }).eq('clave', clave); if (error) return toast(error.message, 'error'); toast('Guardado', 'success'); const { data } = await sb.from('pos_medios_pago').select('*').eq('activo', true).order('orden'); MEDIOS = data || []; pMontar(); }
 
 // ═══ Modal (nunca se cierra clickeando afuera: solo ✕, Cancelar o Escape) ═
 function modal(html, cls) { const ov = document.getElementById('ov'); ov.innerHTML = `<div class="box ${cls || ''}">${html}</div>`; ov.style.display = 'flex'; }
