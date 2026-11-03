@@ -461,13 +461,27 @@ main { max-width: 1500px; }
 .cli-sin input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 16px; font-family: inherit; padding: 4px 0; color: var(--text); }
 .cli-datos { flex: 1; min-width: 0; } .cli-datos .mini { overflow-wrap: anywhere; } .cli-con { cursor: pointer; } .cli-con:hover { background: var(--gray-light); border-radius: 8px; }
 .cli-chk { display: flex; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer; }
-.cl-ficha { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; align-items: start; background: #f1f5f9; border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
-.cl-ficha label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.cl-ficha label.ob::after { content: none; } .cl-ficha label.ob > span::after { content: ' *'; color: var(--red); }
-.cl-ficha input, .cl-ficha select { width: 100%; box-sizing: border-box; height: 38px; border: 1px solid #94a3b8; border-radius: 6px; padding: 0 10px; font-size: 15px; font-family: inherit; background: white; color: var(--text); }
-.cl-ficha input:focus, .cl-ficha select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-bg); }
-.cl-ficha .c3 { grid-column: 1 / -1; }
-@media (max-width: 640px) { .cl-ficha { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+#ov .box.ficha { max-width: 940px; padding: 0; overflow: hidden; }
+.fb { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-height: 90vh; }
+.fb-side { background: var(--primary-dark); color: #fff; padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: auto; }
+.fb-x { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; opacity: .85; }
+.fb-av { width: 60px; height: 60px; border-radius: 16px; background: var(--primary); display: grid; place-items: center; font-size: 22px; font-weight: 700; }
+.fb-side b { font-size: 17px; line-height: 1.15; display: block; overflow-wrap: anywhere; } .fb-side .mini { color: rgba(255,255,255,.78); }
+.fb-k { display: flex; flex-direction: column; font-size: 12px; opacity: .92; } .fb-k span { color: rgba(255,255,255,.7); } .fb-k b { font-size: 13px; }
+.fb-hist { background: rgba(255,255,255,.1); border-radius: 10px; padding: 10px; font-size: 12px; } .fb-hist strong { display: block; color: #a5f3fc; margin-bottom: 4px; }
+.fb-hist .it { display: flex; gap: 8px; align-items: center; padding: 3px 0; } .fb-hist .it img, .fb-hist .it .sin { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; flex: none; background: rgba(255,255,255,.15); }
+.fb-hist .it span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; } .fb-hist summary { cursor: pointer; margin-top: 6px; }
+.fb-st { margin-top: auto; background: rgba(255,255,255,.12); border-radius: 10px; padding: 10px; font-size: 12px; line-height: 1.35; } .fb-st strong { display: block; color: #a5f3fc; }
+.fb-main { display: flex; flex-direction: column; max-height: 90vh; min-width: 0; } .fb-scroll { overflow: auto; flex: 1; padding: 18px 22px 4px; }
+.fb-main h3 { margin: 0 0 2px; font-size: 17px; }
+.fb-sec { font-size: 12px; font-weight: 700; color: var(--primary); margin: 14px 0 8px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: .06em; } .fb-sec::after { content: ""; flex: 1; height: 1px; background: var(--primary-bg); }
+.fb-g { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.fb-f { display: flex; flex-direction: column; gap: 4px; min-width: 0; } .fb-f label { font-size: 12px; font-weight: 600; color: #475569; white-space: nowrap; } .fb-f .req { color: var(--red); }
+.fb-f input, .fb-f select { width: 100%; box-sizing: border-box; background: #f1f5f9; border: none; border-bottom: 2px solid #cbd5e1; border-radius: 8px 8px 0 0; padding: 0 12px; height: 40px; font-size: 15px; font-family: inherit; color: var(--text); }
+.fb-f input:focus, .fb-f select:focus { outline: none; border-bottom-color: var(--primary); background: #ecfeff; }
+.fb-f.c2 { grid-column: 1 / -1; }
+.fb-foot { display: flex; align-items: center; gap: 8px; padding: 12px 22px 16px; border-top: 1px solid var(--border); }
+@media (max-width: 700px) { #ov .box.ficha { overflow: auto; } .fb { grid-template-columns: 1fr; max-height: none; } .fb-main { max-height: none; } .fb-side { padding: 14px; } .fb-st { margin-top: 0; } .fb-g { grid-template-columns: 1fr 1fr; } }
 .renglones table { box-shadow: none; } .renglones td { padding: 6px 6px; } .renglones input { width: 48px; border: 1px solid var(--border); border-radius: 6px; padding: 4px; text-align: right; font-family: inherit; font-size: 14px; }
 .renglones td.cant { white-space: nowrap; } tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
 .empty.chico { padding: 22px; }
@@ -858,31 +872,79 @@ function editarCliente() {
 }
 function abrirFichaCliente(c, editar) {
   c = c || {}; const sel = (k, v) => (c[k] || '') === v ? ' selected' : '';
-  modal(`<div class="m-head"><h3>${editar ? 'Ficha del cliente' : 'Cliente nuevo'}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="mini" style="margin:4px 0 10px">${editar ? 'Corregí lo que haga falta y guardá.' : 'No está en la base: cargalo. Con * es obligatorio; el resto se puede completar otro día (doble clic sobre el cliente en el ticket).'}</div>
-    <div class="form cl-ficha">
-      <label><span>Documento</span><select id="cf-tipo" onchange="cfCond()"><option${sel('doc_tipo', 'DNI')}>DNI</option><option${sel('doc_tipo', 'CUIT')}>CUIT</option><option${sel('doc_tipo', 'CUIL')}>CUIL</option><option${sel('doc_tipo', 'PAS')}>PAS</option></select></label>
-      <label class="ob"><span>Número</span><input id="cf-doc" value="${esc(c.doc || c.dni || c.cuit || '')}" inputmode="numeric" onchange="cfPadron()"></label>
-      <label><span>Condición IVA</span><select id="cf-cond" onchange="cfCond()">${Object.entries(COND).map(([k, v]) => `<option value="${k}"${(c.cond_iva || 'CF') === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
-      <label class="ob"><span>Apellido o razón social</span><input id="cf-ap" value="${esc(c.apellido || '')}"></label>
-      <label><span>Nombre</span><input id="cf-nom" value="${esc(c.nombre || '')}"></label>
-      <label class="ob"><span>Mail</span><input id="cf-email" type="email" value="${esc(c.email || '')}" autocomplete="off" placeholder="por acá se le manda la factura"></label>
-      <label><span>Celular (WhatsApp)</span><input id="cf-cel" value="${esc(c.celular || '')}" inputmode="tel" placeholder="11 1234 5678"></label>
-      <label><span>Fecha de nacimiento</span><input id="cf-fnac" type="date" value="${esc(c.fecha_nacimiento || '')}"></label>
-      <label><span>Sexo</span><select id="cf-sexo"><option value=""></option><option value="F"${sel('sexo', 'F')}>F</option><option value="M"${sel('sexo', 'M')}>M</option><option value="X"${sel('sexo', 'X')}>X</option></select></label>
-      <label class="c3"><span>Dirección</span><input id="cf-dir" value="${esc(c.direccion || '')}" placeholder="Calle y número, piso, depto"></label>
-      <label><span>Localidad</span><input id="cf-loc" value="${esc(c.localidad || '')}"></label>
-      <label><span>Provincia</span><input id="cf-prov" value="${esc(c.provincia || '')}"></label>
-      <label><span>Código postal</span><input id="cf-cp" value="${esc(c.codigo_postal || '')}"></label>
+  const nom = c.nombre_completo || [c.apellido, c.nombre].filter(Boolean).join(', ') || 'Cliente nuevo';
+  const ini = ((c.nombre || ' ')[0] + (c.apellido || c.nombre_completo || '?')[0]).toUpperCase().trim();
+  const f = (id, lb, inner, cls) => `<div class="fb-f ${cls || ''}"><label for="${id}">${lb}</label>${inner}</div>`;
+  modal(`<div class="fb">
+    <aside class="fb-side"><button class="fb-x" onclick="cerrarModal()" aria-label="Cerrar">✕</button>
+      <div class="fb-av">${esc(ini)}</div>
+      <div><b id="fb-nom">${esc(nom)}</b><div class="mini" id="fb-desde">${c.globalid ? (c.fecha_alta ? 'Cliente desde ' + fechaAR(String(c.fecha_alta).slice(0, 10)) : '') : 'Primera vez en la base'}</div></div>
+      <div class="fb-k"><span>Documento</span><b id="fb-doc">${esc((c.doc_tipo || 'DNI') + ' ' + (c.doc || c.dni || c.cuit || '—'))}</b></div>
+      <div class="fb-k"><span>Condición</span><b id="fb-cond">${COND[c.cond_iva || 'CF']}</b></div>
+      <div class="fb-hist" id="fb-hist">${c.globalid ? '<div class="mini">Buscando sus compras…</div>' : '<strong>Sin compras todavía</strong><div class="mini">Hoy es la primera: dale la bienvenida.</div>'}</div>
+      <div class="fb-st"><strong>En la factura</strong><span id="fb-st"></span></div>
+    </aside>
+    <div class="fb-main"><div class="fb-scroll">
+      <h3>${editar ? 'Ficha del cliente' : 'Cliente nuevo'}</h3>
+      <div class="mini">${editar ? 'Corregí lo que haga falta y guardá.' : 'No está en la base: cargalo. Con * es obligatorio; el resto se completa otro día tocando el cliente en el ticket.'}</div>
+      <div class="fb-sec">Datos</div>
+      <div class="fb-g">
+        ${f('cf-tipo', 'Documento', `<select id="cf-tipo" onchange="cfCond()"><option${sel('doc_tipo', 'DNI')}>DNI</option><option${sel('doc_tipo', 'CUIT')}>CUIT</option><option${sel('doc_tipo', 'CUIL')}>CUIL</option><option${sel('doc_tipo', 'PAS')}>PAS</option></select>`)}
+        ${f('cf-doc', 'Número <span class="req">*</span>', `<input id="cf-doc" value="${esc(c.doc || c.dni || c.cuit || '')}" inputmode="numeric" onchange="cfPadron();fbResumen()">`)}
+        ${f('cf-ap', 'Apellido o razón social <span class="req">*</span>', `<input id="cf-ap" value="${esc(c.apellido || '')}" oninput="fbResumen()">`)}
+        ${f('cf-nom', 'Nombre', `<input id="cf-nom" value="${esc(c.nombre || '')}" oninput="fbResumen()">`)}
+        ${f('cf-cond', 'Condición IVA', `<select id="cf-cond" onchange="cfCond()">${Object.entries(COND).map(([k, v]) => `<option value="${k}"${(c.cond_iva || 'CF') === k ? ' selected' : ''}>${v}</option>`).join('')}</select>`)}
+        ${f('cf-fnac', 'Fecha de nacimiento', `<input id="cf-fnac" type="date" value="${esc(c.fecha_nacimiento || '')}">`)}
+      </div>
+      <div class="fb-sec">Contacto</div>
+      <div class="fb-g">
+        ${f('cf-email', 'Mail <span class="req">*</span>', `<input id="cf-email" type="email" value="${esc(c.email || '')}" autocomplete="off" placeholder="por acá se le manda la factura">`)}
+        ${f('cf-cel', 'Celular (WhatsApp)', `<input id="cf-cel" value="${esc(c.celular || '')}" inputmode="tel" placeholder="11 1234 5678">`)}
+        ${f('cf-sexo', 'Sexo', `<select id="cf-sexo"><option value=""></option><option value="F"${sel('sexo', 'F')}>Femenino</option><option value="M"${sel('sexo', 'M')}>Masculino</option><option value="X"${sel('sexo', 'X')}>X</option></select>`)}
+      </div>
+      <div class="fb-sec">Domicilio</div>
+      <div class="fb-g">
+        ${f('cf-dir', 'Dirección', `<input id="cf-dir" value="${esc(c.direccion || '')}" placeholder="Calle y número, piso, depto">`, 'c2')}
+        ${f('cf-loc', 'Localidad', `<input id="cf-loc" value="${esc(c.localidad || '')}">`)}
+        ${f('cf-prov', 'Provincia', `<input id="cf-prov" value="${esc(c.provincia || '')}">`)}
+        ${f('cf-cp', 'Código postal', `<input id="cf-cp" value="${esc(c.codigo_postal || '')}">`)}
+      </div>
+      <div class="mini" id="cf-msg" style="margin-top:8px"></div>
     </div>
-    <div class="mini" id="cf-msg" style="margin-top:6px"></div>
-    <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="cf-ok" onclick="guardarFicha('${esc(c.globalid || '')}')">${editar ? 'Guardar' : 'Dar de alta y usar'}</button></div>`);
+    <div class="fb-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="cf-ok" onclick="guardarFicha('${esc(c.globalid || '')}')">${editar ? 'Guardar' : 'Dar de alta y usar'}</button></div>
+    </div></div>`, 'ficha');
+  fbResumen();
   document.getElementById(!c.apellido ? 'cf-ap' : !c.email ? 'cf-email' : 'cf-cel').focus();
   if (c.doc_tipo === 'CUIT' && !editar) cfPadron();
+  if (c.globalid) cargarHistorial(c.globalid);
+}
+// Panel izquierdo de la ficha: se actualiza mientras se escribe
+function fbResumen() {
+  const g = id => (document.getElementById(id) || {}).value || '';
+  if (!document.getElementById('fb-nom')) return;
+  const nom = [g('cf-ap'), g('cf-nom')].filter(Boolean).join(', ') || 'Cliente nuevo';
+  document.getElementById('fb-nom').textContent = nom;
+  document.getElementById('fb-doc').textContent = g('cf-tipo') + ' ' + (g('cf-doc') || '—');
+  const cond = g('cf-cond') || 'CF'; document.getElementById('fb-cond').textContent = COND[cond];
+  document.getElementById('fb-st').textContent = cond === 'CF' ? 'Va a ARCA como Consumidor Final (salvo que supere el tope o pida la factura a su nombre). El cliente queda en nuestra base.' : 'Factura ' + LETRA_COND[cond] + ' a su nombre, con CUIT (' + COND[cond] + ').';
+}
+// Historial: última compra con sus artículos (Dragon + POS) para darle pie de charla a la vendedora
+async function cargarHistorial(globalid) {
+  const box = document.getElementById('fb-hist'); if (!box) return;
+  const { data: h, error } = await sb.rpc('pos_cliente_historial', { p_globalid: globalid });
+  if (!document.getElementById('fb-hist')) return;
+  if (error || !h) { box.innerHTML = '<div class="mini">No pude traer sus compras.</div>'; return; }
+  if (!h.cantidad) { box.innerHTML = '<strong>Sin compras registradas</strong><div class="mini">Primera compra con nosotros.</div>'; return; }
+  const u = h.ultimas[0]; const items = u.items || [];
+  const desde = document.getElementById('fb-desde'); if (desde) desde.textContent = 'Cliente desde ' + fechaAR(h.primera) + ' · ' + h.cantidad + (h.cantidad === 1 ? ' compra' : ' compras') + ' · ' + plata(h.total);
+  const it = x => `<div class="it">${IMGS[x.sku] ? `<img src="${esc(IMGS[x.sku])}" alt="" loading="lazy">` : '<span class="sin"></span>'}<span title="${esc(x.sku)}">${Number(x.cantidad) > 1 ? Number(x.cantidad) + ' × ' : ''}${esc(tit(x.descripcion || x.sku))}${x.color ? ' · ' + esc(tit(x.color)) : ''}</span></div>`;
+  box.innerHTML = `<strong>Última compra · ${fechaAR(u.fecha)} · ${esc(LOCALES[u.local] || u.local || '')} · ${plata(u.total)}</strong>` + items.slice(0, 5).map(it).join('') + (items.length > 5 ? `<div class="mini">… y ${items.length - 5} más</div>` : '')
+    + (h.ultimas.length > 1 ? `<details><summary class="mini">Compras anteriores</summary>${h.ultimas.slice(1).map(v => `<div class="mini" style="margin-top:6px"><b>${fechaAR(v.fecha)} · ${plata(v.total)}</b></div>` + (v.items || []).slice(0, 4).map(it).join('')).join('')}</details>` : '');
 }
 function cfCond() {
   const cond = document.getElementById('cf-cond').value;
   if (cond !== 'CF') { document.getElementById('cf-tipo').value = 'CUIT'; cfPadron(); }
+  fbResumen();
 }
 // Padrón de ARCA (misma cola que Compras, la atiende arca_padron.py): con CUIT trae razón social, condición y domicilio
 let _padT = null;
@@ -901,7 +963,7 @@ async function cfPadron() {
     if (!g('cf-prov').value && d.descripcionProvincia) g('cf-prov').value = tit(d.descripcionProvincia);
     if (!g('cf-cp').value && d.codPostal) g('cf-cp').value = d.codPostal;
     msg.textContent = 'ARCA: ' + r.razon_social + ' · ' + (COND[cond] || r.cond_iva || '') + (r.vigente === false ? ' · ⚠ CUIT no vigente' : '');
-    return true;
+    fbResumen(); return true;
   };
   const { data: ya } = await sb.from('compras_arca_consultas').select('*').eq('cuit', cuit).maybeSingle();
   if (ya && ya.consultado_at && Date.now() - new Date(ya.consultado_at) < 30 * 864e5 && pinta(ya)) return;
@@ -1177,11 +1239,11 @@ async function guardarPV(id, campo, v) { const { error } = await sb.from('pos_pu
 async function guardarMP(clave, campo, v) { const { error } = await sb.from('pos_medios_pago').update({ [campo]: v }).eq('clave', clave); if (error) return toast(error.message, 'error'); toast('Guardado', 'success'); const { data } = await sb.from('pos_medios_pago').select('*').eq('activo', true).order('orden'); MEDIOS = data || []; }
 
 // ═══ Modal (nunca se cierra clickeando afuera: solo ✕, Cancelar o Escape) ═
-function modal(html) { const ov = document.getElementById('ov'); ov.innerHTML = `<div class="box">${html}</div>`; ov.style.display = 'flex'; }
+function modal(html, cls) { const ov = document.getElementById('ov'); ov.innerHTML = `<div class="box ${cls || ''}">${html}</div>`; ov.style.display = 'flex'; }
 function cerrarModal() { const ov = document.getElementById('ov'); ov.style.display = 'none'; ov.innerHTML = ''; }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=6"></script>
+<script src="manual.js?v=7"></script>
 </body>
 </html>
