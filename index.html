@@ -461,7 +461,13 @@ main { max-width: 1500px; }
 .cli-sin input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 16px; font-family: inherit; padding: 4px 0; color: var(--text); }
 .cli-datos { flex: 1; min-width: 0; } .cli-datos .mini { overflow-wrap: anywhere; } .cli-con { cursor: pointer; } .cli-con:hover { background: var(--gray-light); border-radius: 8px; }
 .cli-chk { display: flex; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer; }
-.cl-ficha label.ob::after { content: ' *'; color: var(--red); } .cl-ficha { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.cl-ficha { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; align-items: start; background: #f1f5f9; border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.cl-ficha label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cl-ficha label.ob::after { content: none; } .cl-ficha label.ob > span::after { content: ' *'; color: var(--red); }
+.cl-ficha input, .cl-ficha select { width: 100%; box-sizing: border-box; height: 38px; border: 1px solid #94a3b8; border-radius: 6px; padding: 0 10px; font-size: 15px; font-family: inherit; background: white; color: var(--text); }
+.cl-ficha input:focus, .cl-ficha select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-bg); }
+.cl-ficha .c3 { grid-column: 1 / -1; }
+@media (max-width: 640px) { .cl-ficha { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .renglones table { box-shadow: none; } .renglones td { padding: 6px 6px; } .renglones input { width: 48px; border: 1px solid var(--border); border-radius: 6px; padding: 4px; text-align: right; font-family: inherit; font-size: 14px; }
 .renglones td.cant { white-space: nowrap; } tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
 .empty.chico { padding: 22px; }
@@ -855,19 +861,19 @@ function abrirFichaCliente(c, editar) {
   modal(`<div class="m-head"><h3>${editar ? 'Ficha del cliente' : 'Cliente nuevo'}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="mini" style="margin:4px 0 10px">${editar ? 'Corregí lo que haga falta y guardá.' : 'No está en la base: cargalo. Con * es obligatorio; el resto se puede completar otro día (doble clic sobre el cliente en el ticket).'}</div>
     <div class="form cl-ficha">
-      <label>Documento <select id="cf-tipo" onchange="cfCond()"><option${sel('doc_tipo', 'DNI')}>DNI</option><option${sel('doc_tipo', 'CUIT')}>CUIT</option><option${sel('doc_tipo', 'CUIL')}>CUIL</option><option${sel('doc_tipo', 'PAS')}>PAS</option></select></label>
-      <label class="ob">Número <input id="cf-doc" value="${esc(c.doc || c.dni || c.cuit || '')}" inputmode="numeric" onchange="cfPadron()"></label>
-      <label>Condición IVA <select id="cf-cond" onchange="cfCond()">${Object.entries(COND).map(([k, v]) => `<option value="${k}"${(c.cond_iva || 'CF') === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
-      <label class="ob">Apellido / razón social <input id="cf-ap" value="${esc(c.apellido || '')}"></label>
-      <label>Nombre <input id="cf-nom" value="${esc(c.nombre || '')}"></label>
-      <label class="ob">Mail <input id="cf-email" type="email" value="${esc(c.email || '')}" autocomplete="off" placeholder="por acá se le manda la factura"></label>
-      <label>Celular (WhatsApp) <input id="cf-cel" value="${esc(c.celular || '')}" inputmode="tel" placeholder="11 1234 5678"></label>
-      <label>Fecha de nacimiento <input id="cf-fnac" type="date" value="${esc(c.fecha_nacimiento || '')}"></label>
-      <label>Sexo <select id="cf-sexo"><option value=""></option><option value="F"${sel('sexo', 'F')}>F</option><option value="M"${sel('sexo', 'M')}>M</option><option value="X"${sel('sexo', 'X')}>X</option></select></label>
-      <label style="grid-column:1/-1">Dirección <input id="cf-dir" value="${esc(c.direccion || '')}" placeholder="Calle y número, piso, depto"></label>
-      <label>Localidad <input id="cf-loc" value="${esc(c.localidad || '')}"></label>
-      <label>Provincia <input id="cf-prov" value="${esc(c.provincia || '')}"></label>
-      <label>Código postal <input id="cf-cp" value="${esc(c.codigo_postal || '')}"></label>
+      <label><span>Documento</span><select id="cf-tipo" onchange="cfCond()"><option${sel('doc_tipo', 'DNI')}>DNI</option><option${sel('doc_tipo', 'CUIT')}>CUIT</option><option${sel('doc_tipo', 'CUIL')}>CUIL</option><option${sel('doc_tipo', 'PAS')}>PAS</option></select></label>
+      <label class="ob"><span>Número</span><input id="cf-doc" value="${esc(c.doc || c.dni || c.cuit || '')}" inputmode="numeric" onchange="cfPadron()"></label>
+      <label><span>Condición IVA</span><select id="cf-cond" onchange="cfCond()">${Object.entries(COND).map(([k, v]) => `<option value="${k}"${(c.cond_iva || 'CF') === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
+      <label class="ob"><span>Apellido o razón social</span><input id="cf-ap" value="${esc(c.apellido || '')}"></label>
+      <label><span>Nombre</span><input id="cf-nom" value="${esc(c.nombre || '')}"></label>
+      <label class="ob"><span>Mail</span><input id="cf-email" type="email" value="${esc(c.email || '')}" autocomplete="off" placeholder="por acá se le manda la factura"></label>
+      <label><span>Celular (WhatsApp)</span><input id="cf-cel" value="${esc(c.celular || '')}" inputmode="tel" placeholder="11 1234 5678"></label>
+      <label><span>Fecha de nacimiento</span><input id="cf-fnac" type="date" value="${esc(c.fecha_nacimiento || '')}"></label>
+      <label><span>Sexo</span><select id="cf-sexo"><option value=""></option><option value="F"${sel('sexo', 'F')}>F</option><option value="M"${sel('sexo', 'M')}>M</option><option value="X"${sel('sexo', 'X')}>X</option></select></label>
+      <label class="c3"><span>Dirección</span><input id="cf-dir" value="${esc(c.direccion || '')}" placeholder="Calle y número, piso, depto"></label>
+      <label><span>Localidad</span><input id="cf-loc" value="${esc(c.localidad || '')}"></label>
+      <label><span>Provincia</span><input id="cf-prov" value="${esc(c.provincia || '')}"></label>
+      <label><span>Código postal</span><input id="cf-cp" value="${esc(c.codigo_postal || '')}"></label>
     </div>
     <div class="mini" id="cf-msg" style="margin-top:6px"></div>
     <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="cf-ok" onclick="guardarFicha('${esc(c.globalid || '')}')">${editar ? 'Guardar' : 'Dar de alta y usar'}</button></div>`);
@@ -1176,6 +1182,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=6"></script>
+<script src="manual.js?v=5"></script>
 </body>
 </html>
