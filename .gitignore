@@ -12,5 +12,3 @@
 *.xls
 backups/
 _*/
-ta_*.json
-instalar_*.ps1
