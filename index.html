@@ -352,7 +352,7 @@ window.ADORNO_SSO = (function () {
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-192-v2.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧾%3C/text%3E%3C/svg%3E">
-
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 @font-face { font-family: 'URW Gothic'; src: url('fonts/URWGothic-Book.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
 :root { --primary: #0e7490; --primary-dark: #155e75; --primary-bg: #cffafe; --green:#16a34a; --green-bg:#dcfce7; --amber:#d97706; --amber-bg:#fef3c7;
@@ -483,6 +483,7 @@ main { max-width: 1500px; }
 .tk-cli { margin-bottom: 6px; } .tk-det { width: 100%; border-collapse: collapse; box-shadow: none; } .tk-det td { padding: 2px 0; border: none; font-size: 13px; }
 .tk-tot { border-top: 1px dashed #999; margin-top: 6px; padding-top: 6px; } .tk-tot .fila, .tk-pagos .fila { display: flex; justify-content: space-between; } .tk-tot .fila.total { font-size: 18px; font-weight: 700; }
 .tk-pagos { border-top: 1px dashed #999; margin-top: 6px; padding-top: 6px; } .tk-f { text-align: center; margin-top: 10px; }
+.tk-qr { text-align: center; margin-top: 8px; } .tk-qr img { width: 110px; height: 110px; } .tk-err { color: #b91c1c; }
 .tk-anulado { text-align: center; color: #b91c1c; font-weight: 700; border: 2px solid #b91c1c; padding: 4px; margin-top: 8px; }
 #print-area { display: none; }
 @media print { body > * { display: none !important; } #app { display: block !important; } #app > * { display: none !important; } main { display: block !important; padding: 0; } main > * { display: none !important; } #print-area { display: block !important; } .ticket { width: 72mm; box-shadow: none; padding: 0; } @page { margin: 4mm; } }
@@ -893,9 +894,10 @@ async function cargarComprobantes() {
       <td>${esc(c.cliente_nombre)}<div class="mini">${c.cliente_doc ? (c.cliente_doc_tipo || '') + ' ' + c.cliente_doc : ''}</div></td>
       <td class="mini">${esc(c.vendedora_nombre || '')}</td>
       <td class="num"><b>${c.signo < 0 ? '- ' : ''}${plata(c.total)}</b></td>
-      <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'pendiente' ? '<span class="chip amber" title="Todavía no se pidió el CAE a ARCA (próxima fase)">Sin CAE</span>' : c.cae_estado === 'ok' ? '<span class="chip green">CAE</span>' : '<span class="chip gray">Manual</span>'}</td>
+      <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'pendiente' ? '<span class="chip amber" title="Esperando el CAE de ARCA">CAE…</span>' : c.cae_estado === 'ok' ? '<span class="chip green" title="CAE ' + esc(c.cae) + '">CAE</span>' : c.cae_estado === 'error' ? '<span class="chip red" title="' + esc(c.cae_error || '') + '">CAE rechazado</span>' : '<span class="chip gray">Manual</span>'}</td>
       <td style="white-space:nowrap"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>
         ${c.tipo !== 'NC' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
+        ${puedeAnular && c.estado === 'emitido' && c.cae_estado === 'error' ? `<button class="btn ico" onclick="reintentarCAE(${c.id})" title="Pedir el CAE de nuevo a ARCA" aria-label="Reintentar CAE">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' ? `<button class="btn ico peligro" onclick="anular(${c.id})" title="Anular" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty">No hay comprobantes en ese rango.</div>';
 }
@@ -911,7 +913,7 @@ function ticketHTML(x) {
   const fiscal = c.letra !== 'X';
   return `<div class="ticket">
     <div class="tk-h"><div class="tk-marca">Claudia Adorno</div><div class="mini">Claudia Adorno SRL · CUIT 30-70967311-0<br>${esc(LOCALES[c.local])}</div></div>
-    <div class="tk-tipo"><b>${TIPO_NOM[c.tipo]} ${c.letra}</b> <span>${fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(c.vendedora_nombre || '')}</div>${!fiscal ? '<div class="mini">Documento no válido como factura</div>' : c.cae_estado !== 'ok' ? '<div class="mini">CAE pendiente</div>' : `<div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div>`}</div>
+    <div class="tk-tipo"><b>${TIPO_NOM[c.tipo]} ${c.letra}</b> <span>${fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(c.vendedora_nombre || '')}</div>${!fiscal ? '<div class="mini">Documento no válido como factura</div>' : c.cae_estado === 'ok' ? `<div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div>` : c.cae_estado === 'error' ? `<div class="mini tk-err">CAE rechazado: ${esc(c.cae_error || '')}</div>` : '<div class="mini">CAE pendiente…</div>'}</div>
     <div class="tk-cli">${esc(c.cliente_nombre)}${c.cliente_doc ? '<br>' + esc(c.cliente_doc_tipo || '') + ' ' + esc(c.cliente_doc) : ''}<br>${COND[c.cliente_cond_iva] || ''}</div>
     ${c.relacionado_id ? `<div class="mini">Devuelve el comprobante #${c.relacionado_id}</div>` : ''}
     <table class="tk-det">${det.map(d => `<tr><td colspan="2">${esc(d.descripcion)}<div class="mini">${esc(d.sku)}${d.descuento_pct > 0 ? ' · dto ' + d.descuento_pct + '%' : ''}</div></td></tr><tr><td>${Number(d.cantidad)} × ${plata2(d.precio_unit)}</td><td class="num">${plata2(d.total)}</td></tr>`).join('')}</table>
@@ -922,7 +924,41 @@ function ticketHTML(x) {
     <div class="tk-pagos">${pagos.map(p => `<div class="fila"><span>${esc(mp[p.medio] || p.medio)}${p.referencia ? ' · ' + esc(p.referencia) : ''}</span><span>${plata2(p.importe)}</span></div>`).join('')}</div>
     ${c.obs ? `<div class="mini">${esc(c.obs)}</div>` : ''}
     ${c.estado === 'anulado' ? `<div class="tk-anulado">ANULADO · ${esc(c.anulado_motivo || '')}</div>` : ''}
+    ${fiscal && c.cae_estado === 'ok' ? `<div class="tk-qr"><img class="qr" data-qr="${esc(qrArca(c))}" alt="QR ARCA"></div>` : ''}
     <div class="tk-f mini">¡Gracias por tu compra! · claudiaadorno.com</div></div>`;
+}
+const DOC_ARCA = { CUIT: 80, CUIL: 86, DNI: 96, PAS: 94 };
+// QR obligatorio de ARCA (RG 4892): JSON en base64 dentro de la URL oficial
+function qrArca(c) {
+  const d = { ver: 1, fecha: c.fecha, cuit: 30709673110, ptoVta: Number(c.punto_venta), tipoCmp: Number(c.arca_cbte_tipo), nroCmp: Number(c.numero),
+    importe: Number(c.total), moneda: 'PES', ctz: 1, tipoDocRec: c.cliente_doc ? (DOC_ARCA[c.cliente_doc_tipo] || 99) : 99, nroDocRec: Number(c.cliente_doc || 0),
+    tipoCodAut: 'E', codAut: Number(c.cae) };
+  return 'https://www.afip.gob.ar/fe/qr/?p=' + btoa(unescape(encodeURIComponent(JSON.stringify(d))));
+}
+async function pintarQR(root) {
+  if (!window.QRCode) return;
+  for (const img of (root || document).querySelectorAll('img.qr[data-qr]')) {
+    try { img.src = await QRCode.toDataURL(img.dataset.qr, { margin: 0, width: 220, errorCorrectionLevel: 'M' }); } catch (e) { /* sin QR */ }
+  }
+}
+// Mientras el servicio pide el CAE a ARCA, el modal se actualiza solo (cada 2 s, hasta 90 s)
+let _caeTimer = null;
+function vigilarCAE(id) {
+  clearInterval(_caeTimer); let n = 0;
+  _caeTimer = setInterval(async () => {
+    if (++n > 45 || !document.querySelector('#ov .tk-wrap')) { clearInterval(_caeTimer); return; }
+    const { data: c } = await sb.from('pos_comprobantes').select('cae_estado,cae,cae_vto,cae_error,arca_cbte_tipo').eq('id', id).single();
+    if (!c || c.cae_estado === 'pendiente') return;
+    clearInterval(_caeTimer);
+    const x = window._ultimoTicket; if (x && x.c.id === id) { Object.assign(x.c, c); const w = document.querySelector('#ov .tk-wrap'); if (w) { w.innerHTML = ticketHTML(x); pintarQR(w); } }
+    toast(c.cae_estado === 'ok' ? 'CAE ' + c.cae + ' autorizado por ARCA' : 'ARCA rechazó el CAE: ' + (c.cae_error || ''), c.cae_estado === 'ok' ? 'success' : 'error');
+    if (document.getElementById('content-comprobantes').classList.contains('active')) cargarComprobantes();
+  }, 2000);
+}
+async function reintentarCAE(id) {
+  const { error } = await sb.rpc('pos_cae_reintentar', { p_id: id });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  toast('Pedido de nuevo a ARCA', 'success'); cargarComprobantes();
 }
 async function verComprobante(id, recien) {
   const x = await traerComprobante(id); if (!x.c) { toast('No lo encontré', 'error'); return; }
@@ -930,11 +966,13 @@ async function verComprobante(id, recien) {
     <button class="btn ico primary-ico" onclick="imprimir(${id})" title="Imprimir" aria-label="Imprimir">${_i('print')}</button>
     <button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="tk-wrap">${ticketHTML(x)}</div>`);
-  window._ultimoTicket = x;
+  window._ultimoTicket = x; pintarQR(document.querySelector('#ov .tk-wrap'));
+  if (x.c.letra !== 'X' && x.c.cae_estado === 'pendiente') vigilarCAE(id);
 }
 async function imprimir(id) {
   const x = (window._ultimoTicket && window._ultimoTicket.c.id === id) ? window._ultimoTicket : await traerComprobante(id);
   document.getElementById('print-area').innerHTML = ticketHTML(x);
+  await pintarQR(document.getElementById('print-area'));
   window.print();
 }
 async function iniciarNC(id) {
@@ -1003,6 +1041,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=3"></script>
+<script src="manual.js?v=4"></script>
 </body>
 </html>
