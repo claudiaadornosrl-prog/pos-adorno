@@ -830,11 +830,12 @@ function vRender() {
 // DNI escaneado (PDF417): nuevo "tramite@APELLIDO@NOMBRE@SEXO@DNI@EJEMPLAR@fnac@femision@…";
 // viejo (2009-2012) "@DNI@A@1@APELLIDO@NOMBRE@PAIS@fnac@SEXO@femision@tramite…".
 const tit = s => String(s || '').trim().toLowerCase().replace(/(^|[\s'’-])\p{L}/gu, m => m.toUpperCase());
+const sexoDNI = s => ({ F: 'Femenino', M: 'Masculino' })[String(s || '').trim().toUpperCase()] || String(s || '').trim();
 const fIso = s => { const m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(s || ''); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };
 function parseDNI(s) {
   if (!s || !s.includes('@')) return null; const p = s.split('@');
-  if (p.length >= 8 && /^\d{6,}$/.test(p[0].trim())) return { doc: p[4].replace(/\D/g, ''), apellido: tit(p[1]), nombre: tit(p[2]), sexo: p[3].trim().toUpperCase(), fecha_nacimiento: fIso(p[6]) };
-  if (p.length >= 9 && /^\d{7,8}\s*$/.test(p[1])) return { doc: p[1].replace(/\D/g, ''), apellido: tit(p[4]), nombre: tit(p[5]), fecha_nacimiento: fIso(p[7]), sexo: p[8].trim().toUpperCase() };
+  if (p.length >= 8 && /^\d{6,}$/.test(p[0].trim())) return { doc: p[4].replace(/\D/g, ''), apellido: tit(p[1]), nombre: tit(p[2]), sexo: sexoDNI(p[3]), fecha_nacimiento: fIso(p[6]) };
+  if (p.length >= 9 && /^\d{7,8}\s*$/.test(p[1])) return { doc: p[1].replace(/\D/g, ''), apellido: tit(p[4]), nombre: tit(p[5]), fecha_nacimiento: fIso(p[7]), sexo: sexoDNI(p[8]) };
   return null;
 }
 function cliDeFicha(c) {
@@ -900,7 +901,7 @@ function abrirFichaCliente(c, editar) {
       <div class="fb-g">
         ${f('cf-email', 'Mail <span class="req">*</span>', `<input id="cf-email" type="email" value="${esc(c.email || '')}" autocomplete="off" placeholder="por acá se le manda la factura">`)}
         ${f('cf-cel', 'Celular (WhatsApp)', `<input id="cf-cel" value="${esc(c.celular || '')}" inputmode="tel" placeholder="11 1234 5678">`)}
-        ${f('cf-sexo', 'Sexo', `<select id="cf-sexo"><option value=""></option><option value="F"${sel('sexo', 'F')}>Femenino</option><option value="M"${sel('sexo', 'M')}>Masculino</option><option value="X"${sel('sexo', 'X')}>X</option></select>`)}
+        ${f('cf-sexo', 'Sexo', `<select id="cf-sexo"><option value=""></option><option value="Femenino"${sel('sexo', 'Femenino')}>Femenino</option><option value="Masculino"${sel('sexo', 'Masculino')}>Masculino</option><option value="X"${sel('sexo', 'X')}>X</option></select>`)}
       </div>
       <div class="fb-sec">Domicilio</div>
       <div class="fb-g">
