@@ -352,7 +352,7 @@ window.ADORNO_SSO = (function () {
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-192-v2.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧾%3C/text%3E%3C/svg%3E">
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
 @font-face { font-family: 'URW Gothic'; src: url('fonts/URWGothic-Book.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
 :root { --primary: #0e7490; --primary-dark: #155e75; --primary-bg: #cffafe; --green:#16a34a; --green-bg:#dcfce7; --amber:#d97706; --amber-bg:#fef3c7;
@@ -936,9 +936,9 @@ function qrArca(c) {
   return 'https://www.afip.gob.ar/fe/qr/?p=' + btoa(unescape(encodeURIComponent(JSON.stringify(d))));
 }
 async function pintarQR(root) {
-  if (!window.QRCode) return;
+  if (!window.qrcode) return;
   for (const img of (root || document).querySelectorAll('img.qr[data-qr]')) {
-    try { img.src = await QRCode.toDataURL(img.dataset.qr, { margin: 0, width: 220, errorCorrectionLevel: 'M' }); } catch (e) { /* sin QR */ }
+    try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(4, 0); } catch (e) { /* sin QR */ }
   }
 }
 // Mientras el servicio pide el CAE a ARCA, el modal se actualiza solo (cada 2 s, hasta 90 s)
