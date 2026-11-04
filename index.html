@@ -736,7 +736,7 @@ let PERFIL = null, LOCAL = null, ARTS = [], ARTS_AT = 0, MEDIOS = [], PV = [], I
 const T = { tipo: 'FC', letra: 'B', items: [], cliente: null, sin_cliente: false, nc_de: null };
 // Tope de ARCA (pos_parametros.tope_cf_arca): desde ese importe la factura va identificada sí o sí.
 const TOPE = { valor: 10000000, at: null, error: null };
-const LOCALES = { alcorta: 'Alcorta', unicenter: 'Unicenter', oficina: 'Oficina' };
+const LOCALES = { alcorta: 'Alcorta', unicenter: 'Unicenter', libertador: 'Atelier Libertador', oficina: 'Oficina' };
 // Pie fiscal y contacto del comprobante. PENDIENTE: domicilios como figuran en ARCA, IIBB e inicio de actividades (los pasa JP).
 const EMPRESA = { razon: 'Claudia Adorno SRL', cuit: '30-70967311-0', cuit_num: 30709673110, cond: 'IVA Responsable Inscripto', iibb: 'PENDIENTE', inicio: 'PENDIENTE',
   ig: '@claudiaadornooficial · @atelier.claudiaadorno', webs: 'claudiaadorno.com · atelierclaudiaadorno.com', mail_admin: 'administracion@claudiaadorno.com', frase: 'Lo que elegís, te acompaña.' };
@@ -744,7 +744,8 @@ const LOCAL_INFO = {
   // logo: 'logo-ca.png' (Claudia Adorno) o 'atelier-logo-der.png' (Claudia Adorno con la firma Atelier abajo a la derecha, para el local de Libertador)
   alcorta:   { domicilio: 'PENDIENTE', mail: 'alcorta@claudiaadorno.com',   wa: '+54 9 11 6978 4643', logo: 'logo-ca.png' },
   unicenter: { domicilio: 'Paraná 3745, Martínez · local PENDIENTE', mail: 'unicenter@claudiaadorno.com', wa: '+54 9 11 6978 4741', logo: 'logo-ca.png' },
-  oficina:   { domicilio: 'PENDIENTE', mail: 'claudiaadorno@claudiaadorno.com', wa: '+54 9 11 6978 4561', logo: 'logo-ca.png' } };   // PENDIENTE: Libertador (Atelier) es otro local, todavía no está en el POS; cuando se agregue va con logo 'atelier-logo-der.png'
+  libertador: { domicilio: 'Av. del Libertador 14072, Martínez', mail: 'PENDIENTE', wa: '', logo: 'atelier-logo-der.png' },   // Atelier · alta 4-nov-2026; punto de venta fiscal de ARCA pendiente (solo manual por ahora)
+  oficina:   { domicilio: 'PENDIENTE', mail: 'claudiaadorno@claudiaadorno.com', wa: '+54 9 11 6978 4561', logo: 'logo-ca.png' } };
 const COND = { CF: 'Consumidor Final', MT: 'Monotributista', EX: 'IVA Exento', NR: 'No Responsable', NA: 'IVA No Alcanzado', RI: 'Responsable Inscripto' };
 // Letra según condición: RI → A; el resto → B (todos menos CF llevan CUIT).
 const LETRA_COND = { CF: 'B', MT: 'B', EX: 'B', NR: 'B', NA: 'B', RI: 'A' };
@@ -1473,6 +1474,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=24"></script>
+<script src="manual.js?v=25"></script>
 </body>
 </html>
