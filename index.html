@@ -866,7 +866,7 @@ function sonar(cual) {
 function vAgregar(sku) {
   const a = ARTS.find(x => x.sku === sku); if (!a) return;
   const it = T.items.find(x => x.sku === sku);
-  if (it) it.cantidad += 1; else T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: Number(a.precio) || 0, descuento_pct: 0, stock: Number(a.stock) });
+  if (it) it.cantidad += 1; else T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: Number(a.precio) || 0, descuento_pct: 0, descuento_monto: 0, stock: Number(a.stock) });
   sonar('mas'); vRender(); vFicha(a.sku); document.getElementById('v-q').focus();
 }
 function vCant(i, d) { sonar(d > 0 ? 'mas' : 'menos'); const it = T.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (it.max && it.cantidad > it.max) it.cantidad = it.max; if (it.cantidad === 0) T.items.splice(i, 1); vRender(); }
@@ -891,7 +891,18 @@ function vTipo(tipo, letra) {
   vRender();
 }
 // Devolver más de lo vendido no se puede: los renglones de una NC guardan el máximo
-function vSet(i, campo, v) { const it = T.items[i]; if (campo === 'cantidad') { const nv = Math.max(0, num(v)); if (nv !== it.cantidad) sonar(nv > it.cantidad ? 'mas' : 'menos'); } it[campo] = Math.max(0, num(v)); if (campo === 'cantidad' && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; } if (campo === 'cantidad' && !it.cantidad) T.items.splice(i, 1); vRender(); }
+// Importe bruto del renglón: con descuento en pesos (por unidad) o en %
+function lineaBruta(it) { return it.descuento_monto > 0 ? it.cantidad * (it.precio_unit - it.descuento_monto) : it.cantidad * it.precio_unit * (1 - it.descuento_pct / 100); }
+const dtoTexto = it => it.descuento_monto > 0 ? plata(it.descuento_monto) : it.descuento_pct > 0 ? String(it.descuento_pct).replace('.', ',') + '%' : '';
+// Casilla Dto: "10%" = porcentaje; "1000" o "$ 1.000" = pesos por unidad
+function vDto(i, v) {
+  const it = T.items[i]; const txt = String(v).trim();
+  if (!txt) { it.descuento_pct = 0; it.descuento_monto = 0; }
+  else if (txt.endsWith('%')) { it.descuento_pct = Math.min(100, Math.max(0, num(txt))); it.descuento_monto = 0; }
+  else { it.descuento_monto = Math.min(it.precio_unit, Math.max(0, r2(num(txt)))); it.descuento_pct = it.descuento_monto && it.precio_unit ? it.descuento_monto / it.precio_unit * 100 : 0; }
+  vRender();
+}
+function vSet(i, campo, v) { const it = T.items[i]; if (campo === 'precio_unit' && it.descuento_monto > 0) { const p = Math.max(0, num(v)); it.descuento_monto = Math.min(p, it.descuento_monto); it.descuento_pct = p ? it.descuento_monto / p * 100 : 0; } if (campo === 'cantidad') { const nv = Math.max(0, num(v)); if (nv !== it.cantidad) sonar(nv > it.cantidad ? 'mas' : 'menos'); } it[campo] = Math.max(0, num(v)); if (campo === 'cantidad' && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; } if (campo === 'cantidad' && !it.cantidad) T.items.splice(i, 1); vRender(); }
 // Descuentos generales: uno o más renglones, cada uno por % o por importe en pesos (la última casilla tocada manda y la otra
 // se muestra calculada). Se aplican en cascada: cada uno sobre lo que queda. El "+" del primer renglón agrega otro.
 function dMontar() { document.getElementById('v-descs').innerHTML = ''; dAgregar(); }
@@ -905,7 +916,7 @@ function dQuitar(btn) { btn.closest('.dsc').remove(); vRender(); }
 function dModo(inp, m) { inp.closest('.dsc').dataset.modo = m; vRender(); }
 function dSet(pct) { dMontar(); document.querySelector('#v-descs .dpct').value = pct || 0; vRender(); }
 function vTotales() {
-  let sub = 0; for (const it of T.items) sub += r2(it.cantidad * it.precio_unit * (1 - it.descuento_pct / 100));
+  let sub = 0; for (const it of T.items) sub += r2(lineaBruta(it));
   sub = r2(sub);
   let base = sub; const filas = [];
   for (const row of document.querySelectorAll('#v-descs .dsc')) {
@@ -921,13 +932,13 @@ function vTotales() {
 }
 function vRender() {
   const box = document.getElementById('v-renglones');
-  box.innerHTML = T.items.length ? `<table><thead><tr><th>Artículo</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto %</th><th class="num">Importe</th><th></th></tr></thead><tbody>` +
+  box.innerHTML = T.items.length ? `<table><thead><tr><th>Artículo</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto</th><th class="num">Importe</th><th></th></tr></thead><tbody>` +
     T.items.map((it, i) => `<tr${it.stock <= 0 ? ' class="sinstock" title="Sin stock en este local"' : ''}>
       <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td>
       <td class="num cant"><button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button></td>
       <td class="num"><input class="din" value="${plata(it.precio_unit)}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
-      <td class="num"><input value="${it.descuento_pct}" onchange="vSet(${i},'descuento_pct',this.value)" inputmode="decimal" style="width:52px"></td>
-      <td class="num"><b>${plata(it.cantidad * it.precio_unit * (1 - it.descuento_pct / 100))}</b></td>
+      <td class="num"><input value="${dtoTexto(it)}" onchange="vDto(${i},this.value)" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right"></td>
+      <td class="num"><b>${plata(lineaBruta(it))}</b></td>
       <td><button class="btn ico chico" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
   const t = vTotales();
@@ -1233,7 +1244,7 @@ async function emitir(esNC) {
   if (pag > t.tot + 1) { const ef = pagos.find(p => p.medio === 'efectivo'); if (ef) ef.importe = r2(ef.importe - (pag - t.tot)); }
   const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, obs: document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: cliPayload(),
-    items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_pct, iva_pct: 21 })),
+    items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_monto > 0 ? 0 : i.descuento_pct, descuento_monto: i.descuento_monto || 0, iva_pct: 21 })),
     pagos: T.tipo === 'PR' ? [] : pagos };
   const { data, error } = await sb.rpc('pos_emitir', { p });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); btn.disabled = false; return; }
@@ -1283,7 +1294,7 @@ function ticketHTML(x) {
     <div class="tk-tipo"><b>${TIPO_NOM[c.tipo]} ${c.letra}</b> <span>${fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(c.vendedora_nombre || '')}</div>${c.tipo === 'PR' ? '<div class="mini">Presupuesto · no válido como factura · precios sujetos a cambio</div>' : !fiscal ? '<div class="mini">Documento no válido como factura</div>' : c.cae_estado === 'ok' ? `<div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div>` : c.cae_estado === 'error' ? `<div class="mini tk-err">CAE rechazado: ${esc(c.cae_error || '')}</div>` : '<div class="mini">CAE pendiente…</div>'}</div>
     <div class="tk-cli">${esc(c.cliente_nombre)}${c.cliente_doc ? '<br>' + esc(c.cliente_doc_tipo || '') + ' ' + esc(c.cliente_doc) : ''}<br>${COND[c.cliente_cond_iva] || ''}</div>
     ${c.relacionado_id ? `<div class="mini">Devuelve el comprobante #${c.relacionado_id}</div>` : ''}
-    <table class="tk-det">${det.map(d => `<tr><td colspan="2">${esc(d.descripcion)}<div class="mini">${esc(d.sku)}${d.descuento_pct > 0 ? ' · dto ' + d.descuento_pct + '%' : ''}</div></td></tr><tr><td>${Number(d.cantidad)} × ${plata2(d.precio_unit)}</td><td class="num">${plata2(d.total)}</td></tr>`).join('')}</table>
+    <table class="tk-det">${det.map(d => `<tr><td colspan="2">${esc(d.descripcion)}<div class="mini">${esc(d.sku)}${Number(d.descuento_monto) > 0 ? ' · dto ' + plata(d.descuento_monto) + ' c/u' : d.descuento_pct > 0 ? ' · dto ' + d.descuento_pct + '%' : ''}</div></td></tr><tr><td>${Number(d.cantidad)} × ${plata2(d.precio_unit)}</td><td class="num">${plata2(d.total)}</td></tr>`).join('')}</table>
     <div class="tk-tot">${c.descuento_pct > 0 ? `<div class="fila"><span>Subtotal</span><span>${plata2(c.subtotal)}</span></div><div class="fila"><span>Descuento ${c.descuento_pct}%</span><span>- ${plata2(c.descuento_monto)}</span></div>` : ''}
       ${c.letra === 'A' ? `<div class="fila"><span>Neto gravado</span><span>${plata2(c.neto)}</span></div><div class="fila"><span>IVA 21%</span><span>${plata2(c.iva)}</span></div>` : ''}
       <div class="fila total"><span>TOTAL</span><span>${plata2(c.total)}</span></div>
@@ -1361,7 +1372,7 @@ async function ncElegir(id) {
   if (devuelto >= Number(x.c.total) - 1) { toast('Esa factura ya se devolvió entera', 'error'); return; }
   T.tipo = 'NC'; T.letra = x.c.letra; T.nc_de = id;
   vPils();
-  T.items = x.det.map(d => ({ sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), max: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), stock: 1 }));
+  T.items = x.det.map(d => ({ sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), max: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), descuento_monto: Number(d.descuento_monto) || 0, stock: 1 }));
   T.cliente = (x.c.cliente_globalid || x.c.cliente_doc) ? { nombre: x.c.cliente_interno || x.c.cliente_nombre, doc_tipo: x.c.cliente_doc_tipo, doc: x.c.cliente_doc, cond_iva: x.c.cliente_cond_iva, globalid: x.c.cliente_globalid, facturar_a_nombre: x.c.cliente_informado !== false } : null;
   T.sin_cliente = true;  // la NC lleva el mismo receptor que la factura
   dSet(Number(x.c.descuento_pct) || 0);
@@ -1373,7 +1384,7 @@ async function ncElegir(id) {
 async function prFacturar(id) {
   const x = await traerComprobante(id); if (!x.c) return;
   switchTab('vender'); vTipo('FC', 'B');
-  T.items = x.det.map(d => { const a = ARTS.find(z => z.sku === d.sku); return { sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), stock: a ? Number(a.stock) : 1 }; });
+  T.items = x.det.map(d => { const a = ARTS.find(z => z.sku === d.sku); return { sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), descuento_monto: Number(d.descuento_monto) || 0, stock: a ? Number(a.stock) : 1 }; });
   T.cliente = (x.c.cliente_globalid || x.c.cliente_doc) ? { nombre: x.c.cliente_nombre, doc_tipo: x.c.cliente_doc_tipo, doc: x.c.cliente_doc, cond_iva: x.c.cliente_cond_iva, globalid: x.c.cliente_globalid, facturar_a_nombre: false } : null;
   if (T.cliente && T.cliente.cond_iva !== 'CF') vTipo('FC', LETRA_COND[T.cliente.cond_iva]);
   dSet(Number(x.c.descuento_pct) || 0);
@@ -1428,6 +1439,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=21"></script>
+<script src="manual.js?v=22"></script>
 </body>
 </html>
