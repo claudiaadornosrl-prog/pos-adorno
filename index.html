@@ -943,7 +943,8 @@ async function vSenasOfrecer(c) {
 function vSenaUsar(x) {
   cerrarModal(); T.sena_usar = { id: x.id, importe: Number(x.importe), factura: x.factura, letra: x.letra };
   for (const i of x.items) { const a = ARTS.find(z => z.sku === i.sku); const it = T.items.find(z => z.sku === i.sku);
-    if (it) it.cantidad += Number(i.cantidad); else T.items.push({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad), precio_unit: a ? Number(a.precio) : Number(i.precio_unit), descuento_pct: 0, descuento_monto: 0, stock: a ? Number(a.stock_fisico || a.stock) : 1 }); }
+    // el precio de lo señado queda congelado al momento de la seña: no lo toca un aumento posterior
+    if (it) { it.cantidad += Number(i.cantidad); it.precio_unit = Number(i.precio_unit); } else T.items.push({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad), precio_unit: Number(i.precio_unit), descuento_pct: 0, descuento_monto: 0, stock: a ? Number(a.stock_fisico || a.stock) : 1 }); }
   sonar('mas'); vRender(); toast('Seña aplicada: el cliente paga el saldo', 'success');
 }
 function vSenaNoUsar() { T.sena_usar = null; vRender(); }
