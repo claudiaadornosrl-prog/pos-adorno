@@ -461,6 +461,7 @@ main { max-width: 1500px; }
 .prod-lista { margin-top: 10px; max-height: calc(100vh - 420px); overflow: auto; display: flex; flex-direction: column; gap: 4px; }
 .prod { display: grid; grid-template-columns: 44px 1fr 40px 90px; gap: 8px; align-items: center; text-align: left; border: 1px solid transparent; background: #f8fafc; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; }
 .prod:hover, .prod.act { border-color: var(--primary); background: var(--primary-bg); }
+.v-stat { text-align: right; margin: 4px 4px 0; color: #95867B; }
 .pficha { display: flex; gap: 14px; margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--primary-bg); }
 .pf-img { width: 150px; height: 150px; border-radius: 10px; object-fit: contain; background: white; border: 1px solid #e2e8f0; cursor: zoom-in; flex: none; display: block; }
 .pf-datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .pf-sku { font-weight: 700; font-size: 15px; color: var(--primary-dark); } .pf-desc { font-size: 16px; font-weight: 600; }
@@ -580,9 +581,9 @@ main { max-width: 1500px; }
         <div class="pos-prod">
           <div class="buscador">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input id="v-q" placeholder="Buscar por código o descripción · o escaneá la etiqueta" autocomplete="off" spellcheck="false">
-            <span class="mini" id="v-stat"></span>
+            <input id="v-q" placeholder="Comenzá a buscar por SKU o descripción" autocomplete="off" spellcheck="false">
           </div>
+          <div class="mini v-stat" id="v-stat"></div>
           <div id="v-ficha" class="pficha" style="display:none"></div>
           <div id="v-lista" class="prod-lista"><div class="empty">Escribí para buscar un producto, o escaneá el QR de la etiqueta.</div></div>
         </div>
