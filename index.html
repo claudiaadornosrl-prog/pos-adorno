@@ -504,7 +504,9 @@ main { max-width: 1500px; }
 .fb-foot { display: flex; align-items: center; gap: 8px; padding: 12px 22px 16px; border-top: 1px solid var(--border); }
 @media (max-width: 700px) { #ov .box.ficha { overflow: auto; } .fb { grid-template-columns: 1fr; max-height: none; } .fb-main { max-height: none; } .fb-side { padding: 14px; } .fb-st { margin-top: 0; } .fb-g { grid-template-columns: 1fr 1fr; } }
 .renglones table { box-shadow: none; } .renglones td { padding: 6px 6px; } .renglones input { width: 48px; border: 1px solid var(--border); border-radius: 6px; padding: 4px; text-align: right; font-family: inherit; font-size: 14px; }
-.renglones td.cant { white-space: nowrap; } .dto-imp, .dto-pct { border-radius: 999px; padding: 3px 9px; } .dto-imp { background: #e0f2fe; color: #0369a1; }   /* descuento en pesos: celeste */ .dto-pct { background: #1d4ed8; color: white; }   /* descuento en %: azul */ tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
+.renglones td.cant { white-space: nowrap; } .sena-box { margin: 8px 0 4px; padding: 8px 10px; border: 2px dashed #1d4ed8; border-radius: 10px; background: #eff6ff; } .sena-h { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; } .sena-h .mini { flex: 1; } .sena-box table { box-shadow: none; background: transparent; } .sena-box td { padding: 4px 6px; border: none; } .sena-box .fila { display: flex; justify-content: space-between; gap: 8px; padding: 2px 6px; }
+.prod.sena { border: 2px dashed #1d4ed8; background: #eff6ff; } .sena-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; } .chip.blue { background: #dbeafe; color: #1d4ed8; } .stk .res { color: #1d4ed8; font-weight: 700; margin-left: 2px; }
+.dto-imp, .dto-pct { border-radius: 999px; padding: 3px 9px; } .dto-imp { background: #e0f2fe; color: #0369a1; }   /* descuento en pesos: celeste */ .dto-pct { background: #1d4ed8; color: white; }   /* descuento en %: azul */ tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
 .empty.chico { padding: 22px; }
 .totales { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
 .totales .fila { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 14px; } .totales .fila.total { font-size: 22px; font-weight: 700; color: var(--primary-dark); }
@@ -614,6 +616,7 @@ main { max-width: 1500px; }
           <div class="totales">
             <div class="fila"><span>Subtotal</span><b id="v-subtotal">$ 0</b></div>
             <div id="v-descs"></div>
+            <div class="fila" id="v-sena-fila" style="display:none"></div>
             <div id="v-iva" style="display:none"><div class="fila"><span>Neto gravado</span><b id="v-neto">$ 0</b></div><div class="fila"><span>IVA 21%</span><b id="v-ivam">$ 0</b></div></div>
             <div class="fila total"><span>TOTAL</span><b id="v-total">$ 0</b></div>
           </div>
@@ -738,13 +741,13 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-wo
 
 
 // ═══ POS · estado ══════════════════════════════════════════════════════
-let PERFIL = null, LOCAL = null, ARTS = [], ARTS_AT = 0, MEDIOS = [], PV = [], IMGS = {};
+let PERFIL = null, LOCAL = null, ARTS = [], ARTS_AT = 0, MEDIOS = [], PV = [], IMGS = {}, RESERVAS = {};
 const T = { tipo: 'FC', letra: 'B', items: [], cliente: null, sin_cliente: false, nc_de: null };
 // Tope de ARCA (pos_parametros.tope_cf_arca): desde ese importe la factura va identificada sí o sí.
 const TOPE = { valor: 10000000, at: null, error: null };
 const LOCALES = { alcorta: 'Alcorta', unicenter: 'Unicenter', libertador: 'Atelier Libertador', oficina: 'Oficina' };
 // Pie fiscal y contacto del comprobante. PENDIENTE: domicilios como figuran en ARCA, IIBB e inicio de actividades (los pasa JP).
-const EMPRESA = { razon: 'Claudia Adorno SRL', cuit: '30-70967311-0', cuit_num: 30709673110, cond: 'IVA Responsable Inscripto', iibb: '902-30709673110', inicio: 'PENDIENTE',
+const EMPRESA = { razon: 'Claudia Adorno SRL', cuit: '30-70967311-0', cuit_num: 30709673110, cond: 'IVA Responsable Inscripto', iibb: 'CM 30-709673110902', inicio: '01/06/2006',
   ig: '@claudiaadornooficial · @atelier.claudiaadorno', webs: 'claudiaadorno.com · atelierclaudiaadorno.com', mail_admin: 'administracion@claudiaadorno.com', frase: 'Lo que elegís, te acompaña.' };
 const LOCAL_INFO = {
   // logo: 'logo-ca.png' (Claudia Adorno) o 'atelier-logo-der.png' (Claudia Adorno con la firma Atelier abajo a la derecha, para el local de Libertador)
@@ -808,6 +811,9 @@ async function cargarArticulos() {
     out.push(...(data || [])); if (!data || data.length < 1000) break; desde += 1000;
   }
   const vistos = new Set(); ARTS = out.filter(a => !vistos.has(a.sku) && vistos.add(a.sku)); ARTS_AT = Date.now();
+  // artículos reservados por señas vigentes del local: se restan del stock que ve la vendedora
+  try { const { data: rv } = await sb.rpc('pos_reservas', { p_local: LOCAL }); RESERVAS = Object.fromEntries((rv || []).map(r => [r.sku, Number(r.cantidad)])); } catch (e) { RESERVAS = {}; }
+  for (const a of ARTS) { a.stock_fisico = Number(a.stock); a.reservado = RESERVAS[a.sku] || 0; if (a.reservado) a.stock = a.stock_fisico - a.reservado; }
   if (!Object.keys(IMGS).length) { let d2 = 0; for (;;) { const { data } = await sb.from('stock_imagenes').select('sku,url').order('sku').range(d2, d2 + 999); (data || []).forEach(r => { IMGS[r.sku] = r.url; }); if (!data || data.length < 1000) break; d2 += 1000; } }
   document.getElementById('v-stat').textContent = ARTS.length ? ARTS.length.toLocaleString('es-AR') + ' artículos' : '';
 }
@@ -823,12 +829,16 @@ function vBuscar() {
   const box = document.getElementById('v-lista');
   if (!q) { box.innerHTML = '<div class="empty">Escribí para buscar un producto, o escaneá el QR de la etiqueta.</div>'; vFicha(null); return; }
   const pal = q.split(/\s+/);
+  if (/^SE[ÑN]A/.test(q)) {   // "seña" en el buscador → cargar una seña (plata a cuenta de artículos reservados)
+    box.innerHTML = `<button class="prod sena" onclick="vSenaIniciar()" title="Cargar una seña"><span class="foto sin"></span><span class="txt"><span class="sku">SEÑA</span><span class="desc">Seña a cuenta: el cliente deja plata y reserva artículos. Necesita cliente con DNI o CUIT.</span></span><span></span><span class="pre">+</span></button>`;
+    vFicha(null); return;
+  }
   const res = ARTS.filter(a => { const t = (a.sku + ' ' + a.descripcion + ' ' + (a.descripcion_adicional || '')).toUpperCase(); return pal.every(p => t.includes(p)); });
   res.sort((a, b) => (a.sku === q ? -1 : b.sku === q ? 1 : 0) || (a.sku.startsWith(q) ? -1 : b.sku.startsWith(q) ? 1 : 0) || (b.stock - a.stock));
   box.innerHTML = res.length ? res.slice(0, 60).map(a => `
     <button class="prod${a.sku === FICHA ? ' act' : ''}" onclick="vAgregar('${esc(a.sku)}')" onmouseenter="vFicha('${esc(a.sku)}')" title="Agregar al ticket">
       ${foto(a.sku)}<span class="txt"><span class="sku">${esc(a.sku)}</span><span class="desc">${esc(a.descripcion)}${a.descripcion_adicional ? ' <i>' + esc(a.descripcion_adicional) + '</i>' : ''}</span></span>
-      <span class="stk ${a.stock <= 0 ? 'sin' : ''}" title="Stock en ${esc(LOCALES[LOCAL])}">${Number(a.stock)}</span><span class="pre">${plata(a.precio)}</span></button>`).join('')
+      <span class="stk ${a.stock <= 0 ? 'sin' : ''}" title="Stock en ${esc(LOCALES[LOCAL])}${a.reservado ? ' · ' + a.reservado + ' señado' + (a.reservado > 1 ? 's' : '') : ''}">${Number(a.stock)}${a.reservado ? '<small class="res">·' + a.reservado + '</small>' : ''}</span><span class="pre">${plata(a.precio)}</span></button>`).join('')
     + (res.length > 60 ? `<div class="mini" style="padding:8px">… y ${res.length - 60} más: afiná la búsqueda.</div>` : '')
     : '<div class="empty">No encontré nada con «' + esc(q) + '».</div>';
   vFicha(res.length ? res[0].sku : null);
@@ -886,12 +896,56 @@ function sonar(cual) {
 }
 function vAgregar(sku) {
   const a = ARTS.find(x => x.sku === sku); if (!a) return;
+  if (T.sena) { const si = T.sena.items.find(x => x.sku === sku); if (si) si.cantidad += 1; else T.sena.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: Number(a.precio) || 0 }); sonar('mas'); vRender(); vFicha(a.sku); document.getElementById('v-q').focus(); return; }
   const it = T.items.find(x => x.sku === sku);
   if (it) it.cantidad += 1; else T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: Number(a.precio) || 0, descuento_pct: 0, descuento_monto: 0, stock: Number(a.stock) });
   sonar('mas'); vRender(); vFicha(a.sku); document.getElementById('v-q').focus();
 }
 function vCant(i, d) { sonar(d > 0 ? 'mas' : 'menos'); const it = T.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (it.max && it.cantidad > it.max) it.cantidad = it.max; if (it.cantidad === 0) T.items.splice(i, 1); vRender(); }
 function vQuitar(i) { sonar('menos'); T.items.splice(i, 1); vRender(); }
+// ═══ Señas ═══
+// Cargar: "seña" en el buscador → un solo renglón "Seña a cuenta" con el importe que deja el cliente, y abajo la subtabla de
+// artículos señados (lo que reserva). Sale como factura por el importe de la seña; el cliente es obligatorio.
+function vSenaIniciar() {
+  if (T.tipo !== 'FC' && T.tipo !== 'MA') { toast('La seña se cobra con una factura', 'error'); return; }
+  if (T.sena) { toast('Ya hay una seña cargada', 'error'); return; }
+  if (T.items.length && !confirm('Hay artículos en el ticket. ¿Los paso a "artículos señados" y arranco la seña?')) return;
+  T.sena = { importe: 0, items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit })) };
+  T.items = [{ sku: 'SENA', descripcion: 'Seña a cuenta', cantidad: 1, precio_unit: 0, descuento_pct: 0, descuento_monto: 0, stock: 1, fijo: true }];
+  T.sena_usar = null; dMontar(); document.getElementById('v-q').value = ''; vBuscar(); vRender();
+  setTimeout(() => { const i = document.querySelector('#v-renglones input.din'); if (i) { i.focus(); i.select(); } }, 50);
+  if (!T.cliente) toast('Cargá el cliente: la seña necesita DNI o CUIT', 'error');
+}
+function vSenaQuitar() { if (!T.sena) return; T.items = T.sena.items.map(i => ({ ...i, descuento_pct: 0, descuento_monto: 0, stock: (ARTS.find(a => a.sku === i.sku) || { stock: 1 }).stock })); T.sena = null; vRender(); }
+function vSenaCant(i, d) { const it = T.sena.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (!it.cantidad) T.sena.items.splice(i, 1); sonar(d > 0 ? 'mas' : 'menos'); vRender(); }
+function vSenaSacar(i) { T.sena.items.splice(i, 1); sonar('menos'); vRender(); }
+function senaHTML() {
+  if (!T.sena) return '';
+  const tot = T.sena.items.reduce((s, i) => s + i.cantidad * i.precio_unit, 0);
+  return `<div class="sena-box"><div class="sena-h"><b>Artículos señados</b><span class="mini">lo que el cliente reserva con esta seña · buscá y tocá los productos para agregarlos</span><button class="btn ico chico" onclick="vSenaQuitar()" title="Cancelar la seña (los artículos vuelven al ticket)" aria-label="Cancelar seña">${_i('x')}</button></div>
+    ${T.sena.items.length ? `<table><tbody>${T.sena.items.map((it, i) => `<tr><td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td>
+      <td class="num cant"><button class="btn ico chico" onclick="vSenaCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" readonly style="text-align:center"><button class="btn ico chico" onclick="vSenaCant(${i},-1)" aria-label="Menos">${_i('minus')}</button></td>
+      <td class="num"><b>${plata(it.cantidad * it.precio_unit)}</b></td><td><button class="btn ico chico" onclick="vSenaSacar(${i})" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('')}</tbody></table>
+    <div class="fila mini"><span>Valor de lo reservado</span><span>${plata(tot)}</span></div>` : '<div class="empty chico">Todavía no reservaste nada: buscá el producto y tocalo.</div>'}</div>`;
+}
+// Usar: al cargar un cliente con señas vigentes, el POS avisa y las ofrece
+async function vSenasOfrecer(c) {
+  if (T.sena || T.tipo === 'NC' || T.tipo === 'PR') return;
+  const { data } = await sb.rpc('pos_senas_cliente', { p_globalid: c.globalid || null, p_doc: c.doc || null });
+  const ss = (data || []).filter(x => x.local === LOCAL); if (!ss.length) return;
+  modal(`<div class="m-head"><h3>Este cliente tiene ${ss.length === 1 ? 'una seña' : ss.length + ' señas'}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="mini" style="margin-bottom:10px">Si la usás, entran al ticket los artículos reservados y se descuenta lo ya pagado.</div>
+    ${ss.map(x => `<div class="sena-card"><div><b>${plata(x.importe)}</b> · ${fechaAR(x.fecha)} · Factura ${esc(x.letra)} ${esc(x.factura)}<div class="mini">${x.items.map(i => Number(i.cantidad) + ' × ' + esc(i.descripcion)).join(' · ')}</div></div><button class="btn primary" onclick='vSenaUsar(${JSON.stringify(x).replace(/'/g, "&#39;")})'>Usar esta seña</button></div>`).join('')}
+    <div class="m-foot"><button class="btn" onclick="cerrarModal()">Ahora no</button></div>`);
+}
+function vSenaUsar(x) {
+  cerrarModal(); T.sena_usar = { id: x.id, importe: Number(x.importe), factura: x.factura, letra: x.letra };
+  for (const i of x.items) { const a = ARTS.find(z => z.sku === i.sku); const it = T.items.find(z => z.sku === i.sku);
+    if (it) it.cantidad += Number(i.cantidad); else T.items.push({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad), precio_unit: a ? Number(a.precio) : Number(i.precio_unit), descuento_pct: 0, descuento_monto: 0, stock: a ? Number(a.stock_fisico || a.stock) : 1 }); }
+  sonar('mas'); vRender(); toast('Seña aplicada: el cliente paga el saldo', 'success');
+}
+function vSenaNoUsar() { T.sena_usar = null; vRender(); }
+
 // Comprobante ficticio con lo cargado en el ticket (para la vista previa, sin emitir)
 function vPreviewDatos() {
   const t = vTotales(); const A = T.letra === 'A'; const hoy = new Date();
@@ -900,7 +954,8 @@ function vPreviewDatos() {
     fecha: hoy.toISOString().slice(0, 10), hora: hoy.toTimeString().slice(0, 5), vendedora_nombre: PERFIL && PERFIL.nombre, estado: 'emitido', obs: document.getElementById('v-obs').value.trim() || null, relacionado_id: T.nc_de,
     cliente_nombre: T.cliente ? T.cliente.nombre : 'Consumidor Final', cliente_doc_tipo: T.cliente && T.cliente.doc_tipo, cliente_doc: T.cliente && T.cliente.doc, cliente_cond_iva: T.cliente ? T.cliente.cond_iva : 'CF',
     subtotal: t.sub, descuento_pct: t.imp == null ? t.pct : r2(t.pct), descuento_monto: t.desc, total: t.tot, neto: A || T.letra === 'B' ? r2(t.tot / 1.21) : t.tot, iva: A || T.letra === 'B' ? r2(t.tot - t.tot / 1.21) : 0, cae_estado: T.letra === 'X' ? 'no_aplica' : 'preview' };
-  return { c, det, pagos: T.tipo === 'PR' ? [] : pPagos(), rel: null, email: T.cliente && T.cliente.email };
+  if (T.sena_usar) { c.sena_monto = t.sena; }
+  return { c, det, pagos: T.tipo === 'PR' ? [] : pPagos(), rel: null, email: T.cliente && T.cliente.email, sena_items: T.sena ? T.sena.items : null, sena_de: T.sena_usar ? T.sena_usar.letra + ' ' + T.sena_usar.factura : null };
 }
 // Vista previa: pestañas Comandera / Hoja A4. Imprimir: la comandera por defecto; la A4 desde su pestaña.
 function vPreview(modo) {
@@ -987,6 +1042,8 @@ function a4HTML(x) {
   tot += `<div class="fila total"><span>Total</span><span>${plata2(c.total)}</span></div>`;
   if (c.letra === 'B') tot += `<div class="fila imp"><span>IVA contenido</span><span>${plata2(c.iva)}</span></div><div class="fila imp"><span>Otros impuestos nacionales indirectos</span><span>$ 0,00</span></div>`;
   if (pr) tot += '<div class="fila imp"><span>Precios finales con IVA incluido</span><span></span></div>';
+  if (Number(c.sena_monto) > 0) tot = `<div class="fila"><span>Seña a cuenta${x.sena_de ? ' · Factura ' + esc(x.sena_de) : ''}</span><span>- ${plata2(c.sena_monto)}</span></div>` + tot;
+  if (x.sena_items && x.sena_items.length) tot += `<div class="et2" style="margin-top:5mm">Artículos señados</div>${x.sena_items.map(d => `<div class="fila"><span>${Number(d.cantidad)} × ${esc(d.descripcion)}</span><span>${plata2(Number(d.cantidad) * Number(d.precio_unit))}</span></div>`).join('')}<div class="mini">Esta seña se descuenta cuando retirás los artículos. No vence.</div>`;
   if (c.obs) tot += `<div class="mini" style="margin-top:3mm">${esc(c.obs)}</div>`;
   const frase = nc ? 'Gracias por tu confianza.' : EMPRESA.frase + (pr ? ' Te esperamos para concretarlo.' : '');
   const wa = (li.wa || '').replace(/[+\s]/g, '');
@@ -999,7 +1056,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main"><div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -1061,22 +1118,25 @@ function vTotales() {
     filas.push({ row, d, base }); base = r2(base - d);
   }
   const desc = r2(sub - base);
+  const sena = T.sena_usar ? Math.min(base, T.sena_usar.importe) : 0; base = r2(base - sena);
   // un solo renglón en % → se manda el %, como siempre; si hay importes o varios renglones → importe exacto
   const soloPct = filas.length === 1 && filas[0].row.dataset.modo === 'pct';
-  return { sub, desc, tot: base, pct: soloPct ? Math.min(100, num(filas[0].row.dataset.v)) : (sub ? desc / sub * 100 : 0), imp: soloPct ? null : desc, filas };
+  return { sub, desc, tot: base, sena, pct: soloPct ? Math.min(100, num(filas[0].row.dataset.v)) : (sub ? desc / sub * 100 : 0), imp: soloPct ? null : desc, filas };
 }
 function vRender() {
   const box = document.getElementById('v-renglones');
   box.innerHTML = T.items.length ? `<table><thead><tr><th>Artículo</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto</th><th class="num">Importe</th><th></th></tr></thead><tbody>` +
-    T.items.map((it, i) => `<tr${it.stock <= 0 ? ' class="sinstock" title="Sin stock en este local"' : ''}>
+    T.items.map((it, i) => `<tr${it.stock <= 0 && !it.fijo ? ' class="sinstock" title="Sin stock en este local"' : ''}>
       <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td>
-      <td class="num cant"><button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button></td>
+      <td class="num cant">${it.fijo ? '' : `<button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button>`}</td>
       <td class="num"><input class="din" value="${plata(it.precio_unit)}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
-      <td class="num"><input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right"></td>
+      <td class="num">${it.fijo ? '' : `<input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right">`}</td>
       <td class="num"><b class="${it.descuento_monto > 0 ? 'dto-imp' : it.descuento_pct > 0 ? 'dto-pct' : ''}" title="${it.descuento_monto > 0 ? 'Con descuento en pesos' : it.descuento_pct > 0 ? 'Con descuento en %' : ''}">${plata(lineaBruta(it))}</b></td>
-      <td><button class="btn ico chico" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('') + '</tbody></table>'
+      <td>${it.fijo ? '' : `<button class="btn ico chico" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
+  box.innerHTML += senaHTML();
   const t = vTotales();
+  { const f = document.getElementById('v-sena-fila'); f.style.display = T.sena_usar ? '' : 'none'; if (T.sena_usar) f.innerHTML = `<span>Seña a cuenta · Factura ${esc(T.sena_usar.letra)} ${esc(T.sena_usar.factura)} <button class="btn ico chico" onclick="vSenaNoUsar()" title="No usar la seña en este ticket" aria-label="No usar">${_i('x')}</button></span><b class="dto-imp">- ${plata(t.sena)}</b>`; }
   for (const f of t.filas) { const e = f.row.querySelector('.dval'); const v = num(f.row.dataset.v);
     if (document.activeElement !== e) e.value = !v ? '' : f.row.dataset.modo === 'imp' ? plata(v) : String(v).replace('.', ',') + '%';
     const dm = f.row.querySelector('.dmonto'); dm.textContent = f.d ? '- ' + plata(f.d) : '$ 0'; dm.className = 'dmonto ' + (f.d ? (f.row.dataset.modo === 'imp' ? 'dto-imp' : 'dto-pct') : ''); }
@@ -1116,6 +1176,7 @@ function usarCliente(c) {
   T.cliente = cliDeFicha(c); T.sin_cliente = false;
   if (T.tipo === 'FC' && T.letra !== LETRA_COND[T.cliente.cond_iva]) vTipo('FC', LETRA_COND[T.cliente.cond_iva]);
   vRender(); document.getElementById('v-q').focus();
+  vSenasOfrecer(T.cliente);
 }
 function quitarCliente() { T.cliente = null; if (T.tipo === 'FC' && T.letra === 'A') vTipo('FC', 'B'); vRender(); document.getElementById('v-cli-doc').focus(); }
 async function cliBuscar(txt) {
@@ -1356,6 +1417,7 @@ function emitirTicket() {
   const nc = T.tipo === 'NC';
   if (nc && !T.nc_de) { toast('Elegí qué factura devuelve', 'error'); document.getElementById('v-nc-q').focus(); return; }
   if (T.tipo === 'PR') return emitir(false);   // presupuesto: sin pagos, el cliente es opcional
+  if (T.sena) { if (!T.cliente || !T.cliente.doc) { toast('La seña necesita un cliente con DNI o CUIT', 'error'); document.getElementById('v-cli-doc').focus(); return; } if (!T.sena.items.length) { toast('La seña tiene que reservar al menos un artículo', 'error'); return; } if (!(T.items[0].precio_unit > 0)) { toast('Poné el importe de la seña', 'error'); return; } }
   if (!nc && !T.cliente && !T.sin_cliente) {
     if (T.letra !== 'X' && t.tot >= TOPE.valor) { toast('Por el importe, ARCA exige identificar al cliente: cargá su DNI o CUIT', 'error'); document.getElementById('v-cli-doc').focus(); return; }
     return preguntarCliente();
@@ -1382,7 +1444,7 @@ async function emitir(esNC) {
   // Vuelto: si pagó de más en efectivo, el efectivo que queda es total - resto
   const pag = pagos.reduce((s, p) => s + p.importe, 0);
   if (pag > t.tot + 1) { const ef = pagos.find(p => p.medio === 'efectivo'); if (ef) ef.importe = r2(ef.importe - (pag - t.tot)); }
-  const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, obs: document.getElementById('v-obs').value.trim() || null,
+  const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, obs: document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: cliPayload(),
     items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_monto > 0 ? 0 : i.descuento_pct, descuento_monto: i.descuento_monto || 0, iva_pct: 21 })),
     pagos: T.tipo === 'PR' ? [] : pagos };
@@ -1412,7 +1474,7 @@ async function cargarComprobantes() {
       <td>${esc(c.cliente_nombre)}<div class="mini">${c.cliente_doc ? (c.cliente_doc_tipo || '') + ' ' + c.cliente_doc : ''}${c.cliente_informado === false && c.cliente_interno ? '<span title="Cliente registrado en nuestra base; a ARCA fue como Consumidor Final">👤 ' + esc(c.cliente_interno) + '</span>' : (!c.cliente_globalid && !c.cliente_doc && c.tipo !== 'NC' ? '<span title="Se vendió sin cargar cliente">sin cliente</span>' : '')}</div></td>
       <td class="mini">${esc(c.vendedora_nombre || '')}</td>
       <td class="num"><b>${c.signo < 0 ? '- ' : ''}${plata(c.total)}</b></td>
-      <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'pendiente' ? '<span class="chip amber" title="Esperando el CAE de ARCA">CAE…</span>' : c.cae_estado === 'ok' ? '<span class="chip green" title="CAE ' + esc(c.cae) + '">CAE</span>' : c.cae_estado === 'error' ? '<span class="chip red" title="' + esc(c.cae_error || '') + '">CAE rechazado</span>' : c.tipo === 'PR' ? '<span class="chip amber">Presupuesto</span>' : '<span class="chip gray">Manual</span>'}</td>
+      <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'pendiente' ? '<span class="chip amber" title="Esperando el CAE de ARCA">CAE…</span>' : c.cae_estado === 'ok' ? '<span class="chip green" title="CAE ' + esc(c.cae) + '">CAE</span>' : c.cae_estado === 'error' ? '<span class="chip red" title="' + esc(c.cae_error || '') + '">CAE rechazado</span>' : c.tipo === 'PR' ? '<span class="chip amber">Presupuesto</span>' : '<span class="chip gray">Manual</span>'}${c.es_sena ? ' <span class="chip blue">Seña</span>' : ''}${Number(c.sena_monto) > 0 ? ' <span class="chip blue" title="Descontó una seña de ' + plata(c.sena_monto) + '">Usa seña</span>' : ''}</td>
       <td style="white-space:nowrap"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
         ${c.tipo === 'PR' && c.estado === 'emitido' ? `<button class="btn ico" onclick="prFacturar(${c.id})" title="Facturar este presupuesto" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo !== 'NC' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && c.cae_estado === 'error' ? `<button class="btn ico" onclick="reintentarCAE(${c.id})" title="Pedir el CAE de nuevo a ARCA" aria-label="Reintentar CAE">${_i('nc')}</button>` : ''}
@@ -1425,7 +1487,10 @@ async function traerComprobante(id) {
     sb.from('pos_comprobantes_det').select('*').eq('comprobante_id', id).order('nro_item'),
     sb.from('pos_pagos').select('*').eq('comprobante_id', id).order('id')]);
   let rel = null; if (c && c.relacionado_id) { const r = await sb.from('pos_comprobantes').select('tipo,letra,punto_venta,numero').eq('id', c.relacionado_id).maybeSingle(); rel = r.data; }
-  return { c, det: det || [], pagos: pagos || [], rel };
+  let sena_items = null, sena_de = null;
+  if (c && c.es_sena) { const r = await sb.from('pos_senas').select('id,pos_senas_det(sku,descripcion,cantidad,precio_unit,nro_item)').eq('comprobante_id', c.id).maybeSingle(); sena_items = r.data ? (r.data.pos_senas_det || []).sort((a, b) => a.nro_item - b.nro_item) : []; }
+  if (c && c.sena_id) { const r = await sb.from('pos_senas').select('comprobante:comprobante_id(letra,punto_venta,numero)').eq('id', c.sena_id).maybeSingle(); if (r.data && r.data.comprobante) sena_de = r.data.comprobante.letra + ' ' + fmtNum(r.data.comprobante.punto_venta, r.data.comprobante.numero); }
+  return { c, det: det || [], pagos: pagos || [], rel, sena_items, sena_de };
 }
 function ticketHTML(x) {
   const { c, det, pagos, rel } = x; const mp = Object.fromEntries(MEDIOS.map(m => [m.clave, m.nombre]));
@@ -1433,6 +1498,8 @@ function ticketHTML(x) {
   // Factura A: los precios se muestran sin IVA (los de lista son con IVA incluido) y el IVA se discrimina abajo
   const u = v => A ? Number(v) / 1.21 : Number(v); const $ = v => A ? plata2(u(v)) : plata(u(v));
   const titulo = c.tipo === 'MA' ? 'Factura manual' : c.tipo === 'PR' ? 'Presupuesto' : TIPO_NOM[c.tipo] + ' ' + c.letra;
+  const senaDet = x.sena_items && x.sena_items.length ? `<div class="sep"></div><div class="mini" style="text-align:center"><b>Artículos señados</b></div><table class="tk-det">${x.sena_items.map(d => `<tr><td>${Number(d.cantidad)} × ${esc(d.descripcion)}</td><td class="num">${plata(Number(d.cantidad) * Number(d.precio_unit))}</td></tr>`).join('')}</table><div class="mini" style="text-align:center">Esta seña se descuenta cuando retirás los artículos. No vence.</div>` : '';
+  const senaUso = Number(c.sena_monto) > 0 ? `<div class="fila"><span>Seña a cuenta${x.sena_de ? ' · Factura ' + esc(x.sena_de) : ''}</span><span>- ${plata(c.sena_monto)}</span></div>` : '';
   const devuelve = nc && rel ? `Devuelve la ${rel.tipo === 'MA' ? 'Factura manual' : TIPO_NOM[rel.tipo] + ' ' + rel.letra} ${fmtNum(rel.punto_venta, rel.numero)}` : nc ? 'Devuelve el comprobante #' + c.relacionado_id : '';
   const cliente = c.cliente_doc ? `<b>${esc(c.cliente_nombre)}</b><div class="mini">${esc(c.cliente_doc_tipo || '')} ${esc(c.cliente_doc)}${c.cliente_cond_iva && c.cliente_cond_iva !== 'CF' ? ' · ' + esc(COND[c.cliente_cond_iva] || '') : ''}</div>` : esc(c.cliente_nombre || 'Consumidor Final');
   const cae = c.preview ? '<div class="mini" style="text-align:center">VISTA PREVIA · sin emitir</div><div class="sep"></div>' : !fiscal ? '' : c.cae_estado === 'ok' ? `<div class="tk-qr"><img class="qr" data-qr="${esc(qrArca(c))}" alt="QR ARCA"><div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div></div><div class="sep"></div>`
@@ -1448,9 +1515,9 @@ function ticketHTML(x) {
     <table class="tk-det">${det.map(d => `<tr class="it"><td colspan="2">${esc(d.descripcion)}<div class="mini">${esc(d.sku)}${Number(d.descuento_monto) > 0 ? ' · dto ' + $(d.descuento_monto) + ' c/u' : d.descuento_pct > 0 ? ' · dto ' + d.descuento_pct + '%' : ''}</div></td></tr><tr><td>${Number(d.cantidad)} × ${$(d.precio_unit)}</td><td class="num">${A ? plata2(d.neto) : plata(d.total)}</td></tr>`).join('')}</table>
     <div class="sep"></div>
     ${Number(c.descuento_monto) > 0 ? `<div class="fila"><span>Subtotal</span><span>${$(c.subtotal)}</span></div><div class="fila"><span>Descuento${c.descuento_pct > 0 ? ' ' + c.descuento_pct + '%' : ''}</span><span>- ${$(c.descuento_monto)}</span></div>` : ''}
-    ${A ? `<div class="fila"><span>Neto gravado</span><span>${plata2(c.neto)}</span></div><div class="fila"><span>IVA 21%</span><span>${plata2(c.iva)}</span></div>` : ''}
+    ${senaUso}${A ? `<div class="fila"><span>Neto gravado</span><span>${plata2(c.neto)}</span></div><div class="fila"><span>IVA 21%</span><span>${plata2(c.iva)}</span></div>` : ''}
     <div class="fila total"><span>TOTAL</span><span>${A ? plata2(c.total) : plata(c.total)}</span></div>
-    ${c.letra === 'B' ? `<div class="mini">IVA contenido ${plata2(c.iva)}<br>Otros impuestos nacionales indirectos $ 0,00</div>` : ''}
+    ${c.letra === 'B' ? `<div class="mini">IVA contenido ${plata2(c.iva)}<br>Otros impuestos nacionales indirectos $ 0,00</div>` : ''}${senaDet}
     ${pagos.length ? '<div class="sep"></div>' + pagos.map(p => `<div class="fila"><span>${esc(mp[p.medio] || p.medio)}${p.referencia ? ' · ' + esc(p.referencia) : ''}</span><span>${plata(p.importe)}</span></div>`).join('') : ''}
     ${c.obs ? `<div class="sep"></div><div class="mini">${esc(c.obs)}</div>` : ''}
     ${c.estado === 'anulado' ? `<div class="tk-anulado">ANULADO · ${esc(c.anulado_motivo || '')}</div>` : ''}
@@ -1597,6 +1664,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=30"></script>
+<script src="manual.js?v=31"></script>
 </body>
 </html>
