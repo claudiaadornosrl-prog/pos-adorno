@@ -512,10 +512,12 @@ main { max-width: 1500px; }
 .cl-res { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow: auto; }
 .cl-it { display: flex; gap: 10px; align-items: center; text-align: left; background: #f8fafc; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; } .cl-it:hover { border-color: var(--primary); } .cl-it .ico { color: var(--muted); }
 .medios { display: flex; flex-direction: column; gap: 6px; }
-.medio { display: grid; grid-template-columns: 1fr 110px 130px 32px; gap: 6px; align-items: center; margin-bottom: 4px; } .medio .mas { width: 30px; height: 30px; padding: 0; border-radius: 50%; background: var(--primary); color: white; font-size: 20px; line-height: 1; font-weight: 600; justify-content: center; } .medio .mas:hover { background: var(--primary-dark); color: white; } .medio .med { border-radius: 999px; }
+.medio { display: grid; grid-template-columns: 1fr 34px 110px 130px 32px; gap: 6px; align-items: center; margin-bottom: 4px; }
+.med-ico { font-size: 24px; line-height: 1; text-align: center; display: inline-block; } .med-ico.pop { animation: medpop .45s cubic-bezier(.34,1.56,.64,1); }
+@keyframes medpop { 0% { transform: scale(.4) rotate(-20deg); opacity: .3; } 60% { transform: scale(1.3) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } } .medio .mas { width: 30px; height: 30px; padding: 0; border-radius: 50%; background: var(--primary); color: white; font-size: 20px; line-height: 1; font-weight: 600; justify-content: center; } .medio .mas:hover { background: var(--primary-dark); color: white; } .medio .med { border-radius: 999px; }
 .renglones input, .totales input, .medio input, .medio select, #v-obs { border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; font-family: inherit; font-size: 14px; background: white; min-width: 0; color: var(--text); } .renglones input:focus, .totales input:focus, .medio input:focus, .medio select:focus, #v-obs:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-bg); }
 .medio input { font-size: 15px; } .medio .imp { text-align: right; } .medio .imp:not(:placeholder-shown) { border-color: var(--primary); background: var(--primary-bg); }
-@media (max-width: 600px) { .medio { grid-template-columns: 1fr 96px 32px; } .medio .ref { grid-column: 1 / -1; } }
+@media (max-width: 600px) { .medio { grid-template-columns: 1fr 30px 96px 32px; } .medio .ref { grid-column: 1 / -1; } .med-ico { font-size: 20px; } }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
 .kpi { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; border-top: 3px solid var(--primary); } .kpi .lb { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; } .kpi .v { font-size: 22px; font-weight: 700; margin-top: 2px; }
 .tk-wrap { display: flex; justify-content: center; background: #f1f5f9; padding: 14px; border-radius: 10px; }
@@ -1165,6 +1167,8 @@ function preguntarCliente() {
 
 // ═══ Cobro y emisión ═══════════════════════════════════════════════════
 // Forma de pago en el ticket: renglones con desplegable de medio + importe + referencia; el "+" del primer renglón suma renglones (pagos combinados)
+const MEDIO_ICO = { efectivo: '💵', mp_point: '📱', mp_qr: '🔳', tarjeta: '💳', link: '🔗', transferencia: '🏦', vale: '🎟️', cc: '📒', mp_point_ni: '📱', mp_qr_ni: '🔳' };
+const mIco = k => MEDIO_ICO[k] || '💰';
 function pMedios() { return MEDIOS.filter(m => !m.solo_oficina || LOCAL === 'oficina'); }
 function pMontar() { document.getElementById('v-pagos').innerHTML = ''; pAgregar(); }
 function pAgregar(medio) {
@@ -1172,7 +1176,7 @@ function pAgregar(medio) {
   const falta = Math.max(0, r2(t.tot - pPagos().reduce((s, p) => s + p.importe, 0)));
   const ms = pMedios(); const sel = medio || (n === 0 ? (ms[0] || {}).clave : '');
   const div = document.createElement('div'); div.className = 'medio';
-  div.innerHTML = `<select class="med" onchange="pMedio(this)">${n ? '<option value="">Elegí el medio…</option>' : ''}${ms.map(m => `<option value="${m.clave}"${m.clave === sel ? ' selected' : ''}>${esc(m.nombre)}</option>`).join('')}</select>
+  div.innerHTML = `<select class="med" onchange="pMedio(this)">${n ? '<option value="">Elegí el medio…</option>' : ''}${ms.map(m => `<option value="${m.clave}"${m.clave === sel ? ' selected' : ''}>${esc(m.nombre)} ${mIco(m.clave)}</option>`).join('')}</select><span class="med-ico" aria-hidden="true"></span>
     <input class="imp din" inputmode="decimal" placeholder="$ 0" oninput="pRender()" onfocus="dinFoco(this)" onblur="dinBlur(this)" title="Importe"${n && falta ? ` value="${plata(falta)}"` : ''}>
     <input class="ref" placeholder="Nº cupón / ref." style="display:none">
     ${n ? `<button class="btn ico chico" onclick="pQuitar(this)" title="Sacar este renglón" aria-label="Sacar">${_i('x')}</button>` : `<button class="btn ico chico mas" onclick="pAgregar()" title="Agregar otra forma de pago" aria-label="Agregar forma de pago">+</button>`}`;
@@ -1182,6 +1186,8 @@ function pAgregar(medio) {
 function pMedio(sel) {
   const m = MEDIOS.find(x => x.clave === sel.value); const row = sel.closest('.medio');
   row.querySelector('.ref').style.display = m && m.pide_referencia ? '' : 'none';
+  // ícono del medio al lado del desplegable: cambia y hace un saltito cada vez que se elige
+  const ico = row.querySelector('.med-ico'); ico.textContent = sel.value ? mIco(sel.value) : ''; ico.classList.remove('pop'); void ico.offsetWidth; ico.classList.add('pop');
   row.dataset.m = sel.value; pRender();
 }
 function pQuitar(btn) { const box = document.getElementById('v-pagos'); btn.closest('.medio').remove(); if (!box.children.length) pAgregar(); pRender(); }
@@ -1414,6 +1420,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=19"></script>
+<script src="manual.js?v=20"></script>
 </body>
 </html>
