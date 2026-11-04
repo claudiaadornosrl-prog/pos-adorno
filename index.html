@@ -973,7 +973,7 @@ function vRender() {
   { const a = T.letra === 'A'; document.getElementById('v-iva').style.display = a ? '' : 'none';
     if (a) { const neto = r2(t.tot / 1.21); document.getElementById('v-neto').textContent = plata2(neto); document.getElementById('v-ivam').textContent = plata2(r2(t.tot - neto)); } }
   document.getElementById('v-total').textContent = plata(t.tot);
-  document.getElementById('v-cobrar-lb').textContent = T.tipo === 'PR' ? 'Guardar presupuesto' : T.tipo === 'NC' ? 'Emitir NC ' + (T.letra === 'X' ? 'manual' : T.letra) : T.tipo === 'MA' ? 'Emitir factura manual' : 'Emitir factura ' + T.letra;
+  document.getElementById('v-cobrar-lb').textContent = (T.tipo === 'PR' || T.tipo === 'MA') ? 'Emitir presupuesto' : T.tipo === 'NC' ? 'Emitir NC ' + (T.letra === 'X' ? 'manual' : T.letra) : 'Emitir factura ' + T.letra;
   document.getElementById('v-pagos-lb').textContent = T.tipo === 'NC' ? 'Cómo se le devuelve la plata al cliente' : 'Forma de pago · elegí el medio; para pagos combinados sumá otro renglón';
   cliRender(t); pRender();
 }
@@ -1276,7 +1276,7 @@ async function emitir(esNC) {
     pagos: T.tipo === 'PR' ? [] : pagos };
   const { data, error } = await sb.rpc('pos_emitir', { p });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); btn.disabled = false; return; }
-  toast((esNC ? 'Nota de crédito ' : T.tipo === 'PR' ? 'Presupuesto ' : (T.tipo === 'MA' ? 'Factura manual ' : 'Factura ' + T.letra + ' ')) + data.numero_fmt + (T.tipo === 'PR' ? ' guardado' : ' emitida'), 'success');
+  toast((esNC ? 'Nota de crédito ' : T.tipo === 'PR' ? 'Presupuesto ' : (T.tipo === 'MA' ? 'Comprobante ' : 'Factura ' + T.letra + ' ')) + data.numero_fmt + (T.tipo === 'PR' || T.tipo === 'MA' ? ' emitido' : ' emitida'), 'success');
   vVaciar(); verComprobante(data.id, true);
 }
 
