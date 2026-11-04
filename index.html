@@ -452,12 +452,18 @@ main { max-width: 1500px; }
 .pos-ticket { position: sticky; top: 64px; }
 .buscador { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; color: var(--muted); }
 .buscador input { flex: 1; border: none; outline: none; font-size: 16px; font-family: inherit; padding: 6px 0; color: var(--text); background: transparent; }
-.prod-lista { margin-top: 10px; max-height: calc(100vh - 220px); overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+.prod-lista { margin-top: 10px; max-height: calc(100vh - 420px); overflow: auto; display: flex; flex-direction: column; gap: 4px; }
 .prod { display: grid; grid-template-columns: 44px 100px 1fr 46px 100px; gap: 8px; align-items: center; text-align: left; border: 1px solid transparent; background: #f8fafc; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; }
-.prod:hover { border-color: var(--primary); background: var(--primary-bg); }
+.prod:hover, .prod.act { border-color: var(--primary); background: var(--primary-bg); }
+.pficha { display: flex; gap: 14px; margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--primary-bg); }
+.pf-img { width: 150px; height: 150px; border-radius: 10px; object-fit: cover; background: #e2e8f0; cursor: zoom-in; flex: none; display: block; }
+.pf-datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .pf-sku { font-weight: 700; font-size: 15px; color: var(--primary-dark); } .pf-desc { font-size: 16px; font-weight: 600; }
+.pf-stock { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-top: 4px; } .pf-stock .aca { color: var(--text); } .pf-stock .sin b { color: var(--red); }
+.pf-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; } .pf-pre { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { .pf-img { width: 100px; height: 100px; } }
 .prod .sku { font-weight: 700; font-size: 13px; } .prod .desc { font-size: 13px; } .prod .desc i { color: var(--muted); font-style: normal; }
 .prod .stk { font-size: 12px; color: var(--muted); text-align: right; } .prod .stk.sin { color: var(--red); font-weight: 700; } .prod .pre { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
-.foto { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #e2e8f0; cursor: zoom-in; flex: none; display: block; } .foto.sin { cursor: default; background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f1f5f9 4px, #f1f5f9 8px); } .foto.chica { width: 34px; height: 34px; }
+.foto { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #e2e8f0; cursor: zoom-in; flex: none; display: block; } .foto.sin { cursor: default; background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f1f5f9 4px, #f1f5f9 8px); } .foto.chica { width: 30px; height: 30px; border-radius: 4px; }
 .art { display: flex; align-items: center; gap: 8px; }
 .cli { margin: 10px 0; padding: 8px 10px; border: 2px solid var(--primary); border-radius: 10px; background: var(--primary-bg); color: var(--text); } .cli.con { border: 1px solid var(--border); background: white; }
 .cli-sin, .cli-con { display: flex; align-items: center; gap: 8px; } .cli .ico { color: var(--muted); flex: none; }
@@ -560,6 +566,7 @@ main { max-width: 1500px; }
             <input id="v-q" placeholder="Buscar por código o descripción · o escaneá la etiqueta" autocomplete="off" spellcheck="false">
             <span class="mini" id="v-stat"></span>
           </div>
+          <div id="v-ficha" class="pficha" style="display:none"></div>
           <div id="v-lista" class="prod-lista"><div class="empty">Escribí para buscar un producto, o escaneá el QR de la etiqueta.</div></div>
         </div>
         <div class="pos-ticket">
@@ -758,12 +765,12 @@ function pintarLocal() {
     ? `<select onchange="cambiarLocal(this.value)" title="Desde qué local facturás">${permitidos.map(k => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${LOCALES[k]}</option>`).join('')}</select>`
     : `<span>${esc(LOCALES[LOCAL] || LOCAL)}</span>`;
 }
-async function cambiarLocal(l) { LOCAL = l; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
+async function cambiarLocal(l) { LOCAL = l; _fStock = {}; FICHA = null; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
 async function cargarArticulos() {
   // Catálogo del local en memoria (≈5.000 filas): búsqueda instantánea y escaneo sin ir a la base.
   const out = []; let desde = 0;
   for (;;) {
-    const { data, error } = await sb.from('stock_articulos').select('sku,descripcion,descripcion_adicional,stock,precio').eq('local', LOCAL).range(desde, desde + 999);
+    const { data, error } = await sb.from('stock_articulos').select('sku,descripcion,descripcion_adicional,stock,precio,material,proveedor').eq('local', LOCAL).range(desde, desde + 999);
     if (error) { toast('No pude cargar el catálogo: ' + error.message, 'error'); break; }
     out.push(...(data || [])); if (!data || data.length < 1000) break; desde += 1000;
   }
@@ -781,16 +788,42 @@ function vBuscarDebounce() { clearTimeout(_vT); _vT = setTimeout(vBuscar, 250); 
 function vBuscar() {
   const q = document.getElementById('v-q').value.trim().toUpperCase();
   const box = document.getElementById('v-lista');
-  if (!q) { box.innerHTML = '<div class="empty">Escribí para buscar un producto, o escaneá el QR de la etiqueta.</div>'; return; }
+  if (!q) { box.innerHTML = '<div class="empty">Escribí para buscar un producto, o escaneá el QR de la etiqueta.</div>'; vFicha(null); return; }
   const pal = q.split(/\s+/);
   const res = ARTS.filter(a => { const t = (a.sku + ' ' + a.descripcion + ' ' + (a.descripcion_adicional || '')).toUpperCase(); return pal.every(p => t.includes(p)); });
   res.sort((a, b) => (a.sku === q ? -1 : b.sku === q ? 1 : 0) || (a.sku.startsWith(q) ? -1 : b.sku.startsWith(q) ? 1 : 0) || (b.stock - a.stock));
   box.innerHTML = res.length ? res.slice(0, 60).map(a => `
-    <button class="prod" onclick="vAgregar('${esc(a.sku)}')" title="Agregar al ticket">
+    <button class="prod${a.sku === FICHA ? ' act' : ''}" onclick="vAgregar('${esc(a.sku)}')" onmouseenter="vFicha('${esc(a.sku)}')" title="Agregar al ticket">
       ${foto(a.sku)}<span class="sku">${esc(a.sku)}</span><span class="desc">${esc(a.descripcion)}${a.descripcion_adicional ? ' <i>' + esc(a.descripcion_adicional) + '</i>' : ''}</span>
       <span class="stk ${a.stock <= 0 ? 'sin' : ''}" title="Stock en ${esc(LOCALES[LOCAL])}">${Number(a.stock)}</span><span class="pre">${plata(a.precio)}</span></button>`).join('')
     + (res.length > 60 ? `<div class="mini" style="padding:8px">… y ${res.length - 60} más: afiná la búsqueda.</div>` : '')
     : '<div class="empty">No encontré nada con «' + esc(q) + '».</div>';
+  vFicha(res.length ? res[0].sku : null);
+}
+// Ficha del producto a la izquierda: foto grande, detalle, stock acá y en los otros locales, precio
+let FICHA = null, _fStock = {};
+function vFicha(sku) {
+  const box = document.getElementById('v-ficha'); const a = sku && ARTS.find(x => x.sku === sku);
+  FICHA = a ? a.sku : null;
+  document.querySelectorAll('#v-lista .prod').forEach(b => b.classList.toggle('act', b.getAttribute('onclick').includes("'" + FICHA + "'")));
+  if (!a) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const u = IMGS[a.sku];
+  box.style.display = ''; box.innerHTML = `
+    ${u ? `<img class="pf-img" src="${esc(u)}" alt="" onclick="verFoto('${esc(u)}')" title="Ver más grande">` : '<span class="pf-img foto sin"></span>'}
+    <div class="pf-datos">
+      <div class="pf-sku">${esc(a.sku)}</div>
+      <div class="pf-desc">${esc(a.descripcion)}</div>
+      ${a.descripcion_adicional ? `<div class="mini">${esc(a.descripcion_adicional)}</div>` : ''}
+      <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')}</div>
+      <div class="pf-stock" id="pf-stock"><span class="${a.stock <= 0 ? 'sin' : ''}">${esc(LOCALES[LOCAL])}: <b>${Number(a.stock)}</b></span></div>
+      <div class="pf-pie"><span class="pf-pre">${plata(a.precio)}</span><button class="btn primary" onclick="vAgregar('${esc(a.sku)}')">${_i('plus')} Agregar</button></div>
+    </div>`;
+  vStockOtros(a.sku);
+}
+async function vStockOtros(sku) {
+  if (!_fStock[sku]) { const { data } = await sb.from('stock_articulos').select('local,stock').eq('sku', sku); _fStock[sku] = data || []; }
+  if (FICHA !== sku) return; const el = document.getElementById('pf-stock'); if (!el) return;
+  el.innerHTML = Object.keys(LOCALES).map(l => { const r = _fStock[sku].find(x => x.local === l); const st = r ? Number(r.stock) : 0; return `<span class="${l === LOCAL ? 'aca' : ''} ${st <= 0 ? 'sin' : ''}">${esc(LOCALES[l])}: <b>${st}</b></span>`; }).join('');
 }
 function vEscanear() {
   // Enter en el buscador: si el texto es un SKU exacto (QR de la etiqueta), lo agrega directo.
@@ -805,7 +838,7 @@ function vAgregar(sku) {
   const a = ARTS.find(x => x.sku === sku); if (!a) return;
   const it = T.items.find(x => x.sku === sku);
   if (it) it.cantidad += 1; else T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: Number(a.precio) || 0, descuento_pct: 0, stock: Number(a.stock) });
-  vRender(); document.getElementById('v-q').focus();
+  vRender(); vFicha(a.sku); document.getElementById('v-q').focus();
 }
 function vCant(i, d) { const it = T.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (it.max && it.cantidad > it.max) it.cantidad = it.max; if (it.cantidad === 0) T.items.splice(i, 1); vRender(); }
 function vQuitar(i) { T.items.splice(i, 1); vRender(); }
@@ -1305,6 +1338,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=10"></script>
+<script src="manual.js?v=11"></script>
 </body>
 </html>
