@@ -499,7 +499,7 @@ main { max-width: 1500px; }
 .cl-res { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow: auto; }
 .cl-it { display: flex; gap: 10px; align-items: center; text-align: left; background: #f8fafc; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; } .cl-it:hover { border-color: var(--primary); } .cl-it .ico { color: var(--muted); }
 .medios { display: flex; flex-direction: column; gap: 6px; }
-.medio { display: grid; grid-template-columns: 1fr 110px 130px 32px; gap: 6px; align-items: center; margin-bottom: 4px; } .medio .med { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-family: inherit; font-size: 14px; background: white; min-width: 0; }
+.medio { display: grid; grid-template-columns: 1fr 110px 130px 32px; gap: 6px; align-items: center; margin-bottom: 4px; } .medio .mas { font-size: 20px; line-height: 1; font-weight: 600; } .medio .med { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-family: inherit; font-size: 14px; background: white; min-width: 0; }
 .medio input { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-family: inherit; font-size: 15px; min-width: 0; } .medio .imp { text-align: right; } .medio .imp:not(:placeholder-shown) { border-color: var(--primary); background: var(--primary-bg); }
 @media (max-width: 600px) { .medio { grid-template-columns: 1fr 96px 32px; } .medio .ref { grid-column: 1 / -1; } }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
@@ -564,12 +564,12 @@ main { max-width: 1500px; }
         </div>
         <div class="pos-ticket">
           <div class="pils tipos" id="v-tipos">
-            <button class="pil on" data-t="FC:B" onclick="vTipo('FC','B')" title="Factura B (consumidor final, monotributista, exento, no responsable)">Factura B</button>
-            <button class="pil" data-t="FC:A" onclick="vTipo('FC','A')" title="Factura A (responsable inscripto, con CUIT)">Factura A</button>
-            <button class="pil" data-t="MA:X" onclick="vTipo('MA','X')" title="Factura manual: comprobante interno X, no va a ARCA">Factura manual</button>
+            <button class="pil on" data-t="FC:B" onclick="vTipo('FC','B')" title="Factura B (consumidor final, monotributista, exento, no responsable)">FC B</button>
+            <button class="pil" data-t="FC:A" onclick="vTipo('FC','A')" title="Factura A (responsable inscripto, con CUIT)">FC A</button>
+            <button class="pil" data-t="MA:X" onclick="vTipo('MA','X')" title="Factura manual: comprobante interno X, no va a ARCA">FC manual</button>
             <span class="pil-sep"></span>
-            <button class="pil nc" data-t="NC:B" onclick="vTipo('NC','B')" title="Nota de crédito B: devolución de una factura B">Nota de crédito B</button>
-            <button class="pil nc" data-t="NC:A" onclick="vTipo('NC','A')" title="Nota de crédito A: devolución de una factura A">Nota de crédito A</button>
+            <button class="pil nc" data-t="NC:B" onclick="vTipo('NC','B')" title="Nota de crédito B: devolución de una factura B">NC B</button>
+            <button class="pil nc" data-t="NC:A" onclick="vTipo('NC','A')" title="Nota de crédito A: devolución de una factura A">NC A</button>
             <button class="pil nc" data-t="NC:X" onclick="vTipo('NC','X')" title="Devolución de una factura manual (comprobante interno)" style="display:none">NC manual</button>
             <span class="pil-sep"></span>
             <button class="pil pr" data-t="PR:X" onclick="vTipo('PR','X')" title="Presupuesto: no es venta, no va a ARCA ni a la caja; después se factura desde Comprobantes">Presupuesto</button>
@@ -591,7 +591,7 @@ main { max-width: 1500px; }
             <div class="fila"><span>Descuento general <input id="v-desc" type="number" min="0" max="100" step="0.5" value="0" oninput="vRender()" style="width:62px"> %</span><b id="v-descm">$ 0</b></div>
             <div class="fila total"><span>TOTAL</span><b id="v-total">$ 0</b></div>
           </div>
-          <div class="pagos-tk"><div class="mini" id="v-pagos-lb">Forma de pago</div><div class="medios" id="v-pagos"></div><button class="btn chico" onclick="pAgregar()" style="margin-top:6px">+ otra forma de pago</button>
+          <div class="pagos-tk"><div class="mini" id="v-pagos-lb">Forma de pago</div><div class="medios" id="v-pagos"></div>
             <div class="fila"><span>Pagado</span><b id="p-pagado">$ 0</b></div><div class="fila falta"><span id="p-falta-lb">Falta</span><b id="p-falta">$ 0</b></div></div>
           <div class="acciones">
             <button class="btn ico" onclick="vVaciar()" title="Vaciar el ticket" aria-label="Vaciar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
@@ -1054,7 +1054,7 @@ function preguntarCliente() {
 }
 
 // ═══ Cobro y emisión ═══════════════════════════════════════════════════
-// Forma de pago en el ticket: renglones con desplegable de medio + importe + referencia; "+ otra forma de pago" suma renglones
+// Forma de pago en el ticket: renglones con desplegable de medio + importe + referencia; el "+" del primer renglón suma renglones (pagos combinados)
 function pMedios() { return MEDIOS.filter(m => !m.solo_oficina || LOCAL === 'oficina'); }
 function pMontar() { document.getElementById('v-pagos').innerHTML = ''; pAgregar(); }
 function pAgregar(medio) {
@@ -1065,7 +1065,7 @@ function pAgregar(medio) {
   div.innerHTML = `<select class="med" onchange="pMedio(this)">${n ? '<option value="">Elegí el medio…</option>' : ''}${ms.map(m => `<option value="${m.clave}"${m.clave === sel ? ' selected' : ''}>${esc(m.nombre)}</option>`).join('')}</select>
     <input class="imp" inputmode="decimal" placeholder="0" oninput="pRender()" title="Importe"${n && falta ? ` value="${falta}"` : ''}>
     <input class="ref" placeholder="Nº cupón / ref." style="display:none">
-    <button class="btn ico chico" onclick="pQuitar(this)" title="Sacar este renglón" aria-label="Sacar">${_i('x')}</button>`;
+    ${n ? `<button class="btn ico chico" onclick="pQuitar(this)" title="Sacar este renglón" aria-label="Sacar">${_i('x')}</button>` : `<button class="btn ico chico mas" onclick="pAgregar()" title="Agregar otra forma de pago" aria-label="Agregar forma de pago">+</button>`}`;
   box.appendChild(div); pMedio(div.querySelector('.med'));
   if (n) div.querySelector('.imp').focus(); else pRender();
 }
@@ -1305,6 +1305,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=9"></script>
+<script src="manual.js?v=10"></script>
 </body>
 </html>
