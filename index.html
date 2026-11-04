@@ -770,12 +770,12 @@ async function cargarArticulos() {
   // Catálogo del local en memoria (≈5.000 filas): búsqueda instantánea y escaneo sin ir a la base.
   const out = []; let desde = 0;
   for (;;) {
-    const { data, error } = await sb.from('stock_articulos').select('sku,descripcion,descripcion_adicional,stock,precio,material,proveedor').eq('local', LOCAL).range(desde, desde + 999);
+    const { data, error } = await sb.from('stock_articulos').select('sku,descripcion,descripcion_adicional,stock,precio,material,proveedor').eq('local', LOCAL).order('sku').range(desde, desde + 999);   // con orden fijo: sin él las páginas vienen mezcladas (repetidos y faltantes)
     if (error) { toast('No pude cargar el catálogo: ' + error.message, 'error'); break; }
     out.push(...(data || [])); if (!data || data.length < 1000) break; desde += 1000;
   }
-  ARTS = out; ARTS_AT = Date.now();
-  if (!Object.keys(IMGS).length) { let d2 = 0; for (;;) { const { data } = await sb.from('stock_imagenes').select('sku,url').range(d2, d2 + 999); (data || []).forEach(r => { IMGS[r.sku] = r.url; }); if (!data || data.length < 1000) break; d2 += 1000; } }
+  const vistos = new Set(); ARTS = out.filter(a => !vistos.has(a.sku) && vistos.add(a.sku)); ARTS_AT = Date.now();
+  if (!Object.keys(IMGS).length) { let d2 = 0; for (;;) { const { data } = await sb.from('stock_imagenes').select('sku,url').order('sku').range(d2, d2 + 999); (data || []).forEach(r => { IMGS[r.sku] = r.url; }); if (!data || data.length < 1000) break; d2 += 1000; } }
   document.getElementById('v-stat').textContent = ARTS.length ? ARTS.length.toLocaleString('es-AR') + ' artículos' : '';
 }
 function foto(sku, cls) { const u = IMGS[sku]; return u ? `<img class="foto ${cls || ''}" src="${esc(u)}" alt="" loading="lazy" onclick="event.stopPropagation(); verFoto('${esc(u)}')" title="Ver más grande">` : `<span class="foto sin ${cls || ''}" aria-hidden="true"></span>`; }
