@@ -441,6 +441,7 @@ main { max-width: 1500px; }
 .btn.ico:hover { background: var(--gray-light); color: var(--text); } .btn.ico.chico { padding: 3px; } .btn.ico.chico .ico { width: 16px; height: 16px; }
 .btn.ico.peligro:hover { color: var(--red); background: var(--red-bg); } .btn.ico.primary-ico { color: var(--primary); } .btn.ico.primary-ico .ico { width: 24px; height: 24px; }
 .pils { display: flex; gap: 6px; flex-wrap: wrap; }
+.tk-acc { margin-left: auto; display: inline-flex; gap: 2px; align-items: center; order: 99; }
 .pil { border: 1px solid var(--border); background: white; border-radius: 999px; padding: 7px 14px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
 .pil.on { background: var(--primary); border-color: var(--primary); color: white; } .pil:hover:not(.on) { background: var(--gray-light); }
 .pil.nc { border-style: dashed; } .pil.nc.on { background: #b45309; border-color: #b45309; border-style: solid; } .pil.pr.on { background: #475569; border-color: #475569; } .pil-sep { width: 1px; background: var(--border); margin: 2px 4px; }
@@ -589,6 +590,7 @@ main { max-width: 1500px; }
         </div>
         <div class="pos-ticket">
           <div class="pils tipos" id="v-tipos">
+            <span class="tk-acc"><button class="btn ico chico" onclick="vVaciar()" title="Limpiar el documento (empezar de cero)" aria-label="Limpiar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button><button class="btn ico chico" onclick="vPreview()" title="Vista previa de cómo va a salir" aria-label="Vista previa"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button class="btn ico chico" onclick="vPreview(true)" title="Imprimir la vista previa" aria-label="Imprimir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button></span>
             <button class="pil on" data-t="FC" onclick="vTipo('FC', T.cliente && LETRA_COND[T.cliente.cond_iva] || 'B')" title="Factura: sale B, o A sola cuando el cliente tiene CUIT de responsable inscripto">Factura</button>
             <span class="pil-sep"></span>
             <button class="pil nc" data-t="NC" onclick="vTipo('NC','B')" title="Nota de crédito: devolución de una factura; toma la letra de la factura que devuelve">Nota de crédito</button>
@@ -761,7 +763,7 @@ function dinFoco(el) { el.value = num(el.value) || ''; el.select(); }
 function dinBlur(el) { el.value = num(el.value) ? plata(num(el.value)) : ''; }
 const r2 = n => Math.round(n * 100) / 100;
 const fechaAR = s => s ? s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4) : '';
-function _i(k) { return ({ plus: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>', minus: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>', x: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>', ver: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', nc: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>', anular: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>', print: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>', ok: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>', edit: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>', cobrar: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>', mail: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>' })[k]; }
+function _i(k) { return ({ plus: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>', minus: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>', x: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>', ver: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', nc: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>', anular: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>', print: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>', ok: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>', edit: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>', cobrar: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>', mail: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>', pdf: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg>' })[k]; }
 
 async function init() {
   const { data: p, error } = await sb.rpc('pos_mi_perfil');
@@ -889,6 +891,19 @@ function vAgregar(sku) {
 }
 function vCant(i, d) { sonar(d > 0 ? 'mas' : 'menos'); const it = T.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (it.max && it.cantidad > it.max) it.cantidad = it.max; if (it.cantidad === 0) T.items.splice(i, 1); vRender(); }
 function vQuitar(i) { sonar('menos'); T.items.splice(i, 1); vRender(); }
+// Vista previa del documento tal como va a salir, sin emitirlo (con lo cargado en el ticket)
+function vPreview(imprimirlo) {
+  if (!T.items.length) { toast('Todavía no agregaste nada', 'error'); return; }
+  const t = vTotales(); const A = T.letra === 'A'; const hoy = new Date();
+  const det = T.items.map((it, i) => { const l = r2(lineaBruta(it) * (1 - (t.imp == null ? t.pct : t.desc / (t.sub || 1) * 100) / 100)); return { nro_item: i + 1, sku: it.sku, descripcion: it.descripcion, cantidad: it.cantidad, precio_unit: it.precio_unit, descuento_pct: it.descuento_monto > 0 ? 0 : it.descuento_pct, descuento_monto: it.descuento_monto || 0, total: l, neto: r2(l / 1.21), iva: r2(l - l / 1.21) }; });
+  const c = { preview: true, local: LOCAL, tipo: T.tipo, letra: T.letra, punto_venta: (PV.find(p => p.local === LOCAL && p.tipo === (T.letra === 'X' ? 'manual' : 'fiscal')) || {}).punto_venta || 0, numero: 0,
+    fecha: hoy.toISOString().slice(0, 10), hora: hoy.toTimeString().slice(0, 5), vendedora_nombre: PERFIL && PERFIL.nombre, estado: 'emitido', obs: document.getElementById('v-obs').value.trim() || null, relacionado_id: T.nc_de,
+    cliente_nombre: T.cliente ? T.cliente.nombre : 'Consumidor Final', cliente_doc_tipo: T.cliente && T.cliente.doc_tipo, cliente_doc: T.cliente && T.cliente.doc, cliente_cond_iva: T.cliente ? T.cliente.cond_iva : 'CF',
+    subtotal: t.sub, descuento_pct: t.imp == null ? t.pct : r2(t.pct), descuento_monto: t.desc, total: t.tot, neto: A || T.letra === 'B' ? r2(t.tot / 1.21) : t.tot, iva: A || T.letra === 'B' ? r2(t.tot - t.tot / 1.21) : 0, cae_estado: T.letra === 'X' ? 'no_aplica' : 'preview' };
+  const x = { c, det, pagos: T.tipo === 'PR' ? [] : pPagos(), rel: null };
+  if (imprimirlo) { document.getElementById('print-area').innerHTML = ticketHTML(x); window.print(); return; }
+  modal(`<div class="m-head"><h3>Vista previa</h3><span class="spacer"></span><button class="btn ico primary-ico" onclick="vPreview(true)" title="Imprimir" aria-label="Imprimir">${_i('print')}</button><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div><div class="mini" style="text-align:center;margin-bottom:8px">Así va a salir en la comandera. Todavía no está emitido: no tiene número ni CAE.</div><div class="tk-wrap">${ticketHTML(x)}</div>`);
+}
 function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
@@ -907,7 +922,8 @@ function vTipo(tipo, letra) {
   document.getElementById('v-nc').style.display = nc ? '' : 'none';
   document.querySelector('.pagos-tk').style.display = tipo === 'PR' ? 'none' : '';
   const tk = document.querySelector('.pos-ticket'); tk.classList.toggle('es-nc', nc); tk.classList.toggle('es-pr', tipo === 'PR'); tk.classList.toggle('es-ma', tipo === 'MA');
-  if (nc !== eraNC) { T.items = []; T.nc_de = null; T.sin_cliente = nc; if (nc) T.cliente = null; document.getElementById('v-nc-sel').textContent = ''; document.getElementById('v-nc-res').innerHTML = ''; pLimpiar(); }
+  // Cambiar de pastilla NO borra los artículos (JP): solo se limpia lo propio de la nota de crédito
+  if (nc !== eraNC) { T.nc_de = null; T.sin_cliente = nc; T.items.forEach(i => delete i.max); document.getElementById('v-nc-sel').textContent = ''; document.getElementById('v-nc-res').innerHTML = ''; }
   if (nc && !T.nc_de) setTimeout(() => document.getElementById('v-nc-q').focus(), 30);
   vRender();
 }
@@ -1302,7 +1318,7 @@ async function cargarComprobantes() {
       <td class="mini">${esc(c.vendedora_nombre || '')}</td>
       <td class="num"><b>${c.signo < 0 ? '- ' : ''}${plata(c.total)}</b></td>
       <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'pendiente' ? '<span class="chip amber" title="Esperando el CAE de ARCA">CAE…</span>' : c.cae_estado === 'ok' ? '<span class="chip green" title="CAE ' + esc(c.cae) + '">CAE</span>' : c.cae_estado === 'error' ? '<span class="chip red" title="' + esc(c.cae_error || '') + '">CAE rechazado</span>' : c.tipo === 'PR' ? '<span class="chip amber">Presupuesto</span>' : '<span class="chip gray">Manual</span>'}</td>
-      <td style="white-space:nowrap"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>
+      <td style="white-space:nowrap"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
         ${c.tipo === 'PR' && c.estado === 'emitido' ? `<button class="btn ico" onclick="prFacturar(${c.id})" title="Facturar este presupuesto" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo !== 'NC' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && c.cae_estado === 'error' ? `<button class="btn ico" onclick="reintentarCAE(${c.id})" title="Pedir el CAE de nuevo a ARCA" aria-label="Reintentar CAE">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' ? `<button class="btn ico peligro" onclick="anular(${c.id})" title="Anular" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
@@ -1324,13 +1340,13 @@ function ticketHTML(x) {
   const titulo = c.tipo === 'MA' ? 'Factura manual' : c.tipo === 'PR' ? 'Presupuesto' : TIPO_NOM[c.tipo] + ' ' + c.letra;
   const devuelve = nc && rel ? `Devuelve la ${rel.tipo === 'MA' ? 'Factura manual' : TIPO_NOM[rel.tipo] + ' ' + rel.letra} ${fmtNum(rel.punto_venta, rel.numero)}` : nc ? 'Devuelve el comprobante #' + c.relacionado_id : '';
   const cliente = c.cliente_doc ? `<b>${esc(c.cliente_nombre)}</b><div class="mini">${esc(c.cliente_doc_tipo || '')} ${esc(c.cliente_doc)}${c.cliente_cond_iva && c.cliente_cond_iva !== 'CF' ? ' · ' + esc(COND[c.cliente_cond_iva] || '') : ''}</div>` : esc(c.cliente_nombre || 'Consumidor Final');
-  const cae = !fiscal ? '' : c.cae_estado === 'ok' ? `<div class="tk-qr"><img class="qr" data-qr="${esc(qrArca(c))}" alt="QR ARCA"><div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div></div><div class="sep"></div>`
+  const cae = c.preview ? '<div class="mini" style="text-align:center">VISTA PREVIA · sin emitir</div><div class="sep"></div>' : !fiscal ? '' : c.cae_estado === 'ok' ? `<div class="tk-qr"><img class="qr" data-qr="${esc(qrArca(c))}" alt="QR ARCA"><div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div></div><div class="sep"></div>`
     : c.cae_estado === 'error' ? `<div class="mini tk-err">CAE rechazado: ${esc(c.cae_error || '')}</div><div class="sep"></div>` : '<div class="mini" style="text-align:center">CAE pendiente…</div><div class="sep"></div>';
   const cierre = c.tipo === 'PR' ? 'Presupuesto · no válido como factura · precios sujetos a cambio' : c.tipo === 'MA' ? 'Documento no válido como factura' : nc ? 'Gracias por tu confianza.' : EMPRESA.frase;
   return `<div class="ticket">
     <div class="tk-h"><img class="tk-logo${li.logo === 'atelier-logo-der.png' ? ' atelier' : ''}" src="${esc(li.logo || 'logo-ca.png')}" alt="Claudia Adorno"><div class="tk-local">${esc(LOCALES[c.local] || c.local)}</div><div class="mini">${esc(li.domicilio || '')}</div></div>
     <div class="sep"></div>
-    <div class="tk-tipo"><b>${esc(titulo)}</b><span class="nro">${fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} · ${String(c.hora).slice(0, 5)}${c.vendedora_nombre ? ' · Te atendió ' + esc(tit((c.vendedora_nombre.split(',')[1] || c.vendedora_nombre).trim())) : ''}</div>${devuelve ? `<div class="mini">${esc(devuelve)}</div>` : ''}</div>
+    <div class="tk-tipo"><b>${esc(titulo)}</b><span class="nro">${c.preview ? 'sin emitir' : fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} · ${String(c.hora).slice(0, 5)}${c.vendedora_nombre ? ' · Te atendió ' + esc(tit((c.vendedora_nombre.split(',')[1] || c.vendedora_nombre).trim())) : ''}</div>${devuelve ? `<div class="mini">${esc(devuelve)}</div>` : ''}</div>
     <div class="sep"></div>
     <div class="tk-cli">${cliente}</div>
     <div class="sep"></div>
@@ -1386,7 +1402,8 @@ async function reintentarCAE(id) {
 async function verComprobante(id, recien) {
   const x = await traerComprobante(id); if (!x.c) { toast('No lo encontré', 'error'); return; }
   modal(`<div class="m-head"><h3>${recien ? '✓ Emitido' : 'Comprobante'}</h3><span class="spacer"></span>
-    ${x.c.letra !== 'X' ? `<button class="btn ico primary-ico" onclick="imprimir(${id})" title="Imprimir en la comandera" aria-label="Imprimir">${_i('print')}</button>` : '<span class="mini" title="Manual y presupuesto no se imprimen en la comandera">sin impresión</span>'}
+    ${x.c.pdf_url ? `<a class="btn ico primary-ico" href="${esc(x.c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF (hoja A4, el que va por mail)" aria-label="PDF">${_i('pdf')}</a>` : '<span class="mini" title="El PDF se arma solo apenas el comprobante tiene CAE">PDF en camino…</span>'}
+    ${x.c.letra !== 'X' ? `<button class="btn ico primary-ico" onclick="imprimir(${id})" title="Imprimir en la comandera" aria-label="Imprimir">${_i('print')}</button>` : ''}
     <button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="tk-wrap">${ticketHTML(x)}</div>`);
   window._ultimoTicket = x; pintarQR(document.querySelector('#ov .tk-wrap'));
@@ -1485,6 +1502,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=28"></script>
+<script src="manual.js?v=29"></script>
 </body>
 </html>
