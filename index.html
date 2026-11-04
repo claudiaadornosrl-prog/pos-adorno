@@ -459,17 +459,17 @@ main { max-width: 1500px; }
 .pos-prod > .buscador input::placeholder { color: #0369a1; opacity: .75; }
 .buscador input { flex: 1; border: none; outline: none; font-size: 16px; font-family: inherit; padding: 6px 0; color: var(--text); background: transparent; }
 .prod-lista { margin-top: 10px; max-height: calc(100vh - 420px); overflow: auto; display: flex; flex-direction: column; gap: 4px; }
-.prod { display: grid; grid-template-columns: 44px 90px 1fr 40px 90px; gap: 8px; align-items: center; text-align: left; border: 1px solid transparent; background: #f8fafc; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; }
+.prod { display: grid; grid-template-columns: 44px 1fr 40px 90px; gap: 8px; align-items: center; text-align: left; border: 1px solid transparent; background: #f8fafc; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; }
 .prod:hover, .prod.act { border-color: var(--primary); background: var(--primary-bg); }
 .pficha { display: flex; gap: 14px; margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--primary-bg); }
-.pf-img { width: 150px; height: 150px; border-radius: 10px; object-fit: cover; background: #e2e8f0; cursor: zoom-in; flex: none; display: block; }
+.pf-img { width: 150px; height: 150px; border-radius: 10px; object-fit: contain; background: white; border: 1px solid #e2e8f0; cursor: zoom-in; flex: none; display: block; }
 .pf-datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .pf-sku { font-weight: 700; font-size: 15px; color: var(--primary-dark); } .pf-desc { font-size: 16px; font-weight: 600; }
 .pf-stock { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-top: 4px; } .pf-stock .aca { color: var(--text); } .pf-stock .sin b { color: var(--red); }
 .pf-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; } .pf-pre { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; } .pf-mas { width: 40px; height: 40px; border: none; border-radius: 50%; background: var(--primary); color: white; font-size: 26px; line-height: 1; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none; } .pf-mas:hover { background: var(--primary-dark); } .pf-mas.chico { width: 26px; height: 26px; font-size: 18px; vertical-align: middle; }
 @media (max-width: 600px) { .pf-img { width: 100px; height: 100px; } }
-.prod .sku { font-weight: 700; font-size: 13px; } .prod .desc { font-size: 13px; } .prod .desc i { color: var(--muted); font-style: normal; }
+.prod .txt { min-width: 0; display: flex; flex-direction: column; gap: 1px; } .prod .sku { font-weight: 700; font-size: 13px; } .prod .desc { font-size: 12px; line-height: 1.25; } .prod .desc i { color: var(--muted); font-style: normal; }
 .prod .stk { font-size: 12px; color: var(--muted); text-align: right; } .prod .stk.sin { color: var(--red); font-weight: 700; } .prod .pre { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
-.foto { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #e2e8f0; cursor: zoom-in; flex: none; display: block; } .foto.sin { cursor: default; background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f1f5f9 4px, #f1f5f9 8px); } .foto.chica { width: 30px; height: 30px; border-radius: 4px; }
+.foto { width: 44px; height: 44px; border-radius: 6px; object-fit: contain; background: white; border: 1px solid #e2e8f0; cursor: zoom-in; flex: none; display: block; } .foto.sin { cursor: default; background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f1f5f9 4px, #f1f5f9 8px); } .foto.chica { width: 30px; height: 30px; border-radius: 4px; }
 .art { display: flex; align-items: center; gap: 8px; }
 .cli { margin: 10px 0; padding: 8px 10px; border: 2px solid var(--primary); border-radius: 10px; background: var(--primary-bg); color: var(--text); } .cli.con { border: 1px solid var(--border); background: white; }
 .cli-sin, .cli-con { display: flex; align-items: center; gap: 8px; } .cli .ico { color: var(--muted); flex: none; }
@@ -808,7 +808,7 @@ function vBuscar() {
   res.sort((a, b) => (a.sku === q ? -1 : b.sku === q ? 1 : 0) || (a.sku.startsWith(q) ? -1 : b.sku.startsWith(q) ? 1 : 0) || (b.stock - a.stock));
   box.innerHTML = res.length ? res.slice(0, 60).map(a => `
     <button class="prod${a.sku === FICHA ? ' act' : ''}" onclick="vAgregar('${esc(a.sku)}')" onmouseenter="vFicha('${esc(a.sku)}')" title="Agregar al ticket">
-      ${foto(a.sku)}<span class="sku">${esc(a.sku)}</span><span class="desc">${esc(a.descripcion)}${a.descripcion_adicional ? ' <i>' + esc(a.descripcion_adicional) + '</i>' : ''}</span>
+      ${foto(a.sku)}<span class="txt"><span class="sku">${esc(a.sku)}</span><span class="desc">${esc(a.descripcion)}${a.descripcion_adicional ? ' <i>' + esc(a.descripcion_adicional) + '</i>' : ''}</span></span>
       <span class="stk ${a.stock <= 0 ? 'sin' : ''}" title="Stock en ${esc(LOCALES[LOCAL])}">${Number(a.stock)}</span><span class="pre">${plata(a.precio)}</span></button>`).join('')
     + (res.length > 60 ? `<div class="mini" style="padding:8px">… y ${res.length - 60} más: afiná la búsqueda.</div>` : '')
     : '<div class="empty">No encontré nada con «' + esc(q) + '».</div>';
