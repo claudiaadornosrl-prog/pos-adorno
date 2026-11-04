@@ -441,7 +441,7 @@ main { max-width: 1500px; }
 .btn.ico:hover { background: var(--gray-light); color: var(--text); } .btn.ico.chico { padding: 3px; } .btn.ico.chico .ico { width: 16px; height: 16px; }
 .btn.ico.peligro:hover { color: var(--red); background: var(--red-bg); } .btn.ico.primary-ico { color: var(--primary); } .btn.ico.primary-ico .ico { width: 24px; height: 24px; }
 .pils { display: flex; gap: 6px; flex-wrap: wrap; }
-.tk-acc { margin-left: auto; display: inline-flex; gap: 2px; align-items: center; order: 99; }
+.tk-acc { margin-left: auto; display: inline-flex; gap: 10px; align-items: center; order: 99; } .tk-acc .btn.ico { padding: 5px; } .tk-acc .btn.ico .ico { width: 22px; height: 22px; }
 .pil { border: 1px solid var(--border); background: white; border-radius: 999px; padding: 7px 14px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
 .pil.on { background: var(--primary); border-color: var(--primary); color: white; } .pil:hover:not(.on) { background: var(--gray-light); }
 .pil.nc { border-style: dashed; } .pil.nc.on { background: #b45309; border-color: #b45309; border-style: solid; } .pil.pr.on { background: #475569; border-color: #475569; } .pil-sep { width: 1px; background: var(--border); margin: 2px 4px; }
@@ -482,6 +482,7 @@ main { max-width: 1500px; }
 .cli-mail input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 15px; font-family: inherit; color: var(--text); padding: 2px 0; }
 .cli-mail.falta { border-color: var(--amber); background: #fffbeb; } .cli-mail.falta #v-mail-st { color: #b45309; font-weight: 600; white-space: nowrap; }
 #ov .box.ficha { max-width: 940px; padding: 0; overflow: hidden; }
+#ov .box.preview { max-width: 860px; } .pv-a4 { background: #cfcac0; padding: 10px; border-radius: 10px; display: flex; justify-content: center; } .pv-a4 iframe { width: 595px; height: 842px; border: 0; background: white; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
 .fb { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-height: 90vh; }
 .fb-side { background: var(--primary-dark); color: #fff; padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: auto; }
 .fb-x { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; opacity: .85; }
@@ -590,7 +591,7 @@ main { max-width: 1500px; }
         </div>
         <div class="pos-ticket">
           <div class="pils tipos" id="v-tipos">
-            <span class="tk-acc"><button class="btn ico chico" onclick="vVaciar()" title="Limpiar el documento (empezar de cero)" aria-label="Limpiar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button><button class="btn ico chico" onclick="vPreview()" title="Vista previa de cómo va a salir" aria-label="Vista previa"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button class="btn ico chico" onclick="vPreview(true)" title="Imprimir la vista previa" aria-label="Imprimir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button></span>
+            <span class="tk-acc"><button class="btn ico" onclick="vVaciar()" title="Limpiar el documento (empezar de cero)" aria-label="Limpiar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button><button class="btn ico" onclick="vPreview()" title="Vista previa: comandera y hoja A4" aria-label="Vista previa"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button class="btn ico" onclick="vPreview('imprimir')" title="Imprimir (comandera; desde la vista previa también la A4)" aria-label="Imprimir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button></span>
             <button class="pil on" data-t="FC" onclick="vTipo('FC', T.cliente && LETRA_COND[T.cliente.cond_iva] || 'B')" title="Factura: sale B, o A sola cuando el cliente tiene CUIT de responsable inscripto">Factura</button>
             <span class="pil-sep"></span>
             <button class="pil nc" data-t="NC" onclick="vTipo('NC','B')" title="Nota de crédito: devolución de una factura; toma la letra de la factura que devuelve">Nota de crédito</button>
@@ -743,7 +744,7 @@ const T = { tipo: 'FC', letra: 'B', items: [], cliente: null, sin_cliente: false
 const TOPE = { valor: 10000000, at: null, error: null };
 const LOCALES = { alcorta: 'Alcorta', unicenter: 'Unicenter', libertador: 'Atelier Libertador', oficina: 'Oficina' };
 // Pie fiscal y contacto del comprobante. PENDIENTE: domicilios como figuran en ARCA, IIBB e inicio de actividades (los pasa JP).
-const EMPRESA = { razon: 'Claudia Adorno SRL', cuit: '30-70967311-0', cuit_num: 30709673110, cond: 'IVA Responsable Inscripto', iibb: 'PENDIENTE', inicio: 'PENDIENTE',
+const EMPRESA = { razon: 'Claudia Adorno SRL', cuit: '30-70967311-0', cuit_num: 30709673110, cond: 'IVA Responsable Inscripto', iibb: '902-30709673110', inicio: 'PENDIENTE',
   ig: '@claudiaadornooficial · @atelier.claudiaadorno', webs: 'claudiaadorno.com · atelierclaudiaadorno.com', mail_admin: 'administracion@claudiaadorno.com', frase: 'Lo que elegís, te acompaña.' };
 const LOCAL_INFO = {
   // logo: 'logo-ca.png' (Claudia Adorno) o 'atelier-logo-der.png' (Claudia Adorno con la firma Atelier abajo a la derecha, para el local de Libertador)
@@ -891,18 +892,112 @@ function vAgregar(sku) {
 }
 function vCant(i, d) { sonar(d > 0 ? 'mas' : 'menos'); const it = T.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (it.max && it.cantidad > it.max) it.cantidad = it.max; if (it.cantidad === 0) T.items.splice(i, 1); vRender(); }
 function vQuitar(i) { sonar('menos'); T.items.splice(i, 1); vRender(); }
-// Vista previa del documento tal como va a salir, sin emitirlo (con lo cargado en el ticket)
-function vPreview(imprimirlo) {
-  if (!T.items.length) { toast('Todavía no agregaste nada', 'error'); return; }
+// Comprobante ficticio con lo cargado en el ticket (para la vista previa, sin emitir)
+function vPreviewDatos() {
   const t = vTotales(); const A = T.letra === 'A'; const hoy = new Date();
   const det = T.items.map((it, i) => { const l = r2(lineaBruta(it) * (1 - (t.imp == null ? t.pct : t.desc / (t.sub || 1) * 100) / 100)); return { nro_item: i + 1, sku: it.sku, descripcion: it.descripcion, cantidad: it.cantidad, precio_unit: it.precio_unit, descuento_pct: it.descuento_monto > 0 ? 0 : it.descuento_pct, descuento_monto: it.descuento_monto || 0, total: l, neto: r2(l / 1.21), iva: r2(l - l / 1.21) }; });
   const c = { preview: true, local: LOCAL, tipo: T.tipo, letra: T.letra, punto_venta: (PV.find(p => p.local === LOCAL && p.tipo === (T.letra === 'X' ? 'manual' : 'fiscal')) || {}).punto_venta || 0, numero: 0,
     fecha: hoy.toISOString().slice(0, 10), hora: hoy.toTimeString().slice(0, 5), vendedora_nombre: PERFIL && PERFIL.nombre, estado: 'emitido', obs: document.getElementById('v-obs').value.trim() || null, relacionado_id: T.nc_de,
     cliente_nombre: T.cliente ? T.cliente.nombre : 'Consumidor Final', cliente_doc_tipo: T.cliente && T.cliente.doc_tipo, cliente_doc: T.cliente && T.cliente.doc, cliente_cond_iva: T.cliente ? T.cliente.cond_iva : 'CF',
     subtotal: t.sub, descuento_pct: t.imp == null ? t.pct : r2(t.pct), descuento_monto: t.desc, total: t.tot, neto: A || T.letra === 'B' ? r2(t.tot / 1.21) : t.tot, iva: A || T.letra === 'B' ? r2(t.tot - t.tot / 1.21) : 0, cae_estado: T.letra === 'X' ? 'no_aplica' : 'preview' };
-  const x = { c, det, pagos: T.tipo === 'PR' ? [] : pPagos(), rel: null };
-  if (imprimirlo) { document.getElementById('print-area').innerHTML = ticketHTML(x); window.print(); return; }
-  modal(`<div class="m-head"><h3>Vista previa</h3><span class="spacer"></span><button class="btn ico primary-ico" onclick="vPreview(true)" title="Imprimir" aria-label="Imprimir">${_i('print')}</button><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div><div class="mini" style="text-align:center;margin-bottom:8px">Así va a salir en la comandera. Todavía no está emitido: no tiene número ni CAE.</div><div class="tk-wrap">${ticketHTML(x)}</div>`);
+  return { c, det, pagos: T.tipo === 'PR' ? [] : pPagos(), rel: null, email: T.cliente && T.cliente.email };
+}
+// Vista previa: pestañas Comandera / Hoja A4. Imprimir: la comandera por defecto; la A4 desde su pestaña.
+function vPreview(modo) {
+  if (!T.items.length) { toast('Todavía no agregaste nada', 'error'); return; }
+  const x = vPreviewDatos();
+  if (modo === 'imprimir') { document.getElementById('print-area').innerHTML = ticketHTML(x); window.print(); return; }
+  modal(`<div class="m-head"><h3>Vista previa</h3><span class="pils" style="margin-left:10px"><button class="pil on" id="pv-t1" onclick="pvTab(1)">Comandera</button><button class="pil" id="pv-t2" onclick="pvTab(2)">Hoja A4</button></span><span class="spacer"></span>
+    <button class="btn ico primary-ico" id="pv-print" onclick="pvImprimir()" title="Imprimir lo que se ve" aria-label="Imprimir">${_i('print')}</button><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="mini" style="text-align:center;margin-bottom:8px">Así va a salir. Todavía no está emitido: no tiene número ni CAE.</div>
+    <div id="pv-1" class="tk-wrap">${ticketHTML(x)}</div>
+    <div id="pv-2" class="pv-a4" style="display:none"><iframe id="pv-if" title="Hoja A4"></iframe></div>`, 'preview');
+  window._pv = x; pvTab(1);
+}
+function pvTab(n) {
+  document.getElementById('pv-1').style.display = n === 1 ? '' : 'none'; document.getElementById('pv-2').style.display = n === 2 ? '' : 'none';
+  document.getElementById('pv-t1').classList.toggle('on', n === 1); document.getElementById('pv-t2').classList.toggle('on', n === 2);
+  document.getElementById('pv-print').title = n === 1 ? 'Imprimir en la comandera' : 'Imprimir la hoja A4';
+  window._pvTab = n;
+  if (n === 2) { const f = document.getElementById('pv-if'); if (!f.dataset.ok) { f.srcdoc = a4HTML(window._pv); f.dataset.ok = 1; } }
+}
+function pvImprimir() {
+  if (window._pvTab === 2) { imprimirA4(window._pv); return; }
+  document.getElementById('print-area').innerHTML = ticketHTML(window._pv); window.print();
+}
+// Imprime la hoja A4 en un iframe oculto (no pasa por el CSS de impresión del ticket)
+function imprimirA4(x) {
+  const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0;visibility:hidden'; document.body.appendChild(f);
+  f.onload = () => setTimeout(() => { try { f.contentWindow.focus(); f.contentWindow.print(); } finally { setTimeout(() => f.remove(), 60000); } }, 900);
+  f.srcdoc = a4HTML(x);
+}
+
+// ═══ Hoja A4 (misma plantilla que pos_pdf.py del servicio: si se cambia una, cambiar la otra) ═══
+const A4_TECA = 'https://cdn.shopify.com/s/files/1/0827/7635/9129/files/mails-fondo-teca.jpg?v=1789414736&width=900';
+const A4_CSS = `body{margin:0;background:#fff;font-family:'Jost',sans-serif;color:#1C1612;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:0}
+.a4{width:210mm;height:297mm;background:#4A3F35 url('${A4_TECA}') center/cover;box-sizing:border-box;padding:8mm;overflow:hidden;page-break-after:always}.a4:last-child{page-break-after:auto}
+.panel{height:100%;display:grid;grid-template-columns:64mm 1fr;box-sizing:border-box}
+.side{background:rgba(250,247,242,.82);padding:12mm 8mm 9mm;display:flex;flex-direction:column;font-size:10.5px;line-height:1.65;color:#43464A}
+.side .logo{width:50mm;display:block;filter:brightness(0);margin-bottom:7mm}.side .logo.atelier{width:52mm}
+.side .et{font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:#95867B;margin:5mm 0 1mm;font-weight:500}.side b{color:#1C1612;font-weight:500}
+.side .qr{width:32mm;height:32mm;margin-top:auto;display:block}.side .cae{margin-top:3mm;font-size:9.5px;line-height:1.6}
+.aviso{margin-top:6mm;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#95867B;border:1px solid #C8B89A;padding:2mm 3mm;text-align:center}
+.main{background:#fff;padding:12mm 11mm 9mm 10mm;display:flex;flex-direction:column}
+.n{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:300;line-height:1;color:#1C1612}.nro{font-size:11px;letter-spacing:.12em;color:#43464A;margin-top:3mm;line-height:1.7}
+.sep{height:1.5px;background:#1C1612;margin:6mm 0 5mm}.et2{font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:#95867B;margin:0 0 2mm;font-weight:500;text-align:center}
+.it{display:grid;grid-template-columns:17mm 1fr auto;gap:4mm;align-items:center;padding:2mm 0;border-bottom:1px solid #EDEAE4;font-size:12px}.it img,.it .sinfoto{width:17mm;height:17mm;object-fit:contain;display:block}
+.it .sku{font-size:9.5px;color:#95867B;margin-top:1mm;letter-spacing:.06em}.it .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.6}.it .num small{color:#95867B;font-size:10px;display:block}
+.tot{margin-top:auto}.fila{display:flex;justify-content:space-between;font-size:12px;padding:1mm 0;font-variant-numeric:tabular-nums}
+.fila.total{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;border-top:1.5px solid #1C1612;margin-top:3mm;padding-top:3.5mm}.fila.imp{font-size:10.5px;color:#95867B;padding:.5mm 0}
+.mini{font-size:9.5px;color:#95867B;line-height:1.6}.frase{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:#1C1612;margin-top:6mm}
+.contacto{font-size:9.5px;color:#95867B;line-height:2.4;margin-top:3mm}.contacto b{color:#43464A;font-weight:500}.contacto a{color:inherit;text-decoration:none;border-bottom:1px solid #E9E2D5}
+.cont{font-size:9.5px;color:#95867B;text-align:right;margin-top:auto;letter-spacing:.1em}.hoja{font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:#95867B;text-align:right;margin-top:1.5mm}
+.prev{position:absolute;top:4mm;left:0;right:0;text-align:center;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#fff;opacity:.8}`;
+const A4_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+function a4HTML(x) {
+  const { c, det, pagos, rel } = x; const mp = Object.fromEntries(MEDIOS.map(m => [m.clave, m.nombre]));
+  const fiscal = c.letra !== 'X', A = c.letra === 'A', nc = c.tipo === 'NC', ma = c.tipo === 'MA', pr = c.tipo === 'PR';
+  const li = LOCAL_INFO[c.local] || {}; const f = A ? 1 / 1.21 : 1;
+  const d = new Date(c.fecha + 'T00:00:00'); const fechaL = `${d.getDate()} de ${A4_MESES[d.getMonth()]} de ${d.getFullYear()}`;
+  const titulo = ma ? 'Comprobante' : pr ? 'Presupuesto' : (nc ? 'Nota de crédito ' : 'Factura ') + c.letra;
+  const cod = fiscal && c.arca_cbte_tipo ? ` · Cód. ${String(c.arca_cbte_tipo).padStart(3, '0')}` : '';
+  const quien = (pr ? 'Te lo preparó ' : 'Te atendió ') + esc(tit((String(c.vendedora_nombre || '').split(',')[1] || c.vendedora_nombre || '').trim()));
+  const nroTxt = c.preview ? 'Vista previa · sin emitir' : 'N° ' + fmtNum(c.punto_venta, c.numero) + cod;
+  const devuelve = nc && rel ? `<br>Devuelve la ${rel.tipo === 'MA' ? 'Comprobante' : 'Factura ' + rel.letra} ${fmtNum(rel.punto_venta, rel.numero)}` : '';
+  let cli = `<b>${esc(c.cliente_interno || c.cliente_nombre || 'Consumidor Final')}</b>`;
+  if (c.cliente_doc && !ma) { cli += `<br>${esc(c.cliente_doc_tipo || '')} ${esc(c.cliente_doc)}`; if ((c.cliente_cond_iva || 'CF') !== 'CF') cli += `<br>${esc(COND[c.cliente_cond_iva] || '')}`; }
+  if (x.email && pr) cli += `<br>${esc(x.email)}`;
+  if (!pr) cli += '<br>Condición de venta: contado';
+  const pagosH = pagos.map(p => `${esc(mp[p.medio] || p.medio)}${p.referencia ? ' · ' + esc(p.referencia) : ''}<br><b>${plata2(p.importe)}</b>`).join('<br>');
+  let side = `<div class="side"><img class="logo${li.logo === 'atelier-logo-der.png' ? ' atelier' : ''}" src="${location.origin + location.pathname.replace(/[^/]*$/, '')}${li.logo || 'logo-ca.png'}" alt="Claudia Adorno"><div class="et">Local</div><b>${esc(LOCALES[c.local] || c.local)}</b><br>${esc(li.domicilio || '')}`;
+  if (fiscal) side += `<div class="et">Emisor</div><b>${esc(EMPRESA.razon)}</b><br>CUIT ${EMPRESA.cuit}<br>${esc(EMPRESA.cond)}<br>IIBB ${esc(EMPRESA.iibb)}<br>Inicio de actividades ${esc(EMPRESA.inicio)}`;
+  side += `<div class="et">Cliente</div>${cli}`;
+  if (pagosH) side += `<div class="et">${nc ? 'Devolución' : 'Pagos'}</div>${pagosH}`;
+  if (pr) { const v = new Date(d); v.setDate(v.getDate() + 7); side += `<div class="et">Validez</div>7 días · hasta el ${fechaAR(v.toISOString().slice(0, 10))}<br>Precios sujetos a cambio<div class="aviso">Presupuesto · no válido como factura</div>`; }
+  if (ma) side += '<div class="aviso">Documento no válido como factura</div>';
+  if (fiscal && c.cae_estado === 'ok') side += `<img class="qr" data-qr="${esc(qrArca(c))}" alt="QR ARCA"><div class="cae"><b>CAE ${esc(c.cae)}</b><br>Vencimiento ${fechaAR(c.cae_vto)}<br>Comprobante autorizado por ARCA</div>`;
+  if (fiscal && c.preview) side += '<div class="aviso" style="margin-top:auto">Sin CAE · vista previa</div>';
+  side += '</div>';
+  const item = dd => { let dto = ''; if (Number(dd.descuento_monto) > 0) dto = ` · descuento ${plata2(Number(dd.descuento_monto) * f)} por unidad`; else if (Number(dd.descuento_pct) > 0) dto = ` · descuento ${Number(dd.descuento_pct)}%`;
+    const foto = IMGS[dd.sku]; const desc = String(dd.descripcion); const descT = desc === desc.toUpperCase() ? desc.charAt(0) + desc.slice(1).toLowerCase() : desc;
+    return `<div class="it">${foto ? `<img src="${esc(foto)}" alt="">` : '<div class="sinfoto"></div>'}<div>${esc(descT)}<div class="sku">${esc(dd.sku)}${dto}</div></div><div class="num">${plata2(A ? dd.neto : dd.total)}<small>${Number(dd.cantidad)} × ${plata2(Number(dd.precio_unit) * f)}</small></div></div>`; };
+  let tot = '';
+  if (Number(c.descuento_monto) > 0) tot += `<div class="fila"><span>Subtotal</span><span>${plata2(Number(c.subtotal) * f)}</span></div><div class="fila"><span>Descuento${Number(c.descuento_pct) > 0 ? ' ' + Number(c.descuento_pct) + '%' : ''}</span><span>- ${plata2(Number(c.descuento_monto) * f)}</span></div>`;
+  if (A) tot += `<div class="fila"><span>Neto gravado</span><span>${plata2(c.neto)}</span></div><div class="fila"><span>IVA 21%</span><span>${plata2(c.iva)}</span></div>`;
+  tot += `<div class="fila total"><span>Total</span><span>${plata2(c.total)}</span></div>`;
+  if (c.letra === 'B') tot += `<div class="fila imp"><span>IVA contenido</span><span>${plata2(c.iva)}</span></div><div class="fila imp"><span>Otros impuestos nacionales indirectos</span><span>$ 0,00</span></div>`;
+  if (pr) tot += '<div class="fila imp"><span>Precios finales con IVA incluido</span><span></span></div>';
+  if (c.obs) tot += `<div class="mini" style="margin-top:3mm">${esc(c.obs)}</div>`;
+  const frase = nc ? 'Gracias por tu confianza.' : EMPRESA.frase + (pr ? ' Te esperamos para concretarlo.' : '');
+  const wa = (li.wa || '').replace(/[+\s]/g, '');
+  const contacto = `<div class="frase">${esc(frase)}</div><div class="contacto"><b><a href="https://www.instagram.com/claudiaadornooficial/">@claudiaadornooficial</a> · <a href="https://www.instagram.com/atelier.claudiaadorno/">@atelier.claudiaadorno</a></b><br><a href="https://claudiaadorno.com">claudiaadorno.com</a> · <a href="https://atelierclaudiaadorno.com">atelierclaudiaadorno.com</a><br>${li.mail && li.mail !== 'PENDIENTE' ? `<a href="mailto:${li.mail}">${li.mail}</a> · ` : ''}<a href="mailto:${EMPRESA.mail_admin}">${EMPRESA.mail_admin}</a>${wa ? `<br><a href="https://wa.me/${wa}">WhatsApp ${esc(li.wa)}</a>` : ''}</div>`;
+  let enc = pr ? 'Lo que elegiste' : nc ? 'Lo que devolviste' : 'Lo que te llevaste'; if (A) enc += ' · precios sin IVA';
+  const pags = []; let resto = det.slice(); while (resto.length) { if (resto.length <= 5) { pags.push(resto); resto = []; } else { pags.push(resto.slice(0, 8)); resto = resto.slice(8); } } if (!pags.length) pags.push([]);
+  const n = pags.length;
+  const hojas = pags.map((pg, i) => { const k = i + 1, ult = k === n;
+    const nroK = k === 1 ? `${nroTxt}<br>${fechaL} · ${String(c.hora).slice(0, 5)}<br>${quien}${devuelve}` : `${nroTxt} · continuación<br>${fechaL} · ${String(c.hora).slice(0, 5)}`;
+    return `<div class="a4"><div class="panel">${side}<div class="main"><div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
 function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
@@ -1502,6 +1597,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=29"></script>
+<script src="manual.js?v=30"></script>
 </body>
 </html>
