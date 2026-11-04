@@ -955,7 +955,9 @@ function parseDNI(s) {
 }
 function cliDeFicha(c) {
   const cuit = (c.cuit || '').replace(/\D/g, ''), dni = (c.dni || '').replace(/\D/g, '');
-  const cond = COND[(c.cond_iva || 'CF').toUpperCase()] ? (c.cond_iva || 'CF').toUpperCase() : 'CF';
+  // Sin condición cargada (clientes del Dragon): con CUIT se toma responsable inscripto → factura A; con DNI, consumidor final
+  const condRaw = (c.cond_iva || '').toUpperCase();
+  const cond = COND[condRaw] ? condRaw : (cuit.length === 11 ? 'RI' : 'CF');
   const usaCuit = cond !== 'CF' || (cuit.length === 11 && !dni);
   return { globalid: c.globalid, nombre: c.nombre_completo || [c.apellido, c.nombre].filter(Boolean).join(', '), doc_tipo: usaCuit ? 'CUIT' : 'DNI', doc: usaCuit ? cuit : dni, cond_iva: cond, email: c.email, celular: c.celular, facturar_a_nombre: false, ficha: c };
 }
@@ -987,7 +989,7 @@ function editarCliente() {
   abrirFichaCliente(Object.assign({}, c.ficha || { globalid: c.globalid, apellido: c.nombre, cond_iva: c.cond_iva, email: c.email, celular: c.celular }, { doc_tipo: c.doc_tipo, doc: c.doc }), true);
 }
 function abrirFichaCliente(c, editar) {
-  c = c || {}; const sel = (k, v) => (c[k] || '') === v ? ' selected' : '';
+  c = c || {}; if (!c.cond_iva && (c.doc_tipo === 'CUIT' || ((c.cuit || '').replace(/\D/g, '').length === 11 && !c.dni))) c.cond_iva = 'RI'; const sel = (k, v) => (c[k] || '') === v ? ' selected' : '';
   const nom = c.nombre_completo || [c.apellido, c.nombre].filter(Boolean).join(', ') || 'Cliente nuevo';
   const ini = ((c.nombre || ' ')[0] + (c.apellido || c.nombre_completo || '?')[0]).toUpperCase().trim();
   const f = (id, lb, inner, cls) => `<div class="fb-f ${cls || ''}"><label for="${id}">${lb}</label>${inner}</div>`;
@@ -1393,6 +1395,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=16"></script>
+<script src="manual.js?v=17"></script>
 </body>
 </html>
