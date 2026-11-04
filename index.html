@@ -499,7 +499,7 @@ main { max-width: 1500px; }
 .fb-foot { display: flex; align-items: center; gap: 8px; padding: 12px 22px 16px; border-top: 1px solid var(--border); }
 @media (max-width: 700px) { #ov .box.ficha { overflow: auto; } .fb { grid-template-columns: 1fr; max-height: none; } .fb-main { max-height: none; } .fb-side { padding: 14px; } .fb-st { margin-top: 0; } .fb-g { grid-template-columns: 1fr 1fr; } }
 .renglones table { box-shadow: none; } .renglones td { padding: 6px 6px; } .renglones input { width: 48px; border: 1px solid var(--border); border-radius: 6px; padding: 4px; text-align: right; font-family: inherit; font-size: 14px; }
-.renglones td.cant { white-space: nowrap; } .renglones b.con-dto { background: #e0f2fe; color: #0369a1; border-radius: 999px; padding: 3px 9px; }   /* importe con descuento: celeste, para verlo rápido */ tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
+.renglones td.cant { white-space: nowrap; } .dto-imp, .dto-pct { border-radius: 999px; padding: 3px 9px; } .dto-imp { background: #e0f2fe; color: #0369a1; }   /* descuento en pesos: celeste */ .dto-pct { background: #1d4ed8; color: white; }   /* descuento en %: azul */ tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
 .empty.chico { padding: 22px; }
 .totales { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
 .totales .fila { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 14px; } .totales .fila.total { font-size: 22px; font-weight: 700; color: var(--primary-dark); }
@@ -941,13 +941,13 @@ function vRender() {
       <td class="num cant"><button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button></td>
       <td class="num"><input class="din" value="${plata(it.precio_unit)}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
       <td class="num"><input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right"></td>
-      <td class="num"><b class="${it.descuento_monto > 0 || it.descuento_pct > 0 ? 'con-dto' : ''}" title="${it.descuento_monto > 0 || it.descuento_pct > 0 ? 'Con descuento' : ''}">${plata(lineaBruta(it))}</b></td>
+      <td class="num"><b class="${it.descuento_monto > 0 ? 'dto-imp' : it.descuento_pct > 0 ? 'dto-pct' : ''}" title="${it.descuento_monto > 0 ? 'Con descuento en pesos' : it.descuento_pct > 0 ? 'Con descuento en %' : ''}">${plata(lineaBruta(it))}</b></td>
       <td><button class="btn ico chico" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
   const t = vTotales();
   for (const f of t.filas) { const e = f.row.querySelector('.dval'); const v = num(f.row.dataset.v);
     if (document.activeElement !== e) e.value = !v ? '' : f.row.dataset.modo === 'imp' ? plata(v) : String(v).replace('.', ',') + '%';
-    f.row.querySelector('.dmonto').textContent = f.d ? '- ' + plata(f.d) : '$ 0'; }
+    const dm = f.row.querySelector('.dmonto'); dm.textContent = f.d ? '- ' + plata(f.d) : '$ 0'; dm.className = 'dmonto ' + (f.d ? (f.row.dataset.modo === 'imp' ? 'dto-imp' : 'dto-pct') : ''); }
   document.getElementById('v-subtotal').textContent = plata(t.sub);
   // Letra A: en pantalla se discrimina el IVA igual que en el comprobante (los precios son con IVA incluido; neto = total / 1,21)
   { const a = T.letra === 'A'; document.getElementById('v-iva').style.display = a ? '' : 'none';
