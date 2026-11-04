@@ -1160,7 +1160,7 @@ function cliRender(t) {
   const obliga = t.tot >= TOPE.valor;
   chk.disabled = obliga; chk.checked = obliga || !!c.facturar_a_nombre;
   lb.title = obliga ? 'Por el importe, ARCA exige que la factura vaya a su nombre' : 'Solo si el cliente pide la factura con sus datos';
-  arca.textContent = chk.checked ? 'La factura va a ARCA con su nombre y documento' + (obliga ? ' (lo exige ARCA por el importe).' : '.') : 'A ARCA va como Consumidor Final; el cliente queda en nuestra base.';
+  arca.textContent = chk.checked ? 'La factura va a ARCA con su nombre y documento' + (obliga ? ' (lo exige ARCA por el importe).' : '.') : '';
 }
 function preguntarCliente() {
   modal(`<div class="m-head"><h3>No cargaste cliente</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
