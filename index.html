@@ -1153,7 +1153,9 @@ async function mailGuardar() {
   const c = T.cliente; if (!c) return; const inp = document.getElementById('v-mail'); const v = inp.value.trim().toLowerCase();
   if (v === (c.email || '').toLowerCase()) { mailRender(); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { toast('Ese mail no parece válido', 'error'); inp.focus(); return; }
-  const f = c.ficha; if (!f) { c.email = v; mailRender(); return; }   // cliente que vino de una factura (NC/presupuesto): queda solo para este ticket
+  // cliente que vino de una factura anterior (NC / presupuesto): no trae la ficha → se busca por su código para guardar igual
+  if (!c.ficha && c.globalid) { const { data: fc } = await sb.from('clientes').select('*').eq('globalid', c.globalid).maybeSingle(); if (fc) c.ficha = fc; }
+  const f = c.ficha; if (!f) { c.email = v; mailRender(); toast('El cliente no tiene ficha: el mail queda solo para este ticket', 'error'); return; }
   const p = { globalid: c.globalid || null, local: LOCAL, doc_tipo: c.doc_tipo, doc: c.doc, cond_iva: c.cond_iva, apellido: f.apellido || f.nombre_completo || c.nombre, nombre: f.apellido ? f.nombre : '', email: v, celular: f.celular,
     fecha_nacimiento: f.fecha_nacimiento || null, sexo: f.sexo, direccion: f.direccion, localidad: f.localidad, provincia: f.provincia, codigo_postal: f.codigo_postal };
   const { data, error } = await sb.rpc('pos_cliente_guardar', { p });
