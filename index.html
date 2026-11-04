@@ -507,6 +507,8 @@ main { max-width: 1500px; }
 .renglones td.cant { white-space: nowrap; } .sena-box { margin: 8px 0 4px; padding: 10px 12px; border: 2px dashed #1d4ed8; border-radius: 12px; background: #eff6ff; } .sena-h b { color: #1d4ed8; font-size: 15px; }
 input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !important; } .sena-h { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; } .sena-h .mini { flex: 1; } .sena-box table { box-shadow: none; background: transparent; } .sena-box td { padding: 4px 6px; border: none; } .sena-box .fila { display: flex; justify-content: space-between; gap: 8px; padding: 2px 6px; }
 .prod.sena { border: 2px dashed #1d4ed8; background: #eff6ff; } .sena-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; } .chip.blue { background: #dbeafe; color: #1d4ed8; } .stk .res { color: #1d4ed8; font-weight: 700; margin-left: 2px; }
+.mp-zona { display: inline-flex; align-items: center; gap: 6px; } .mp-btn { white-space: nowrap; } .pils { display: flex; gap: 8px; flex-wrap: wrap; } .pil { border: 1.5px solid var(--border); background: #fff; border-radius: 999px; padding: 7px 14px; font-weight: 600; cursor: pointer; font-family: inherit; } .pil.on { background: var(--teal, #0e7490); color: #fff; border-color: transparent; }
+.mp-wait { text-align: center; padding: 10px 6px; } .mp-imp { font-size: 30px; font-weight: 700; color: var(--teal, #0e7490); margin: 4px 0; } .spin { width: 46px; height: 46px; border: 5px solid #bae6fd; border-top-color: #0e7490; border-radius: 50%; margin: 6px auto 10px; animation: mpspin 1s linear infinite; } @keyframes mpspin { to { transform: rotate(360deg); } }
 .dto-imp, .dto-pct { border-radius: 999px; padding: 3px 9px; } .dto-imp { background: #e0f2fe; color: #0369a1; }   /* descuento en pesos: celeste */ .dto-pct { background: #1d4ed8; color: white; }   /* descuento en %: azul */ tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
 .empty.chico { padding: 22px; }
 .totales { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
@@ -655,6 +657,9 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
         <div class="mini" style="margin-bottom:8px">Los fiscales son provisorios hasta que ARCA habilite puntos de venta nuevos para el POS (los del Dragonfish no se pueden compartir). La numeración sigue sola cuando se cambia el número.</div>
         <div id="a-pv"></div></div>
       <div class="card"><h3>Tope de ARCA para identificar al consumidor final</h3><div id="a-tope" class="mini"></div></div>
+      <div class="card"><h3>Mi Point en esta caja</h3>
+        <div class="mini" style="margin-bottom:8px">Elegí la terminal Mercado Pago Point que está en esta caja. Queda guardado en esta computadora o tablet; cada caja elige la suya.</div>
+        <div id="a-point" class="pils"></div></div>
       <div class="card"><h3>Medios de pago</h3><div id="a-mp"></div></div>
     </section>
     <div id="ov" style="display:none"></div>
@@ -742,7 +747,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-wo
 
 
 // ═══ POS · estado ══════════════════════════════════════════════════════
-let PERFIL = null, LOCAL = null, ARTS = [], ARTS_AT = 0, MEDIOS = [], PV = [], IMGS = {}, RESERVAS = {};
+let PERFIL = null, LOCAL = null, ARTS = [], ARTS_AT = 0, MEDIOS = [], PV = [], IMGS = {}, RESERVAS = {}, TERMS = [];
 const T = { tipo: 'FC', letra: 'B', items: [], cliente: null, sin_cliente: false, nc_de: null };
 // Tope de ARCA (pos_parametros.tope_cf_arca): desde ese importe la factura va identificada sí o sí.
 const TOPE = { valor: 10000000, at: null, error: null };
@@ -814,6 +819,7 @@ async function cargarArticulos() {
   const vistos = new Set(); ARTS = out.filter(a => !/^SE[ÑN]A$/i.test(a.sku) && !vistos.has(a.sku) && vistos.add(a.sku)); ARTS_AT = Date.now();
   // artículos reservados por señas vigentes del local: se restan del stock que ve la vendedora
   try { const { data: rv } = await sb.rpc('pos_reservas', { p_local: LOCAL }); RESERVAS = Object.fromEntries((rv || []).map(r => [r.sku, Number(r.cantidad)])); } catch (e) { RESERVAS = {}; }
+  cargarTerminales().then(pRender);
   for (const a of ARTS) { a.stock_fisico = Number(a.stock); a.reservado = RESERVAS[a.sku] || 0; if (a.reservado) a.stock = a.stock_fisico - a.reservado; }
   if (!Object.keys(IMGS).length) { let d2 = 0; for (;;) { const { data } = await sb.from('stock_imagenes').select('sku,url').order('sku').range(d2, d2 + 999); (data || []).forEach(r => { IMGS[r.sku] = r.url; }); if (!data || data.length < 1000) break; d2 += 1000; } }
   document.getElementById('v-stat').textContent = ARTS.length ? ARTS.length.toLocaleString('es-AR') + ' artículos' : '';
@@ -1397,7 +1403,7 @@ function pAgregar(medio) {
   const div = document.createElement('div'); div.className = 'medio';
   div.innerHTML = `<select class="med" onchange="pMedio(this)"><option value="">Elegí el medio…</option>${ms.map(m => `<option value="${m.clave}"${m.clave === sel ? ' selected' : ''}>${esc(m.nombre)} ${mIco(m.clave)}</option>`).join('')}</select><span class="med-ico" aria-hidden="true"></span><span class="seg" style="display:none"><button type="button" class="on" data-v="" onclick="pSeg(this)">Integrado</button><button type="button" data-v="_ni" onclick="pSeg(this)">No integrado</button></span>
     <input class="imp din" inputmode="decimal" placeholder="$ 0" oninput="pRender()" onfocus="dinFoco(this)" onblur="dinBlur(this)" title="Importe"${n && falta ? ` value="${plata(falta)}"` : ''}>
-    <input class="ref" placeholder="Nº cupón / ref." style="display:none">
+    <input class="ref" placeholder="Nº cupón / ref." style="display:none"><span class="mp-zona"></span>
     ${n ? `<button class="btn ico chico" onclick="pQuitar(this)" title="Sacar este renglón" aria-label="Sacar">${_i('x')}</button>` : `<button class="btn ico chico mas" onclick="pAgregar()" title="Agregar otra forma de pago" aria-label="Agregar forma de pago">+</button>`}`;
   box.appendChild(div);
   if (medio && medio.endsWith('_ni')) { div.querySelector('.med').value = medio.slice(0, -3); div.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.v === '_ni')); }
@@ -1430,16 +1436,86 @@ function emitirTicket() {
   if (!nc && T.letra === 'B' && T.cliente && T.cliente.cond_iva === 'RI') { toast('A un Responsable Inscripto se le hace factura A', 'error'); vTipo('FC', 'A'); return; }
   emitir(nc);
 }
-function pPagos() { return [...document.querySelectorAll('#v-pagos .medio')].map(r => ({ medio: r.dataset.m || r.querySelector('.med').value, importe: r2(num(r.querySelector('.imp').value)), referencia: r.querySelector('.ref').value || null })).filter(p => p.medio && p.importe > 0); }
+function pPagos() { return [...document.querySelectorAll('#v-pagos .medio')].map(r => { const mp = r.dataset.mp ? JSON.parse(r.dataset.mp) : null; return { medio: r.dataset.m || r.querySelector('.med').value, importe: r2(num(r.querySelector('.imp').value)), referencia: r.querySelector('.ref').value || (mp ? mp.payment_id : null), detalle: mp }; }).filter(p => p.medio && p.importe > 0); }
+
+// ═══ Mercado Pago Point integrado ═══
+// El POS no habla con Mercado Pago: le pide a la función mp-point de Supabase (que guarda el token) cobrar en la terminal de esta caja.
+async function mpLlamar(accion, body) {
+  const { data, error } = await sb.functions.invoke('mp-point', { body: { accion, ...body } });
+  if (error) { let msg = error.message || 'Error'; try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (e) {} throw new Error(msg); }
+  if (data && data.error) throw new Error(data.error);
+  return data;
+}
+async function cargarTerminales() { if (!TERMS.length) { const { data } = await sb.from('pos_terminales').select('*').eq('activo', true).order('nombre'); TERMS = data || []; } return TERMS; }
+function miPoint() { const id = localStorage.getItem('pos_point_' + LOCAL); return TERMS.find(t => t.terminal_id === id && t.local === LOCAL) || null; }
+async function pointAjustes() {
+  await cargarTerminales(); const box = document.getElementById('a-point'); const mios = TERMS.filter(t => t.local === LOCAL); const sel = miPoint();
+  box.innerHTML = mios.length ? mios.map(t => `<button class="pil ${sel && sel.terminal_id === t.terminal_id ? 'on' : ''}" onclick="pointElegir('${t.terminal_id}')" title="${esc(t.terminal_id)}">📱 ${esc(t.nombre)}</button>`).join('') + `<button class="pil ${sel ? '' : 'on'}" onclick="pointElegir('')">Sin Point</button>`
+    : '<div class="mini">Este local no tiene terminales Point dadas de alta.</div>';
+}
+function pointElegir(id) { if (id) localStorage.setItem('pos_point_' + LOCAL, id); else localStorage.removeItem('pos_point_' + LOCAL); pointAjustes(); pRender(); toast(id ? 'Point de esta caja guardado' : 'Esta caja queda sin Point', 'success'); }
+// Zona del Point en cada renglón de pago: botón de cobrar, o chip "pagado" cuando Mercado Pago aprobó
+function mpZonas() {
+  for (const r of document.querySelectorAll('#v-pagos .medio')) {
+    const z = r.querySelector('.mp-zona'); if (!z) continue; const imp = r.querySelector('.imp');
+    if (r.dataset.m !== 'mp_point' || T.tipo === 'PR') { z.innerHTML = ''; if (r.dataset.mp) { delete r.dataset.mp; imp.readOnly = false; } continue; }
+    if (r.dataset.mp) { const d = JSON.parse(r.dataset.mp); z.innerHTML = `<span class="chip green" title="Operación ${esc(d.payment_id || '')}">✔ pagado${d.metodo ? ' · ' + esc(d.metodo) : ''}${d.cuotas > 1 ? ' · ' + d.cuotas + ' cuotas' : ''}</span>`; imp.readOnly = true; continue; }
+    if (T.tipo === 'NC') { z.innerHTML = '<span class="mini">se devuelve a la tarjeta al emitir</span>'; continue; }
+    const pt = miPoint(); const v = r2(num(imp.value));
+    z.innerHTML = pt ? `<button type="button" class="btn primary chico mp-btn" onclick="mpCobrar(this)"${v >= 15 ? '' : ' disabled'} title="Manda el importe a la terminal ${esc(pt.nombre)}">📱 Cobrar ${v ? plata(v) : ''} en ${esc(pt.nombre)}</button>`
+                     : `<button type="button" class="btn chico" onclick="switchTab('ajustes')">Elegí tu Point en Ajustes</button>`;
+  }
+}
+let _mpPoll = null;
+async function mpCobrar(btn) {
+  const row = btn.closest('.medio'); const imp = row.querySelector('.imp'); const importe = r2(num(imp.value)); const pt = miPoint();
+  if (!pt) { switchTab('ajustes'); return; }
+  if (importe < 15) { toast('El Point cobra desde $ 15', 'error'); return; }
+  btn.disabled = true;
+  let o;
+  try { o = await mpLlamar('cobrar', { terminal_id: pt.terminal_id, importe, descripcion: 'Claudia Adorno ' + (LOCALES[LOCAL] || '') }); }
+  catch (e) { toast(e.message, 'error'); btn.disabled = false; return; }
+  let vivo = true;
+  modal(`<div class="mp-wait"><div class="spin"></div><div class="mp-imp">${plata(importe)}</div><div>Esperando el pago en <b>${esc(pt.nombre)}</b>…</div>
+    <div class="mini" style="margin:6px 0 14px">Si la terminal no lo muestra, tocá el botón verde del Point. Vence en 3 minutos.</div>
+    <button class="btn peligro" id="mp-cancel">Cancelar el cobro</button></div>`);
+  document.getElementById('mp-cancel').onclick = async () => { document.getElementById('mp-cancel').disabled = true; try { await mpLlamar('cancelar', { order_id: o.order_id }); } catch (e) { toast(e.message, 'error'); } };
+  const fin = (ok, msg) => { vivo = false; clearTimeout(_mpPoll); cerrarModal(); btn.disabled = false; toast(msg, ok ? 'success' : 'error'); if (ok) sonar('mas'); pRender(); };
+  const t0 = Date.now();
+  const paso = async () => {
+    if (!vivo) return;
+    let e; try { e = await mpLlamar('estado', { order_id: o.order_id }); } catch (err) { _mpPoll = setTimeout(paso, 2500); return; }
+    if (e.estado === 'processed') { row.dataset.mp = JSON.stringify({ order_id: o.order_id, payment_id: e.payment_id, metodo: e.metodo, cuotas: e.cuotas, importe }); imp.value = plata(importe); return fin(true, 'Pago aprobado en el Point'); }
+    if (e.estado === 'canceled') return fin(false, e.status_detail === 'cancel_by_terminal' ? 'Cobro cancelado desde la terminal' : 'Cobro cancelado');
+    if (e.estado === 'expired') return fin(false, 'El cobro venció sin pagarse');
+    if (e.estado === 'failed' || (e.estado === 'processed' && e.status_detail && e.status_detail !== 'accredited')) return fin(false, 'El pago no se aprobó' + (e.status_detail ? ' (' + e.status_detail + ')' : ''));
+    if (Date.now() - t0 > 4 * 60000) return fin(false, 'El Point no respondió');
+    _mpPoll = setTimeout(paso, 2000);
+  };
+  _mpPoll = setTimeout(paso, 1500);
+}
+// Devolución por Mercado Pago cuando la NC devuelve una venta cobrada con Point integrado
+async function mpDevolverNC(ncId, pagosNC) {
+  const dev = pagosNC.filter(p => p.medio === 'mp_point' && p.importe > 0); if (!dev.length) return;
+  const { data: orig } = await sb.from('pos_pagos').select('importe,detalle').eq('comprobante_id', T.nc_de).eq('medio', 'mp_point');
+  const ordenes = (orig || []).filter(p => p.detalle && p.detalle.order_id);
+  if (!ordenes.length) { toast('La venta original no se cobró con Point integrado: hacé la devolución desde la terminal', 'error'); return; }
+  let resto = dev.reduce((s, p) => s + p.importe, 0);
+  for (const op of ordenes) { if (resto <= 0) break; const imp = Math.min(resto, Number(op.importe));
+    try { const r = await mpLlamar('devolver', { order_id: op.detalle.order_id, importe: imp, comprobante_id: ncId }); resto = r2(resto - imp); toast('Devolución de ' + plata(imp) + ' hecha por Mercado Pago', 'success'); }
+    catch (e) { toast(e.message, 'error'); break; } }
+}
 function pRender() {
   const t = vTotales();
   // un solo renglón sin importe → se le sugiere el total (la vendedora lo puede cambiar)
   const rows = document.querySelectorAll('#v-pagos .medio'); if (rows.length === 1 && T.items.length) { const imp = rows[0].querySelector('.imp'); if (document.activeElement !== imp && !imp.dataset.tocado) imp.value = t.tot ? plata(t.tot) : ''; imp.oninput = () => { imp.dataset.tocado = 1; pRender(); }; }
+  mpZonas();
   const pag = r2(pPagos().reduce((s, p) => s + p.importe, 0)); const falta = r2(t.tot - pag);
+  const pointSinCobrar = T.tipo !== 'PR' && T.tipo !== 'NC' && [...rows].some(r => r.dataset.m === 'mp_point' && num(r.querySelector('.imp').value) > 0 && !r.dataset.mp);
   document.getElementById('p-pagado').textContent = plata(pag);
   document.getElementById('p-falta-lb').textContent = falta < 0 ? 'Vuelto' : 'Falta';
   document.getElementById('p-falta').textContent = plata(Math.abs(falta));
-  document.getElementById('v-cobrar').disabled = !T.items.length || (T.tipo === 'NC' && !T.nc_de) || (T.tipo !== 'PR' && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo')));
+  document.getElementById('v-cobrar').disabled = !T.items.length || pointSinCobrar || (T.tipo === 'NC' && !T.nc_de) || (T.tipo !== 'PR' && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo')));
 }
 function pFalta() { const t = vTotales(); const rows = [...document.querySelectorAll('#v-pagos .medio')]; const vacio = rows.find(r => !num(r.querySelector('.imp').value)); if (!vacio) return; const otros = pPagos().reduce((s, p) => s + p.importe, 0); vacio.querySelector('.imp').value = plata(Math.max(0, r2(t.tot - otros))); pRender(); }
 async function emitir(esNC) {
@@ -1454,6 +1530,8 @@ async function emitir(esNC) {
     pagos: T.tipo === 'PR' ? [] : pagos };
   const { data, error } = await sb.rpc('pos_emitir', { p });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); btn.disabled = false; return; }
+  for (const pg of pagos) if (pg.detalle && pg.detalle.order_id) mpLlamar('vincular', { order_id: pg.detalle.order_id, comprobante_id: data.id }).catch(() => {});
+  if (esNC) await mpDevolverNC(data.id, pagos);
   toast((esNC ? 'Nota de crédito ' : T.tipo === 'PR' ? 'Presupuesto ' : (T.tipo === 'MA' ? 'Comprobante ' : 'Factura ' + T.letra + ' ')) + data.numero_fmt + (T.tipo === 'PR' || T.tipo === 'MA' ? ' emitido' : ' emitida'), 'success');
   vVaciar(); verComprobante(data.id, true);
 }
@@ -1652,6 +1730,7 @@ async function cargarCaja() {
 
 // ═══ Ajustes (admin) ═══════════════════════════════════════════════════
 async function cargarAjustes() {
+  pointAjustes();
   const [{ data: pv }, { data: mp }, { data: tp }] = await Promise.all([sb.from('pos_puntos_venta').select('*').order('local').order('tipo'), sb.from('pos_medios_pago').select('*').order('orden'), sb.from('pos_parametros').select('*').eq('clave', 'tope_cf_arca').maybeSingle()]);
   document.getElementById('a-tope').innerHTML = tp ? `<b style="font-size:18px;color:var(--text)">${plata(tp.valor_num)}</b> · abajo de este importe la factura B sale a Consumidor Final sin datos (el cliente queda igual en nuestra base); desde este importe ARCA exige identificarlo y el POS lo obliga.<br>No se carga a mano: el servicio del CAE lo lee en <a href="${esc(tp.fuente || '')}" target="_blank" rel="noopener">la página de ARCA</a> una vez por mes. Última lectura: ${tp.actualizado_at ? new Date(tp.actualizado_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '—'}.${tp.error ? `<div style="color:var(--red);margin-top:4px">⚠ ${esc(tp.error)}</div>` : ''}` : 'No está configurado el tope (pos_parametros).';
   document.getElementById('a-pv').innerHTML = `<table><thead><tr><th>Local</th><th>Tipo</th><th class="num">Punto de venta</th><th>Activo</th><th>Nota</th></tr></thead><tbody>` +
@@ -1668,6 +1747,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=31"></script>
+<script src="manual.js?v=32"></script>
 </body>
 </html>
