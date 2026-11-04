@@ -743,10 +743,11 @@ const EMPRESA = { razon: 'Claudia Adorno SRL', cuit: '30-70967311-0', cuit_num: 
   ig: '@claudiaadornooficial · @atelier.claudiaadorno', webs: 'claudiaadorno.com · atelierclaudiaadorno.com', mail_admin: 'administracion@claudiaadorno.com', frase: 'Lo que elegís, te acompaña.' };
 const LOCAL_INFO = {
   // logo: 'logo-ca.png' (Claudia Adorno) o 'atelier-logo-der.png' (Claudia Adorno con la firma Atelier abajo a la derecha, para el local de Libertador)
-  alcorta:   { domicilio: 'PENDIENTE', mail: 'alcorta@claudiaadorno.com',   wa: '+54 9 11 6978 4643', logo: 'logo-ca.png' },
-  unicenter: { domicilio: 'Paraná 3745, Martínez · local PENDIENTE', mail: 'unicenter@claudiaadorno.com', wa: '+54 9 11 6978 4741', logo: 'logo-ca.png' },
-  libertador: { domicilio: 'Av. del Libertador 14072, Martínez', mail: 'PENDIENTE', wa: '', logo: 'atelier-logo-der.png' },   // Atelier · alta 4-nov-2026; punto de venta fiscal de ARCA pendiente (solo manual por ahora)
-  oficina:   { domicilio: 'PENDIENTE', mail: 'claudiaadorno@claudiaadorno.com', wa: '+54 9 11 6978 4561', logo: 'logo-ca.png' } };
+  // Domicilios como están declarados en ARCA (Registro Único Tributario, 4-nov-2026)
+  alcorta:   { domicilio: 'Jerónimo Salguero 3212, local 43, CABA', mail: 'alcorta@claudiaadorno.com',   wa: '+54 9 11 6978 4643', logo: 'logo-ca.png' },
+  unicenter: { domicilio: 'Paraná 3745, local 2332, Martínez', mail: 'unicenter@claudiaadorno.com', wa: '+54 9 11 6978 4741', logo: 'logo-ca.png' },
+  libertador: { domicilio: 'Av. del Libertador 14072, Martínez', mail: 'PENDIENTE', wa: '', logo: 'atelier-logo-der.png' },   // Atelier · punto de venta 6 (ARCA, 4-nov-2026); mail y WhatsApp del local a definir
+  oficina:   { domicilio: 'Ruta Panamericana y Colectora Este 26527, Don Torcuato', mail: 'claudiaadorno@claudiaadorno.com', wa: '+54 9 11 6978 4561', logo: 'logo-ca.png' } };
 const COND = { CF: 'Consumidor Final', MT: 'Monotributista', EX: 'IVA Exento', NR: 'No Responsable', NA: 'IVA No Alcanzado', RI: 'Responsable Inscripto' };
 // Letra según condición: RI → A; el resto → B (todos menos CF llevan CUIT).
 const LETRA_COND = { CF: 'B', MT: 'B', EX: 'B', NR: 'B', NA: 'B', RI: 'A' };
