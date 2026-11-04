@@ -843,11 +843,16 @@ let _ac = null;
 function sonar(cual) {
   try {
     _ac = _ac || new (window.AudioContext || window.webkitAudioContext)(); if (_ac.state === 'suspended') _ac.resume();
-    const t = _ac.currentTime, o = _ac.createOscillator(), g = _ac.createGain(); o.type = 'sine'; o.connect(g); g.connect(_ac.destination);
-    const [f1, f2] = cual === 'mas' ? [660, 990] : [660, 440];
-    o.frequency.setValueAtTime(f1, t); o.frequency.setValueAtTime(f2, t + 0.08);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    o.start(t); o.stop(t + 0.2);
+    const t = _ac.currentTime, o = _ac.createOscillator(), g = _ac.createGain(); o.connect(g); g.connect(_ac.destination);
+    if (cual === 'mas') {   // agregar: bip agudo y corto que sube
+      o.type = 'sine'; o.frequency.setValueAtTime(660, t); o.frequency.setValueAtTime(990, t + 0.08);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      o.start(t); o.stop(t + 0.2);
+    } else {                // sacar: "bo-op" grave, más largo, con timbre distinto y que se desliza hacia abajo
+      o.type = 'triangle'; o.frequency.setValueAtTime(330, t); o.frequency.exponentialRampToValueAtTime(160, t + 0.3);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.start(t); o.stop(t + 0.37);
+    }
   } catch (e) { /* sin audio: no pasa nada */ }
 }
 function vAgregar(sku) {
