@@ -1,5 +1,5 @@
 // Service Worker · network-first para HTML, cache-first para assets
-const CACHE_VERSION = 'pos-v24';
+const CACHE_VERSION = 'pos-v25';
 const CACHE_ASSETS = ['fonts/URWGothic-Book.ttf', './', './index.html', './manual.js', './manifest.webmanifest'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_VERSION).then(c => c.addAll(CACHE_ASSETS)).catch(err => console.warn('[SW]', err)));
@@ -14,7 +14,8 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.hostname.includes('supabase.co') || url.hostname.includes('jsdelivr.net') || url.hostname.includes('cdnjs.cloudflare.com')) return;
   if (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')) {
-    e.respondWith(fetch(req).then(r => { if (r && r.ok) { const c = r.clone(); caches.open(CACHE_VERSION).then(x => x.put('./index.html', c)); } return r; })
+    // cache: 'no-cache' → el CDN de GitHub Pages revalida contra el origen (si no, hasta 10 min puede devolver la versión anterior)
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(r => { if (r && r.ok) { const c = r.clone(); caches.open(CACHE_VERSION).then(x => x.put('./index.html', c)); } return r; })
       .catch(() => caches.match('./index.html')));
     return;
   }
