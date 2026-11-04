@@ -889,7 +889,7 @@ function vRender() {
   box.innerHTML = T.items.length ? `<table><thead><tr><th>Artículo</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto %</th><th class="num">Importe</th><th></th></tr></thead><tbody>` +
     T.items.map((it, i) => `<tr${it.stock <= 0 ? ' class="sinstock" title="Sin stock en este local"' : ''}>
       <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td>
-      <td class="num cant"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal"><button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button></td>
+      <td class="num cant"><button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button></td>
       <td class="num"><input class="din" value="${plata(it.precio_unit)}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
       <td class="num"><input value="${it.descuento_pct}" onchange="vSet(${i},'descuento_pct',this.value)" inputmode="decimal" style="width:52px"></td>
       <td class="num"><b>${plata(it.cantidad * it.precio_unit * (1 - it.descuento_pct / 100))}</b></td>
