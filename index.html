@@ -700,8 +700,8 @@ async function doLogin() {
   finally { document.getElementById('btn-login').disabled = false; }
 }
 async function entrar(user) {
-  const { data: ok } = await sb.rpc('pos_es_usuario');
-  if (!ok) { /* sin signOut: sesión compartida (SSO) */ document.getElementById('login-error').textContent = 'Tu usuario no tiene acceso al POS. Tiene que estar en Colaboradores con un local asignado.'; return; }
+  const { data: ok, error: errOk } = await sb.rpc('pos_es_usuario');
+  if (!ok) { /* sin signOut: sesión compartida (SSO). Si la base pide el código del celular (MFA0x), se muestra ese motivo y no el de acceso */ document.getElementById('login-error').textContent = errOk && /^MFA/.test(errOk.code || '') ? errOk.message + ' · ' + (errOk.hint || '') : 'Tu usuario no tiene acceso al POS. Tiene que estar en Colaboradores con un local asignado.'; return; }
   session = { email: user.email, user };
   document.getElementById('user-info').textContent = user.email;
   document.getElementById('login').style.display = 'none';
