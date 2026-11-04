@@ -596,7 +596,7 @@ main { max-width: 1500px; }
           <div class="renglones" id="v-renglones"><div class="empty chico">Todavía no agregaste nada.</div></div>
           <div class="totales">
             <div class="fila"><span>Subtotal</span><b id="v-subtotal">$ 0</b></div>
-            <div class="fila"><span>Descuento general <input id="v-desc" type="number" min="0" max="100" step="0.5" value="0" oninput="vRender()" style="width:62px"> %</span><b id="v-descm">$ 0</b></div>
+            <div class="fila"><span>Descuento general <input id="v-desc" inputmode="decimal" value="0" oninput="vDescModo('pct')" style="width:58px;text-align:right" title="Descuento en porcentaje"> % <span class="mini">o</span> <input id="v-desc-imp" class="din" inputmode="decimal" placeholder="$ 0" oninput="vDescModo('imp')" onfocus="dinFoco(this)" onblur="dinBlur(this)" style="width:96px;text-align:right" title="Descuento en pesos"></span><b id="v-descm">$ 0</b></div>
             <div class="fila total"><span>TOTAL</span><b id="v-total">$ 0</b></div>
           </div>
           <div class="pagos-tk"><div class="mini" id="v-pagos-lb">Forma de pago</div><div class="medios" id="v-pagos"></div>
@@ -863,7 +863,7 @@ function vAgregar(sku) {
 }
 function vCant(i, d) { sonar(d > 0 ? 'mas' : 'menos'); const it = T.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (it.max && it.cantidad > it.max) it.cantidad = it.max; if (it.cantidad === 0) T.items.splice(i, 1); vRender(); }
 function vQuitar(i) { sonar('menos'); T.items.splice(i, 1); vRender(); }
-function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; document.getElementById('v-desc').value = 0; document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.desc_modo = 'pct'; document.getElementById('v-desc-imp').value = ''; document.getElementById('v-desc').value = 0; document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 function vTipo(tipo, letra) {
   const eraNC = T.tipo === 'NC';
   T.tipo = tipo; T.letra = letra;
@@ -878,11 +878,18 @@ function vTipo(tipo, letra) {
 }
 // Devolver más de lo vendido no se puede: los renglones de una NC guardan el máximo
 function vSet(i, campo, v) { const it = T.items[i]; if (campo === 'cantidad') { const nv = Math.max(0, num(v)); if (nv !== it.cantidad) sonar(nv > it.cantidad ? 'mas' : 'menos'); } it[campo] = Math.max(0, num(v)); if (campo === 'cantidad' && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; } if (campo === 'cantidad' && !it.cantidad) T.items.splice(i, 1); vRender(); }
+// Descuento general: por % o por importe en pesos; la última casilla tocada manda (T.desc_modo) y la otra se muestra calculada
+function vDescModo(m) { T.desc_modo = m; vRender(); }
 function vTotales() {
+  let sub = 0; for (const it of T.items) sub += r2(it.cantidad * it.precio_unit * (1 - it.descuento_pct / 100));
+  sub = r2(sub);
+  if (T.desc_modo === 'imp') {
+    const imp = Math.min(sub, Math.max(0, r2(num(document.getElementById('v-desc-imp').value))));
+    return { sub, desc: imp, tot: r2(sub - imp), pct: sub ? imp / sub * 100 : 0, imp };
+  }
   const d = Math.min(100, Math.max(0, num(document.getElementById('v-desc').value)));
-  let sub = 0, tot = 0;
-  for (const it of T.items) { const l = r2(it.cantidad * it.precio_unit * (1 - it.descuento_pct / 100)); sub += l; tot += r2(l * (1 - d / 100)); }
-  return { sub: r2(sub), desc: r2(sub - tot), tot: r2(tot), pct: d };
+  let tot = 0; for (const it of T.items) tot += r2(r2(it.cantidad * it.precio_unit * (1 - it.descuento_pct / 100)) * (1 - d / 100));
+  return { sub, desc: r2(sub - tot), tot: r2(tot), pct: d, imp: null };
 }
 function vRender() {
   const box = document.getElementById('v-renglones');
@@ -896,6 +903,9 @@ function vRender() {
       <td><button class="btn ico chico" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
   const t = vTotales();
+  { const ePct = document.getElementById('v-desc'), eImp = document.getElementById('v-desc-imp');
+    if (T.desc_modo === 'imp') { if (document.activeElement !== ePct) ePct.value = t.pct ? String(r2(t.pct)).replace('.', ',') : 0; }
+    else if (document.activeElement !== eImp) eImp.value = t.desc ? plata(t.desc) : ''; }
   document.getElementById('v-subtotal').textContent = plata(t.sub);
   document.getElementById('v-descm').textContent = t.desc ? '- ' + plata(t.desc) : '$ 0';
   document.getElementById('v-total').textContent = plata(t.tot);
@@ -1161,7 +1171,7 @@ async function emitir(esNC) {
   // Vuelto: si pagó de más en efectivo, el efectivo que queda es total - resto
   const pag = pagos.reduce((s, p) => s + p.importe, 0);
   if (pag > t.tot + 1) { const ef = pagos.find(p => p.medio === 'efectivo'); if (ef) ef.importe = r2(ef.importe - (pag - t.tot)); }
-  const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.pct, obs: document.getElementById('v-obs').value.trim() || null,
+  const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: T.desc_modo === 'imp' ? null : t.pct, descuento_monto: T.desc_modo === 'imp' ? t.imp : null, obs: document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: cliPayload(),
     items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_pct, iva_pct: 21 })),
     pagos: T.tipo === 'PR' ? [] : pagos };
@@ -1295,7 +1305,7 @@ async function ncElegir(id) {
   T.items = x.det.map(d => ({ sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), max: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), stock: 1 }));
   T.cliente = (x.c.cliente_globalid || x.c.cliente_doc) ? { nombre: x.c.cliente_interno || x.c.cliente_nombre, doc_tipo: x.c.cliente_doc_tipo, doc: x.c.cliente_doc, cond_iva: x.c.cliente_cond_iva, globalid: x.c.cliente_globalid, facturar_a_nombre: x.c.cliente_informado !== false } : null;
   T.sin_cliente = true;  // la NC lleva el mismo receptor que la factura
-  document.getElementById('v-desc').value = Number(x.c.descuento_pct) || 0;
+  T.desc_modo = 'pct'; document.getElementById('v-desc').value = Number(x.c.descuento_pct) || 0;
   document.getElementById('v-nc-q').value = ''; document.getElementById('v-nc-res').innerHTML = '';
   document.getElementById('v-nc-sel').innerHTML = `Devuelve <b>${TIPO_NOM[x.c.tipo]} ${x.c.letra} ${fmtNum(x.c.punto_venta, x.c.numero)}</b> del ${fechaAR(x.c.fecha)} por ${plata(x.c.total)}${devuelto ? ' (ya se devolvieron ' + plata(devuelto) + ')' : ''}. Sacá o bajá la cantidad de lo que no vuelve.`;
   pLimpiar(); vRender();
@@ -1307,7 +1317,7 @@ async function prFacturar(id) {
   T.items = x.det.map(d => { const a = ARTS.find(z => z.sku === d.sku); return { sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), stock: a ? Number(a.stock) : 1 }; });
   T.cliente = (x.c.cliente_globalid || x.c.cliente_doc) ? { nombre: x.c.cliente_nombre, doc_tipo: x.c.cliente_doc_tipo, doc: x.c.cliente_doc, cond_iva: x.c.cliente_cond_iva, globalid: x.c.cliente_globalid, facturar_a_nombre: false } : null;
   if (T.cliente && T.cliente.cond_iva !== 'CF') vTipo('FC', LETRA_COND[T.cliente.cond_iva]);
-  document.getElementById('v-desc').value = Number(x.c.descuento_pct) || 0;
+  T.desc_modo = 'pct'; document.getElementById('v-desc').value = Number(x.c.descuento_pct) || 0;
   document.getElementById('v-obs').value = 'Según presupuesto ' + fmtNum(x.c.punto_venta, x.c.numero);
   vRender(); toast('Presupuesto cargado en el ticket: revisá precios y cobrá', 'success');
 }
@@ -1359,6 +1369,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=12"></script>
+<script src="manual.js?v=13"></script>
 </body>
 </html>
