@@ -455,6 +455,8 @@ main { max-width: 1500px; }
 .pos-ticket.es-ma { background: #fee2e2; border-color: #fca5a5; }   /* manual: rojo clarito */
 .pos-ticket.es-nc .renglones table, .pos-ticket.es-pr .renglones table, .pos-ticket.es-ma .renglones table { background: white; }
 .buscador { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; color: var(--muted); }
+.pos-prod > .buscador { background: #e0f2fe; border-color: #7dd3fc; border-radius: 999px; color: #0369a1; }   /* buscador de productos: celeste, bien diferenciado */
+.pos-prod > .buscador input::placeholder { color: #0369a1; opacity: .75; }
 .buscador input { flex: 1; border: none; outline: none; font-size: 16px; font-family: inherit; padding: 6px 0; color: var(--text); background: transparent; }
 .prod-lista { margin-top: 10px; max-height: calc(100vh - 420px); overflow: auto; display: flex; flex-direction: column; gap: 4px; }
 .prod { display: grid; grid-template-columns: 44px 90px 1fr 40px 90px; gap: 8px; align-items: center; text-align: left; border: 1px solid transparent; background: #f8fafc; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; }
