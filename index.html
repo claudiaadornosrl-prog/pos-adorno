@@ -450,7 +450,7 @@ main { max-width: 1500px; }
 @media (max-width: 900px) { .pos { grid-template-columns: 1fr; } }
 .pos-prod, .pos-ticket { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
 .pos-ticket { position: sticky; top: 64px; transition: background .2s; }
-.pos-ticket.es-nc { background: #e5e7eb; border-color: #9ca3af; }   /* nota de crédito: gris, para que se note que no es una factura */
+.pos-ticket.es-nc { background: #ffedd5; border-color: #fdba74; }   /* nota de crédito: naranja claro, para que se note que no es una factura */
 .pos-ticket.es-pr { background: #e0f2fe; border-color: #7dd3fc; }   /* presupuesto: celeste */
 .pos-ticket.es-nc .renglones table, .pos-ticket.es-pr .renglones table { background: white; }
 .buscador { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; color: var(--muted); }
@@ -575,15 +575,12 @@ main { max-width: 1500px; }
         </div>
         <div class="pos-ticket">
           <div class="pils tipos" id="v-tipos">
-            <button class="pil on" data-t="FC:B" onclick="vTipo('FC','B')" title="Factura B (consumidor final, monotributista, exento, no responsable)">FC B</button>
-            <button class="pil" data-t="FC:A" onclick="vTipo('FC','A')" title="Factura A (responsable inscripto, con CUIT)">FC A</button>
-            <button class="pil" data-t="MA:X" onclick="vTipo('MA','X')" title="Factura manual: comprobante interno X, no va a ARCA">FC Manual</button>
+            <button class="pil on" data-t="FC" onclick="vTipo('FC', T.cliente && LETRA_COND[T.cliente.cond_iva] || 'B')" title="Factura: sale B, o A sola cuando el cliente tiene CUIT de responsable inscripto">Factura</button>
+            <button class="pil" data-t="MA" onclick="vTipo('MA','X')" title="Factura manual: comprobante interno X, no va a ARCA">FC Manual</button>
             <span class="pil-sep"></span>
-            <button class="pil nc" data-t="NC:B" onclick="vTipo('NC','B')" title="Nota de crédito B: devolución de una factura B">NC B</button>
-            <button class="pil nc" data-t="NC:A" onclick="vTipo('NC','A')" title="Nota de crédito A: devolución de una factura A">NC A</button>
-            <button class="pil nc" data-t="NC:X" onclick="vTipo('NC','X')" title="Devolución de una factura manual (comprobante interno)" style="display:none">NC manual</button>
+            <button class="pil nc" data-t="NC" onclick="vTipo('NC','B')" title="Nota de crédito: devolución de una factura; toma la letra de la factura que devuelve">Nota de crédito</button>
             <span class="pil-sep"></span>
-            <button class="pil pr" data-t="PR:X" onclick="vTipo('PR','X')" title="Presupuesto: no es venta, no va a ARCA ni a la caja; después se factura desde Comprobantes">Presupuesto</button>
+            <button class="pil pr" data-t="PR" onclick="vTipo('PR','X')" title="Presupuesto: no es venta, no va a ARCA ni a la caja; después se factura desde Comprobantes">Presupuesto</button>
           </div>
           <div class="ncbox" id="v-nc" style="display:none">
             <div class="cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="v-nc-q" placeholder="Qué factura devuelve: número (35-2) o cliente" autocomplete="off" oninput="ncDebounce()" onkeydown="if(event.key==='Enter'){event.preventDefault();ncBuscar();}"></div>
@@ -867,13 +864,18 @@ function vAgregar(sku) {
 function vCant(i, d) { sonar(d > 0 ? 'mas' : 'menos'); const it = T.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (it.max && it.cantidad > it.max) it.cantidad = it.max; if (it.cantidad === 0) T.items.splice(i, 1); vRender(); }
 function vQuitar(i) { sonar('menos'); T.items.splice(i, 1); vRender(); }
 function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+// Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
+function vPils() {
+  document.querySelectorAll('#v-tipos .pil').forEach(b => b.classList.toggle('on', b.dataset.t === T.tipo));
+  document.querySelector('#v-tipos .pil[data-t="FC"]').textContent = 'Factura' + (T.tipo === 'FC' && T.letra === 'A' ? ' A' : '');
+  document.querySelector('#v-tipos .pil[data-t="NC"]').textContent = 'Nota de crédito' + (T.tipo === 'NC' ? (T.letra === 'A' ? ' A' : T.letra === 'X' ? ' manual' : '') : '');
+}
 function vTipo(tipo, letra) {
   const eraNC = T.tipo === 'NC';
   T.tipo = tipo; T.letra = letra;
-  document.querySelectorAll('#v-tipos .pil').forEach(b => b.classList.toggle('on', b.dataset.t === tipo + ':' + letra));
+  vPils();
   const nc = tipo === 'NC';
   document.getElementById('v-nc').style.display = nc ? '' : 'none';
-  document.querySelector('#v-tipos .pil[data-t="NC:X"]').style.display = (nc && letra === 'X') ? '' : 'none';
   document.querySelector('.pagos-tk').style.display = tipo === 'PR' ? 'none' : '';
   const tk = document.querySelector('.pos-ticket'); tk.classList.toggle('es-nc', nc); tk.classList.toggle('es-pr', tipo === 'PR');
   if (nc !== eraNC) { T.items = []; T.nc_de = null; T.sin_cliente = nc; if (nc) T.cliente = null; document.getElementById('v-nc-sel').textContent = ''; document.getElementById('v-nc-res').innerHTML = ''; pLimpiar(); }
@@ -1304,8 +1306,7 @@ async function imprimir(id) {
 let _ncT; function ncDebounce() { clearTimeout(_ncT); _ncT = setTimeout(ncBuscar, 400); }
 async function ncBuscar() {
   const q = document.getElementById('v-nc-q').value.trim(); const box = document.getElementById('v-nc-res'); if (q.length < 2) { box.innerHTML = ''; return; }
-  let qry = sb.from('pos_comprobantes').select('*').eq('local', LOCAL).eq('estado', 'emitido').eq('tipo', T.letra === 'X' ? 'MA' : 'FC').order('id', { ascending: false }).limit(10);
-  if (T.letra !== 'X') qry = qry.eq('letra', T.letra);
+  let qry = sb.from('pos_comprobantes').select('*').eq('local', LOCAL).eq('estado', 'emitido').in('tipo', ['FC', 'MA']).order('id', { ascending: false }).limit(10);
   const m = /^(\d{1,4})\s*-\s*(\d{1,8})$/.exec(q);
   if (m) qry = qry.eq('punto_venta', Number(m[1])).eq('numero', Number(m[2]));
   else if (/^\d+$/.test(q)) qry = qry.or(`numero.eq.${q},cliente_doc.ilike.%${q}%`);
@@ -1319,7 +1320,7 @@ async function ncElegir(id) {
   const devuelto = (ya || []).reduce((s, r) => s + Number(r.total), 0);
   if (devuelto >= Number(x.c.total) - 1) { toast('Esa factura ya se devolvió entera', 'error'); return; }
   T.tipo = 'NC'; T.letra = x.c.letra; T.nc_de = id;
-  document.querySelectorAll('#v-tipos .pil').forEach(b => b.classList.toggle('on', b.dataset.t === 'NC:' + x.c.letra));
+  vPils();
   T.items = x.det.map(d => ({ sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), max: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), stock: 1 }));
   T.cliente = (x.c.cliente_globalid || x.c.cliente_doc) ? { nombre: x.c.cliente_interno || x.c.cliente_nombre, doc_tipo: x.c.cliente_doc_tipo, doc: x.c.cliente_doc, cond_iva: x.c.cliente_cond_iva, globalid: x.c.cliente_globalid, facturar_a_nombre: x.c.cliente_informado !== false } : null;
   T.sin_cliente = true;  // la NC lleva el mismo receptor que la factura
@@ -1387,6 +1388,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=14"></script>
+<script src="manual.js?v=15"></script>
 </body>
 </html>
