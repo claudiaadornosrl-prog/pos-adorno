@@ -504,7 +504,8 @@ main { max-width: 1500px; }
 .fb-foot { display: flex; align-items: center; gap: 8px; padding: 12px 22px 16px; border-top: 1px solid var(--border); }
 @media (max-width: 700px) { #ov .box.ficha { overflow: auto; } .fb { grid-template-columns: 1fr; max-height: none; } .fb-main { max-height: none; } .fb-side { padding: 14px; } .fb-st { margin-top: 0; } .fb-g { grid-template-columns: 1fr 1fr; } }
 .renglones table { box-shadow: none; } .renglones td { padding: 6px 6px; } .renglones input { width: 48px; border: 1px solid var(--border); border-radius: 6px; padding: 4px; text-align: right; font-family: inherit; font-size: 14px; }
-.renglones td.cant { white-space: nowrap; } .sena-box { margin: 8px 0 4px; padding: 8px 10px; border: 2px dashed #1d4ed8; border-radius: 10px; background: #eff6ff; } .sena-h { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; } .sena-h .mini { flex: 1; } .sena-box table { box-shadow: none; background: transparent; } .sena-box td { padding: 4px 6px; border: none; } .sena-box .fila { display: flex; justify-content: space-between; gap: 8px; padding: 2px 6px; }
+.renglones td.cant { white-space: nowrap; } .sena-box { margin: 8px 0 4px; padding: 10px 12px; border: 2px dashed #1d4ed8; border-radius: 12px; background: #eff6ff; } .sena-h b { color: #1d4ed8; font-size: 15px; }
+input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !important; } .sena-h { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; } .sena-h .mini { flex: 1; } .sena-box table { box-shadow: none; background: transparent; } .sena-box td { padding: 4px 6px; border: none; } .sena-box .fila { display: flex; justify-content: space-between; gap: 8px; padding: 2px 6px; }
 .prod.sena { border: 2px dashed #1d4ed8; background: #eff6ff; } .sena-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; } .chip.blue { background: #dbeafe; color: #1d4ed8; } .stk .res { color: #1d4ed8; font-weight: 700; margin-left: 2px; }
 .dto-imp, .dto-pct { border-radius: 999px; padding: 3px 9px; } .dto-imp { background: #e0f2fe; color: #0369a1; }   /* descuento en pesos: celeste */ .dto-pct { background: #1d4ed8; color: white; }   /* descuento en %: azul */ tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
 .empty.chico { padding: 22px; }
@@ -913,7 +914,7 @@ function vSenaIniciar() {
   T.sena = { importe: 0, items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit })) };
   T.items = [{ sku: 'SENA', descripcion: 'Seña a cuenta', cantidad: 1, precio_unit: 0, descuento_pct: 0, descuento_monto: 0, stock: 1, fijo: true }];
   T.sena_usar = null; dMontar(); document.getElementById('v-q').value = ''; vBuscar(); vRender();
-  setTimeout(() => { const i = document.querySelector('#v-renglones input.din'); if (i) { i.focus(); i.select(); } }, 50);
+  setTimeout(() => { const i = document.querySelector('#v-renglones input.din'); if (i) i.focus(); }, 50);
   if (!T.cliente) toast('Cargá el cliente: la seña necesita DNI o CUIT', 'error');
 }
 function vSenaQuitar() { if (!T.sena) return; T.items = T.sena.items.map(i => ({ ...i, descuento_pct: 0, descuento_monto: 0, stock: (ARTS.find(a => a.sku === i.sku) || { stock: 1 }).stock })); T.sena = null; vRender(); }
@@ -1129,12 +1130,13 @@ function vRender() {
     T.items.map((it, i) => `<tr${it.stock <= 0 && !it.fijo ? ' class="sinstock" title="Sin stock en este local"' : ''}>
       <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td>
       <td class="num cant">${it.fijo ? '' : `<button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button>`}</td>
-      <td class="num"><input class="din" value="${plata(it.precio_unit)}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
+      <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? 'Importe de la seña' : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
       <td class="num">${it.fijo ? '' : `<input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right">`}</td>
       <td class="num"><b class="${it.descuento_monto > 0 ? 'dto-imp' : it.descuento_pct > 0 ? 'dto-pct' : ''}" title="${it.descuento_monto > 0 ? 'Con descuento en pesos' : it.descuento_pct > 0 ? 'Con descuento en %' : ''}">${plata(lineaBruta(it))}</b></td>
       <td>${it.fijo ? '' : `<button class="btn ico chico" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
   box.innerHTML += senaHTML();
+  document.getElementById('v-descs').style.display = T.sena ? 'none' : '';
   const t = vTotales();
   { const f = document.getElementById('v-sena-fila'); f.style.display = T.sena_usar ? '' : 'none'; if (T.sena_usar) f.innerHTML = `<span>Seña a cuenta · Factura ${esc(T.sena_usar.letra)} ${esc(T.sena_usar.factura)} <button class="btn ico chico" onclick="vSenaNoUsar()" title="No usar la seña en este ticket" aria-label="No usar">${_i('x')}</button></span><b class="dto-imp">- ${plata(t.sena)}</b>`; }
   for (const f of t.filas) { const e = f.row.querySelector('.dval'); const v = num(f.row.dataset.v);
