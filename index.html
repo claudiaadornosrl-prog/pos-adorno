@@ -598,6 +598,7 @@ main { max-width: 1500px; }
           <div class="totales">
             <div class="fila"><span>Subtotal</span><b id="v-subtotal">$ 0</b></div>
             <div id="v-descs"></div>
+            <div id="v-iva" style="display:none"><div class="fila"><span>Neto gravado</span><b id="v-neto">$ 0</b></div><div class="fila"><span>IVA 21%</span><b id="v-ivam">$ 0</b></div></div>
             <div class="fila total"><span>TOTAL</span><b id="v-total">$ 0</b></div>
           </div>
           <div class="pagos-tk"><div class="mini" id="v-pagos-lb">Forma de pago</div><div class="medios" id="v-pagos"></div>
@@ -929,6 +930,9 @@ function vRender() {
     else eImp.value = f.d ? plata(f.d) : '';
     f.row.querySelector('.dmonto').textContent = f.d ? '- ' + plata(f.d) : '$ 0'; }
   document.getElementById('v-subtotal').textContent = plata(t.sub);
+  // Letra A: en pantalla se discrimina el IVA igual que en el comprobante (los precios son con IVA incluido; neto = total / 1,21)
+  { const a = T.letra === 'A'; document.getElementById('v-iva').style.display = a ? '' : 'none';
+    if (a) { const neto = r2(t.tot / 1.21); document.getElementById('v-neto').textContent = plata2(neto); document.getElementById('v-ivam').textContent = plata2(r2(t.tot - neto)); } }
   document.getElementById('v-total').textContent = plata(t.tot);
   document.getElementById('v-cobrar-lb').textContent = T.tipo === 'PR' ? 'Guardar presupuesto' : T.tipo === 'NC' ? 'Emitir NC ' + (T.letra === 'X' ? 'manual' : T.letra) : T.tipo === 'MA' ? 'Emitir factura manual' : 'Emitir factura ' + T.letra;
   document.getElementById('v-pagos-lb').textContent = T.tipo === 'NC' ? 'Cómo se le devuelve la plata al cliente' : 'Forma de pago · elegí el medio; para pagos combinados sumá otro renglón';
@@ -1389,6 +1393,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=15"></script>
+<script src="manual.js?v=16"></script>
 </body>
 </html>
