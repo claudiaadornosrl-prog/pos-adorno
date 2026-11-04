@@ -594,7 +594,6 @@ main { max-width: 1500px; }
           <div class="cli" id="v-cli">
             <div class="cli-sin" id="v-cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-cli-doc" placeholder="Cliente: DNI o CUIT · o escaneá el DNI" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();cliBuscar();}"><button class="btn ico chico" onclick="buscarPorNombre()" title="Buscar por nombre" aria-label="Buscar por nombre"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button></div>
             <div class="cli-con" id="v-cli-con" style="display:none" onclick="editarCliente()" title="Tocá para editar la ficha del cliente"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div class="cli-datos"><b id="v-cli-nombre"></b><div class="mini" id="v-cli-det"></div><div class="mini" id="v-cli-arca"></div></div>
-              <label class="mini cli-chk" id="v-cli-anombre-lb" style="display:none" onclick="event.stopPropagation()"><input type="checkbox" id="v-cli-anombre" onchange="T.cliente.facturar_a_nombre=this.checked;vRender()"> a su nombre</label>
               <button class="btn ico chico" onclick="event.stopPropagation();quitarCliente()" title="Sacar el cliente del ticket" aria-label="Sacar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
           </div>
           <div class="cli-mail" id="v-cli-mail" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="v-mail" type="email" placeholder="Mail del cliente · acá se manda la factura" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();mailGuardar()}" onblur="mailGuardar()"><span class="mini" id="v-mail-st"></span></div>
@@ -1048,7 +1047,7 @@ function fbResumen() {
   document.getElementById('fb-nom').textContent = nom;
   document.getElementById('fb-doc').textContent = g('cf-tipo') + ' ' + (g('cf-doc') || '—');
   const cond = g('cf-cond') || 'CF'; document.getElementById('fb-cond').textContent = COND[cond];
-  document.getElementById('fb-st').textContent = cond === 'CF' ? 'Va a ARCA como Consumidor Final (salvo que supere el tope o pida la factura a su nombre). El cliente queda en nuestra base.' : 'Factura ' + LETRA_COND[cond] + ' a su nombre, con CUIT (' + COND[cond] + ').';
+  document.getElementById('fb-st').textContent = cond === 'CF' ? 'Va a ARCA como Consumidor Final (salvo que supere el tope). El cliente queda en nuestra base.' : 'Factura ' + LETRA_COND[cond] + ' a su nombre, con CUIT (' + COND[cond] + ').';
 }
 // Historial: última compra con sus artículos (Dragon + POS) para darle pie de charla a la vendedora
 async function cargarHistorial(globalid) {
@@ -1106,7 +1105,7 @@ async function guardarFicha(globalid) {
   const { data, error } = await sb.rpc('pos_cliente_guardar', { p });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); btn.disabled = false; return; }
   cerrarModal(); toast(data.nueva ? 'Cliente dado de alta' : 'Ficha guardada', 'success');
-  const fa = T.cliente && T.cliente.facturar_a_nombre; usarCliente(data); if (fa) { T.cliente.facturar_a_nombre = true; vRender(); }
+  usarCliente(data);
 }
 let _clLista = [];
 function buscarPorNombre() {
@@ -1124,7 +1123,7 @@ async function buscarClientesNombre() {
   box.innerHTML = _clLista.map((c, i) => `<button class="cl-it" onclick="elegirDeLista(${i})">${`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`}<span><b>${esc(c.nombre_completo || (c.apellido + ' ' + c.nombre))}</b><div class="mini">${c.cuit ? 'CUIT ' + esc(c.cuit) : c.dni ? 'DNI ' + esc(c.dni) : 'sin documento'}${c.email ? ' · ' + esc(c.email) : ''}${c.localidad ? ' · ' + esc(c.localidad) : ''}</div></span></button>`).join('') || '<div class="mini">No encontré clientes con ese nombre.</div>';
 }
 function elegirDeLista(i) { const c = _clLista[i]; cerrarModal(); if (!(c.dni || c.cuit)) { toast('Ese cliente no tiene documento cargado: completalo', 'error'); abrirFichaCliente(c, true); return; } usarCliente(c); }
-function cliPayload() { const c = T.cliente; return c ? { globalid: c.globalid, nombre: c.nombre, doc_tipo: c.doc_tipo, doc: c.doc, cond_iva: c.cond_iva, facturar_a_nombre: !!c.facturar_a_nombre } : null; }
+function cliPayload() { const c = T.cliente; return c ? { globalid: c.globalid, nombre: c.nombre, doc_tipo: c.doc_tipo, doc: c.doc, cond_iva: c.cond_iva, facturar_a_nombre: false } : null; }
 // Casilla de mail del cliente (JP: es el dato más importante, por ahí va la factura). Si falta, se carga ahí mismo y se guarda en la ficha.
 function mailRender() {
   const c = T.cliente, box = document.getElementById('v-cli-mail'), inp = document.getElementById('v-mail'), st = document.getElementById('v-mail-st');
@@ -1153,14 +1152,10 @@ function cliRender(t) {
   if (!c) return;
   document.getElementById('v-cli-nombre').textContent = c.nombre;
   document.getElementById('v-cli-det').textContent = [c.doc ? c.doc_tipo + ' ' + c.doc : 'sin documento', COND[c.cond_iva], c.email || '', c.celular ? '📱 ' + c.celular : ''].filter(Boolean).join(' · ');
-  const lb = document.getElementById('v-cli-anombre-lb'), chk = document.getElementById('v-cli-anombre'), arca = document.getElementById('v-cli-arca');
+  // Consumidor final: abajo del tope de ARCA la factura sale sin datos (el cliente queda en nuestra base); arriba, identificada sí o sí
+  const arca = document.getElementById('v-cli-arca');
   const cf = c.cond_iva === 'CF' && T.letra !== 'X' && !!c.doc;
-  lb.style.display = cf ? '' : 'none';
-  if (!cf) { arca.textContent = T.letra === 'X' ? '' : 'La factura ' + T.letra + ' va a su nombre (' + COND[c.cond_iva] + ').'; return; }
-  const obliga = t.tot >= TOPE.valor;
-  chk.disabled = obliga; chk.checked = obliga || !!c.facturar_a_nombre;
-  lb.title = obliga ? 'Por el importe, ARCA exige que la factura vaya a su nombre' : 'Solo si el cliente pide la factura con sus datos';
-  arca.textContent = chk.checked ? 'La factura va a ARCA con su nombre y documento' + (obliga ? ' (lo exige ARCA por el importe).' : '.') : '';
+  arca.textContent = cf && t.tot >= TOPE.valor ? 'Por el importe, ARCA exige que la factura vaya a su nombre.' : '';
 }
 function preguntarCliente() {
   modal(`<div class="m-head"><h3>No cargaste cliente</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
@@ -1419,6 +1414,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=18"></script>
+<script src="manual.js?v=19"></script>
 </body>
 </html>
