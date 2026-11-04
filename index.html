@@ -459,7 +459,7 @@ main { max-width: 1500px; }
 .pf-img { width: 150px; height: 150px; border-radius: 10px; object-fit: cover; background: #e2e8f0; cursor: zoom-in; flex: none; display: block; }
 .pf-datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .pf-sku { font-weight: 700; font-size: 15px; color: var(--primary-dark); } .pf-desc { font-size: 16px; font-weight: 600; }
 .pf-stock { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-top: 4px; } .pf-stock .aca { color: var(--text); } .pf-stock .sin b { color: var(--red); }
-.pf-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; } .pf-pre { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pf-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; } .pf-pre { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; } .pf-mas { width: 40px; height: 40px; border: none; border-radius: 50%; background: var(--primary); color: white; font-size: 26px; line-height: 1; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none; } .pf-mas:hover { background: var(--primary-dark); }
 @media (max-width: 600px) { .pf-img { width: 100px; height: 100px; } }
 .prod .sku { font-weight: 700; font-size: 13px; } .prod .desc { font-size: 13px; } .prod .desc i { color: var(--muted); font-style: normal; }
 .prod .stk { font-size: 12px; color: var(--muted); text-align: right; } .prod .stk.sin { color: var(--red); font-weight: 700; } .prod .pre { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
@@ -820,7 +820,7 @@ function vFicha(sku) {
       ${a.descripcion_adicional ? `<div class="mini">${esc(a.descripcion_adicional)}</div>` : ''}
       <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')}</div>
       <div class="pf-stock" id="pf-stock"><span class="${a.stock <= 0 ? 'sin' : ''}">${esc(LOCALES[LOCAL])}: <b>${Number(a.stock)}</b></span></div>
-      <div class="pf-pie"><span class="pf-pre">${plata(a.precio)}</span><button class="btn primary" onclick="vAgregar('${esc(a.sku)}')">${_i('plus')} Agregar</button></div>
+      <div class="pf-pie"><span class="pf-pre">${plata(a.precio)}</span><button class="pf-mas" onclick="vAgregar('${esc(a.sku)}')" title="Agregar al ticket" aria-label="Agregar al ticket">+</button></div>
     </div>`;
   vStockOtros(a.sku);
 }
