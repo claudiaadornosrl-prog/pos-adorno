@@ -811,7 +811,7 @@ async function cargarArticulos() {
     if (error) { toast('No pude cargar el catálogo: ' + error.message, 'error'); break; }
     out.push(...(data || [])); if (!data || data.length < 1000) break; desde += 1000;
   }
-  const vistos = new Set(); ARTS = out.filter(a => !vistos.has(a.sku) && vistos.add(a.sku)); ARTS_AT = Date.now();
+  const vistos = new Set(); ARTS = out.filter(a => !/^SE[ÑN]A$/i.test(a.sku) && !vistos.has(a.sku) && vistos.add(a.sku)); ARTS_AT = Date.now();
   // artículos reservados por señas vigentes del local: se restan del stock que ve la vendedora
   try { const { data: rv } = await sb.rpc('pos_reservas', { p_local: LOCAL }); RESERVAS = Object.fromEntries((rv || []).map(r => [r.sku, Number(r.cantidad)])); } catch (e) { RESERVAS = {}; }
   for (const a of ARTS) { a.stock_fisico = Number(a.stock); a.reservado = RESERVAS[a.sku] || 0; if (a.reservado) a.stock = a.stock_fisico - a.reservado; }
@@ -874,6 +874,7 @@ function vEscanear() {
   const inp = document.getElementById('v-q'); const raw = inp.value.trim();
   if (raw.includes('@')) { inp.value = ''; cliBuscar(raw); return; }   // DNI escaneado con el cursor en artículos: va al cliente
   const q = raw.toUpperCase(); if (!q) return;
+  if (/^SE[ÑN]A$/.test(q)) { inp.value = ''; vSenaIniciar(); return; }   // Enter sobre "seña": abre la seña del POS (no el artículo SEÑA del Dragon)
   const a = ARTS.find(x => x.sku.toUpperCase() === q);
   if (a) { vAgregar(a.sku); inp.value = ''; vBuscar(); }
   else { clearTimeout(_vT); vBuscar(); const first = document.querySelector('#v-lista .prod'); if (first && ARTS.filter(x => (x.sku + ' ' + x.descripcion).toUpperCase().includes(q)).length === 1) { first.click(); inp.value = ''; vBuscar(); } }
