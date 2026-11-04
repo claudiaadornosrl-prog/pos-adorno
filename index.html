@@ -895,6 +895,7 @@ function vTipo(tipo, letra) {
 function lineaBruta(it) { return it.descuento_monto > 0 ? it.cantidad * (it.precio_unit - it.descuento_monto) : it.cantidad * it.precio_unit * (1 - it.descuento_pct / 100); }
 const dtoTexto = it => it.descuento_monto > 0 ? plata(it.descuento_monto) : it.descuento_pct > 0 ? String(it.descuento_pct).replace('.', ',') + '%' : '';
 // Casilla Dto: "10%" = porcentaje; "1000" o "$ 1.000" = pesos por unidad
+function dtoFoco(el) { const v = el.value.trim(); if (v && !v.endsWith('%')) el.value = num(v) || ''; el.select(); }
 function vDto(i, v) {
   const it = T.items[i]; const txt = String(v).trim();
   if (!txt) { it.descuento_pct = 0; it.descuento_monto = 0; }
@@ -908,27 +909,29 @@ function vSet(i, campo, v) { const it = T.items[i]; if (campo === 'precio_unit' 
 function dMontar() { document.getElementById('v-descs').innerHTML = ''; dAgregar(); }
 function dAgregar() {
   const box = document.getElementById('v-descs'); const n = box.children.length;
-  const div = document.createElement('div'); div.className = 'fila dsc'; div.dataset.modo = 'pct';
-  div.innerHTML = `<span>${n ? 'Otro descuento' : 'Descuento general'} <input class="dpct" inputmode="decimal" value="0" oninput="dModo(this,'pct')" style="width:58px;text-align:right" title="Descuento en porcentaje"> % <span class="mini">o</span> <input class="dimp din" inputmode="decimal" placeholder="$ 0" oninput="dModo(this,'imp')" onfocus="dinFoco(this)" onblur="dinBlur(this)" style="width:96px;text-align:right" title="Descuento en pesos"> ${n ? `<button class="btn ico chico" onclick="dQuitar(this)" title="Sacar este descuento" aria-label="Sacar">${_i('x')}</button>` : `<button class="pf-mas chico" onclick="dAgregar()" title="Agregar otro descuento" aria-label="Agregar otro descuento">+</button>`}</span><b class="dmonto">$ 0</b>`;
-  box.appendChild(div); if (n) div.querySelector('.dpct').focus(); vRender();
+  const div = document.createElement('div'); div.className = 'fila dsc'; div.dataset.modo = 'pct'; div.dataset.v = '0';
+  div.innerHTML = `<span>${n ? 'Otro descuento' : 'Descuento general'} <input class="dval" placeholder="$ o %" onfocus="dtoFoco(this)" onchange="dVal(this)" onblur="vRender()" style="width:96px;text-align:right" title="Un número son pesos; con % al final es porcentaje"> ${n ? `<button class="btn ico chico" onclick="dQuitar(this)" title="Sacar este descuento" aria-label="Sacar">${_i('x')}</button>` : `<button class="pf-mas chico" onclick="dAgregar()" title="Agregar otro descuento" aria-label="Agregar otro descuento">+</button>`}</span><b class="dmonto">$ 0</b>`;
+  box.appendChild(div); if (n) div.querySelector('.dval').focus(); vRender();
 }
 function dQuitar(btn) { btn.closest('.dsc').remove(); vRender(); }
-function dModo(inp, m) { inp.closest('.dsc').dataset.modo = m; vRender(); }
-function dSet(pct) { dMontar(); document.querySelector('#v-descs .dpct').value = pct || 0; vRender(); }
+// "10%" = porcentaje; "1000" o "$ 1.000" = pesos (igual que la casilla Dto del renglón)
+function dVal(inp) { const row = inp.closest('.dsc'); const txt = inp.value.trim(); row.dataset.modo = txt.endsWith('%') ? 'pct' : 'imp'; row.dataset.v = String(Math.max(0, num(txt))); vRender(); }
+function dSet(pct) { dMontar(); const row = document.querySelector('#v-descs .dsc'); row.dataset.modo = 'pct'; row.dataset.v = String(pct || 0); vRender(); }
 function vTotales() {
   let sub = 0; for (const it of T.items) sub += r2(lineaBruta(it));
   sub = r2(sub);
   let base = sub; const filas = [];
   for (const row of document.querySelectorAll('#v-descs .dsc')) {
     let d;
-    if (row.dataset.modo === 'imp') d = Math.min(base, Math.max(0, r2(num(row.querySelector('.dimp').value))));
-    else d = r2(base * Math.min(100, Math.max(0, num(row.querySelector('.dpct').value))) / 100);
+    const v = num(row.dataset.v);
+    if (row.dataset.modo === 'imp') d = Math.min(base, Math.max(0, r2(v)));
+    else d = r2(base * Math.min(100, Math.max(0, v)) / 100);
     filas.push({ row, d, base }); base = r2(base - d);
   }
   const desc = r2(sub - base);
   // un solo renglón en % → se manda el %, como siempre; si hay importes o varios renglones → importe exacto
   const soloPct = filas.length === 1 && filas[0].row.dataset.modo === 'pct';
-  return { sub, desc, tot: base, pct: soloPct ? num(filas[0].row.querySelector('.dpct').value) : (sub ? desc / sub * 100 : 0), imp: soloPct ? null : desc, filas };
+  return { sub, desc, tot: base, pct: soloPct ? Math.min(100, num(filas[0].row.dataset.v)) : (sub ? desc / sub * 100 : 0), imp: soloPct ? null : desc, filas };
 }
 function vRender() {
   const box = document.getElementById('v-renglones');
@@ -937,14 +940,13 @@ function vRender() {
       <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td>
       <td class="num cant"><button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button></td>
       <td class="num"><input class="din" value="${plata(it.precio_unit)}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
-      <td class="num"><input value="${dtoTexto(it)}" onchange="vDto(${i},this.value)" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right"></td>
+      <td class="num"><input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right"></td>
       <td class="num"><b>${plata(lineaBruta(it))}</b></td>
       <td><button class="btn ico chico" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
   const t = vTotales();
-  for (const f of t.filas) { const ePct = f.row.querySelector('.dpct'), eImp = f.row.querySelector('.dimp');
-    if (f.row.dataset.modo === 'imp') ePct.value = f.d && f.base ? String(r2(f.d / f.base * 100)).replace('.', ',') : 0;
-    else eImp.value = f.d ? plata(f.d) : '';
+  for (const f of t.filas) { const e = f.row.querySelector('.dval'); const v = num(f.row.dataset.v);
+    if (document.activeElement !== e) e.value = !v ? '' : f.row.dataset.modo === 'imp' ? plata(v) : String(v).replace('.', ',') + '%';
     f.row.querySelector('.dmonto').textContent = f.d ? '- ' + plata(f.d) : '$ 0'; }
   document.getElementById('v-subtotal').textContent = plata(t.sub);
   // Letra A: en pantalla se discrimina el IVA igual que en el comprobante (los precios son con IVA incluido; neto = total / 1,21)
@@ -1188,9 +1190,9 @@ function pMontar() { document.getElementById('v-pagos').innerHTML = ''; pAgregar
 function pAgregar(medio) {
   const box = document.getElementById('v-pagos'); const n = box.children.length; const t = vTotales();
   const falta = Math.max(0, r2(t.tot - pPagos().reduce((s, p) => s + p.importe, 0)));
-  const ms = pMedios(); const sel = medio || (n === 0 ? (ms[0] || {}).clave : '');
+  const ms = pMedios(); const sel = medio || '';   // sin medio por defecto: la cajera lo elige, así la factura no se cierra sin querer
   const div = document.createElement('div'); div.className = 'medio';
-  div.innerHTML = `<select class="med" onchange="pMedio(this)">${n ? '<option value="">Elegí el medio…</option>' : ''}${ms.map(m => `<option value="${m.clave}"${m.clave === sel ? ' selected' : ''}>${esc(m.nombre)} ${mIco(m.clave)}</option>`).join('')}</select><span class="med-ico" aria-hidden="true"></span><span class="seg" style="display:none"><button type="button" class="on" data-v="" onclick="pSeg(this)">Integrado</button><button type="button" data-v="_ni" onclick="pSeg(this)">No integrado</button></span>
+  div.innerHTML = `<select class="med" onchange="pMedio(this)"><option value="">Elegí el medio…</option>${ms.map(m => `<option value="${m.clave}"${m.clave === sel ? ' selected' : ''}>${esc(m.nombre)} ${mIco(m.clave)}</option>`).join('')}</select><span class="med-ico" aria-hidden="true"></span><span class="seg" style="display:none"><button type="button" class="on" data-v="" onclick="pSeg(this)">Integrado</button><button type="button" data-v="_ni" onclick="pSeg(this)">No integrado</button></span>
     <input class="imp din" inputmode="decimal" placeholder="$ 0" oninput="pRender()" onfocus="dinFoco(this)" onblur="dinBlur(this)" title="Importe"${n && falta ? ` value="${plata(falta)}"` : ''}>
     <input class="ref" placeholder="Nº cupón / ref." style="display:none">
     ${n ? `<button class="btn ico chico" onclick="pQuitar(this)" title="Sacar este renglón" aria-label="Sacar">${_i('x')}</button>` : `<button class="btn ico chico mas" onclick="pAgregar()" title="Agregar otra forma de pago" aria-label="Agregar forma de pago">+</button>`}`;
@@ -1439,6 +1441,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=22"></script>
+<script src="manual.js?v=23"></script>
 </body>
 </html>
