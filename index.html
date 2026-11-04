@@ -593,7 +593,6 @@ main { max-width: 1500px; }
             <button class="pil nc" data-t="NC" onclick="vTipo('NC','B')" title="Nota de crédito: devolución de una factura; toma la letra de la factura que devuelve">Nota de crédito</button>
             <span class="pil-sep"></span>
             <button class="pil pr" data-t="PR" onclick="vTipo(T.tipo === 'PR' ? 'PR' : 'MA','X')" title="Comprobantes que no van a ARCA">Presupuesto</button>
-            <span class="seg tipo-seg" id="v-seg-pr" style="display:none"><button type="button" class="on" onclick="vTipo('MA','X')">Manual</button><button type="button" onclick="vTipo('PR','X')">Presupuesto</button></span>
           </div>
           <div class="ncbox" id="v-nc" style="display:none">
             <div class="cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="v-nc-q" placeholder="Qué factura devuelve: número (35-2) o cliente" autocomplete="off" oninput="ncDebounce()" onkeydown="if(event.key==='Enter'){event.preventDefault();ncBuscar();}"></div>
@@ -619,6 +618,7 @@ main { max-width: 1500px; }
           <div class="acciones">
             <button class="btn ico" onclick="vVaciar()" title="Vaciar el ticket" aria-label="Vaciar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
             <input id="v-obs" placeholder="Observación (opcional)">
+            <label class="mini cli-chk" id="v-chk-pr" style="display:none" title="Tildado es un presupuesto; sin tildar, comprobante manual"><input type="checkbox" id="v-chk-pr-in" onchange="vTipo(this.checked ? 'PR' : 'MA','X')"> Presupuesto</label>
             <button class="btn-cobrar" id="v-cobrar" onclick="emitirTicket()" title="Emitir el comprobante"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span id="v-cobrar-lb">Emitir</span></button>
           </div>
         </div>
@@ -891,11 +891,10 @@ function vQuitar(i) { sonar('menos'); T.items.splice(i, 1); vRender(); }
 function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
-  // Manual vive adentro de la pastilla Presupuesto (selector Manual | Presupuesto, Manual por defecto)
+  // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
   const interno = T.tipo === 'MA' || T.tipo === 'PR';
   document.querySelectorAll('#v-tipos .pil').forEach(b => b.classList.toggle('on', b.dataset.t === T.tipo || (b.dataset.t === 'PR' && interno)));
-  const seg = document.getElementById('v-seg-pr'); seg.style.display = interno ? '' : 'none';
-  seg.querySelectorAll('button').forEach((b, i) => b.classList.toggle('on', (i === 0) === (T.tipo === 'MA')));
+  const chk = document.getElementById('v-chk-pr'); chk.style.display = interno ? '' : 'none'; document.getElementById('v-chk-pr-in').checked = T.tipo === 'PR';
   document.querySelector('#v-tipos .pil[data-t="FC"]').textContent = 'Factura' + (T.tipo === 'FC' && T.letra === 'A' ? ' A' : '');
   document.querySelector('#v-tipos .pil[data-t="NC"]').textContent = 'Nota de crédito' + (T.tipo === 'NC' ? (T.letra === 'A' ? ' A' : T.letra === 'X' ? ' manual' : '') : '');
 }
@@ -1485,6 +1484,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=27"></script>
+<script src="manual.js?v=28"></script>
 </body>
 </html>
