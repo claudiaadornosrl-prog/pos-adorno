@@ -452,7 +452,8 @@ main { max-width: 1500px; }
 .pos-ticket { position: sticky; top: 64px; transition: background .2s; }
 .pos-ticket.es-nc { background: #ffedd5; border-color: #fdba74; }   /* nota de crédito: naranja claro, para que se note que no es una factura */
 .pos-ticket.es-pr { background: #e0f2fe; border-color: #7dd3fc; }   /* presupuesto: celeste */
-.pos-ticket.es-nc .renglones table, .pos-ticket.es-pr .renglones table { background: white; }
+.pos-ticket.es-ma { background: #fee2e2; border-color: #fca5a5; }   /* manual: rojo clarito */
+.pos-ticket.es-nc .renglones table, .pos-ticket.es-pr .renglones table, .pos-ticket.es-ma .renglones table { background: white; }
 .buscador { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; color: var(--muted); }
 .buscador input { flex: 1; border: none; outline: none; font-size: 16px; font-family: inherit; padding: 6px 0; color: var(--text); background: transparent; }
 .prod-lista { margin-top: 10px; max-height: calc(100vh - 420px); overflow: auto; display: flex; flex-direction: column; gap: 4px; }
@@ -877,7 +878,7 @@ function vTipo(tipo, letra) {
   const nc = tipo === 'NC';
   document.getElementById('v-nc').style.display = nc ? '' : 'none';
   document.querySelector('.pagos-tk').style.display = tipo === 'PR' ? 'none' : '';
-  const tk = document.querySelector('.pos-ticket'); tk.classList.toggle('es-nc', nc); tk.classList.toggle('es-pr', tipo === 'PR');
+  const tk = document.querySelector('.pos-ticket'); tk.classList.toggle('es-nc', nc); tk.classList.toggle('es-pr', tipo === 'PR'); tk.classList.toggle('es-ma', tipo === 'MA');
   if (nc !== eraNC) { T.items = []; T.nc_de = null; T.sin_cliente = nc; if (nc) T.cliente = null; document.getElementById('v-nc-sel').textContent = ''; document.getElementById('v-nc-res').innerHTML = ''; pLimpiar(); }
   if (nc && !T.nc_de) setTimeout(() => document.getElementById('v-nc-q').focus(), 30);
   vRender();
