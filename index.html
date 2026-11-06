@@ -913,7 +913,7 @@ function pintarLocal() {
     ? `<select onchange="cambiarLocal(this.value)" title="Desde qué local facturás">${permitidos.map(k => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${LOCALES[k]}</option>`).join('')}</select>`
     : `<span>${esc(LOCALES[LOCAL] || LOCAL)}</span>`;
 }
-async function cambiarLocal(l) { LOCAL = l; _fStock = {}; FICHA = null; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
+async function cambiarLocal(l) { LOCAL = l; _fStock = {}; FICHA = null; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); { const tp = document.getElementById('tab-pedidos'); if (tp) tp.style.display = LOCAL === 'oficina' ? 'none' : ''; if (LOCAL === 'oficina' && document.getElementById('content-pedidos').classList.contains('active')) switchTab('vender'); } await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
 async function cargarArticulos() {
   // Catálogo del local en memoria (≈5.000 filas): búsqueda instantánea y escaneo sin ir a la base.
   const out = []; let desde = 0;
