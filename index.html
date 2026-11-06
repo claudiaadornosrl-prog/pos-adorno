@@ -911,7 +911,7 @@ async function cargarArticulos() {
   // Catálogo del local en memoria (≈5.000 filas): búsqueda instantánea y escaneo sin ir a la base.
   const out = []; let desde = 0;
   for (;;) {
-    const { data, error } = await sb.from('stock_articulos').select('sku,descripcion,descripcion_adicional,stock,precio,material,proveedor').eq('local', LOCAL).order('sku').range(desde, desde + 999);   // con orden fijo: sin él las páginas vienen mezcladas (repetidos y faltantes)
+    const { data, error } = await sb.from('stock_articulos').select('sku,descripcion,descripcion_adicional,stock,precio,material,proveedor,discontinuado').eq('local', LOCAL).order('sku').range(desde, desde + 999);   // con orden fijo: sin él las páginas vienen mezcladas (repetidos y faltantes)
     if (error) { toast('No pude cargar el catálogo: ' + error.message, 'error'); break; }
     out.push(...(data || [])); if (!data || data.length < 1000) break; desde += 1000;
   }
@@ -1340,8 +1340,8 @@ function pdRender() {
       : `<div class="empty">Todavía no hay pedidos de ${esc(LOCALES[LOCAL])}.</div>`;
   } else {
     const puede = puedeMinimos();
-    let arts = ARTS.filter(a => q && (a.sku + ' ' + a.descripcion).toUpperCase().includes(q)); const mins = Object.fromEntries(PD.min.map(m => [m.sku, m]));
-    if (!q) arts = ARTS.filter(a => mins[a.sku]);
+    let arts = ARTS.filter(a => !a.discontinuado && q && (a.sku + ' ' + a.descripcion).toUpperCase().includes(q)); const mins = Object.fromEntries(PD.min.map(m => [m.sku, m]));
+    if (!q) arts = ARTS.filter(a => mins[a.sku] && !a.discontinuado);   // los discontinuados (tilde importado del Dragon) no se piden
     arts = arts.slice(0, 150);
     document.getElementById('pd-stat').textContent = (q ? arts.length + ' encontrados' : PD.min.length + ' con mínimo') + (puede ? '' : ' · solo lectura');
     box.innerHTML = `<div class="mini" style="margin-bottom:8px">${puede ? 'Escribí el mínimo que tiene que haber en ' + esc(LOCALES[LOCAL]) + ' y salí de la casilla: queda guardado con tu nombre. Cero lo saca. Buscá arriba para cargar uno nuevo.' : 'Los mínimos los carga la encargada. Hasta el cierre del año los que no se tocaron vienen del Dragonfish.'}</div>` +
