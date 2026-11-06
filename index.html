@@ -442,6 +442,11 @@ main { max-width: 1500px; }
 .btn.ico.peligro:hover { color: var(--red); background: var(--red-bg); } .btn.ico.primary-ico { color: var(--primary); } .btn.ico.primary-ico .ico { width: 24px; height: 24px; }
 .pils { display: flex; gap: 6px; flex-wrap: wrap; }
 .tk-acc { margin-left: auto; display: inline-flex; gap: 10px; align-items: center; order: 99; } .tk-acc .btn.ico { padding: 5px; } .tk-acc .btn.ico .ico { width: 22px; height: 22px; }
+/* Regla JP (4-nov): todo en pastilla. Botones con texto, casillas y selectores del POS; los íconos van sin recuadro. */
+.btn:not(.ico), button.btn.primary:not(.ico), .btn.primary, .btn.sec { border-radius: 999px !important; padding: 7px 16px; }
+.btn-cobrar { border-radius: 999px !important; }
+main input:not([type=checkbox]):not([type=radio]):not(.din), main select, #ov input:not([type=checkbox]):not([type=radio]), #ov select, .filters input, .filters select { border-radius: 999px !important; }
+.filters input, .filters select { padding: 7px 12px; } .et-f input, .et-f select { padding: 6px 10px; } td input { padding: 5px 10px; } textarea { border-radius: 14px !important; }
 .pil { border: 1px solid var(--border); background: white; border-radius: 999px; padding: 7px 14px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
 .pil.on { background: var(--primary); border-color: var(--primary); color: white; } .pil:hover:not(.on) { background: var(--gray-light); }
 .pil.nc { border-style: dashed; } .pil.nc.on { background: #b45309; border-color: #b45309; border-style: solid; } .pil.pr.on { background: #475569; border-color: #475569; } .pil-sep { width: 1px; background: var(--border); margin: 2px 4px; }
