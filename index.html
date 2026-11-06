@@ -1874,7 +1874,7 @@ function autorizar(accion, resumen) {
 function autFin(v) { if (!AUT || AUT.fin) return; AUT.fin = true; clearInterval(AUT.poll); const r = AUT.resolve; AUT = null; cerrarModal(); r(v); }
 function autCancelar() { if (AUT && AUT.id) sb.rpc('pos_autorizacion_cancelar', { p_id: AUT.id }); autFin(null); }
 function autPersona(p, boton) {
-  return `<div class="aut-p"><span class="nom"><b>${esc(pila(p.nombre))}</b> <span class="chip ${p.rol === 'admin' ? 'gray' : 'amber'}">${p.rol === 'gerente' ? 'encargada' : p.rol}</span><span class="mini">${p.fuente === 'reloj' ? 'fichó ' + p.hora : p.fuente === 'turno' ? 'turno desde ' + p.hora : p.rol === 'admin' ? 'fuera del local' : 'no está'}${p.push ? '' : ' · sin notificaciones en el celu'}</span></span>
+  return `<div class="aut-p"><span class="nom"><b>${esc(pila(p.nombre))}</b> <span class="chip ${p.rol === 'admin' ? 'gray' : 'amber'}">${p.rol === 'gerente' ? 'encargada' : p.rol === 'cajero' ? 'cajera' : p.rol}</span><span class="mini">${p.fuente === 'reloj' ? 'fichó ' + p.hora : p.fuente === 'turno' ? 'turno desde ' + p.hora : p.rol === 'admin' ? 'fuera del local' : 'no está'}${p.push ? '' : ' · sin notificaciones en el celu'}</span></span>
     ${boton ? `<button class="btn primary chico" ${p.push ? '' : 'disabled title="No tiene las notificaciones activadas en el celu"'} onclick="autPedir(${p.empleado_id})">Pedir a ${esc(pila(p.nombre).split(' ')[0])}</button>` : ''}</div>`;
 }
 function autLista(msg) {
@@ -1938,7 +1938,7 @@ async function cargarRangos() {
   const el = document.getElementById('a-rangos'); if (!el) return;
   const { data } = await sb.rpc('pos_usuarios_rangos'); const lista = data || [];
   el.innerHTML = lista.length ? `<table><thead><tr><th>Persona</th><th>Local</th><th>Rango</th><th>Celu</th></tr></thead><tbody>` + lista.map(u => `<tr><td>${esc(tit(u.nombre || ''))}<div class="mini">${esc(u.email)}</div></td><td>${esc(LOCALES[u.local] || u.local || '')}</td>
-    <td><select onchange="setRango('${esc(u.email)}',this.value)"><option value="empleado"${u.rol === 'empleado' ? ' selected' : ''}>Empleada</option><option value="cajera"${u.rol === 'cajera' ? ' selected' : ''}>Cajera</option><option value="gerente"${u.rol === 'gerente' ? ' selected' : ''}>Encargada</option></select></td>
+    <td><select onchange="setRango('${esc(u.email)}',this.value)"><option value="empleado"${u.rol === 'empleado' ? ' selected' : ''}>Empleada</option><option value="cajero"${u.rol === 'cajero' ? ' selected' : ''}>Cajero/a</option><option value="gerente"${u.rol === 'gerente' ? ' selected' : ''}>Encargada</option></select></td>
     <td class="mini">${u.push ? '✔ recibe avisos' : 'sin notificaciones'}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">No hay personas con usuario y legajo.</div>';
 }
 async function setRango(email, rol) { const { error } = await sb.rpc('pos_set_rango', { p_email: email, p_rol: rol }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); cargarRangos(); return; } toast('Rango guardado', 'success'); }
