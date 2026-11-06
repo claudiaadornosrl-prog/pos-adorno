@@ -622,7 +622,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
         <div class="pos-prod">
           <div class="buscador">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input id="v-q" placeholder="Comenzá a buscar por SKU o descripción" autocomplete="off" spellcheck="false">
+            <span class="chip amber" id="v-pend" style="display:none;margin-right:6px" title="Cantidad para el próximo producto"></span><input id="v-q" placeholder="SKU o descripción · cantidad primero: 12 + y después el SKU" autocomplete="off" spellcheck="false">
           </div>
           <div class="mini v-stat" id="v-stat"></div>
           <div id="v-ficha" class="pficha" style="display:none"></div>
@@ -960,8 +960,11 @@ function onTab(k) { if (k !== 'remitos') rmModo('lista'); if (k === 'remitos') c
 // ═══ Vender · productos ════════════════════════════════════════════════
 let _vT = null;
 function vBuscarDebounce() { clearTimeout(_vT); _vT = setTimeout(vBuscar, 250); }
+// Cantidad primero (JP 6-nov, como en Etiquetas): "12 +" y Enter → chip "12 ×"; el próximo producto (clic, Enter o escaneo) entra con 12. También "12 SMINI".
+function vPend() { const c = document.getElementById('v-pend'); if (!c) return; c.style.display = T.pend ? '' : 'none'; c.textContent = T.pend ? T.pend + ' ×' : ''; }
 function vBuscar() {
-  const q = document.getElementById('v-q').value.trim().toUpperCase();
+  let q = document.getElementById('v-q').value.trim().toUpperCase();
+  { const m = q.match(/^(\d+)\s*[+*X\s]\s*(.+)$/); if (m && !ARTS.find(x => x.sku.toUpperCase() === q)) q = m[2].trim(); if (/^\d+\s*[+*X]?$/.test(q)) q = ''; }
   const box = document.getElementById('v-lista');
   if (!q) { box.innerHTML = '<div class="empty">Escribí para buscar un producto, o escaneá el QR de la etiqueta.</div>'; vFicha(null); return; }
   const pal = q.split(/\s+/);
@@ -1061,7 +1064,9 @@ function vEscanear() {
   // Enter en el buscador: si el texto es un SKU exacto (QR de la etiqueta), lo agrega directo.
   const inp = document.getElementById('v-q'); const raw = inp.value.trim();
   if (raw.includes('@')) { inp.value = ''; cliBuscar(raw); return; }   // DNI escaneado con el cursor en artículos: va al cliente
-  const q = raw.toUpperCase(); if (!q) return;
+  let q = raw.toUpperCase(); if (!q) return;
+  { let m = q.match(/^(\d+)\s*[+*X]?$/); if (m) { T.pend = Number(m[1]); inp.value = ''; vBuscar(); vPend(); return; }
+    m = q.match(/^(\d+)\s*[+*X\s]\s*(.+)$/); if (m && !ARTS.find(x => x.sku.toUpperCase() === q)) { T.pend = Number(m[1]); vPend(); q = m[2].trim(); inp.value = q; } }
   if (/^GIFT/.test(q)) { inp.value = ''; vGiftIniciar(); return; }
   if (/^[GV]C-?[A-Z0-9]{4}-?[A-Z0-9]{4}-?[A-Z0-9]{4}$/.test(q)) { inp.value = ''; vBuscar(); valeDesdeEscaneo(q); return; }   // QR de una gift card o vale → va al cobro
   if (/^SE[ÑN]A$/.test(q)) { inp.value = ''; vSenaIniciar(); return; }   // Enter sobre "seña": abre la seña del POS (no el artículo SEÑA del Dragon)
@@ -1089,9 +1094,11 @@ function sonar(cual) {
 function vAgregar(sku) {
   const a = ARTS.find(x => x.sku === sku); if (!a) return;
   if (T.gift) { toast('Terminá la gift card primero (o sacala con la ✕)', 'error'); return; }
-  if (T.sena) { const si = T.sena.items.find(x => x.sku === sku); if (si) si.cantidad += 1; else T.sena.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: Number(a.precio) || 0 }); sonar('mas'); vRender(); vFicha(a.sku); document.getElementById('v-q').focus(); return; }
+  const n = T.pend || 1; T.pend = 0; vPend();
+  if (T.sena) { const si = T.sena.items.find(x => x.sku === sku); if (si) si.cantidad += n; else T.sena.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: n, precio_unit: Number(a.precio) || 0 }); sonar('mas'); vRender(); vFicha(a.sku); document.getElementById('v-q').focus(); return; }
   const it = T.items.find(x => x.sku === sku);
-  if (it) it.cantidad += 1; else T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: Number(a.precio) || 0, descuento_pct: 0, descuento_monto: 0, stock: Number(a.stock) });
+  if (it) it.cantidad += n; else T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: n, precio_unit: Number(a.precio) || 0, descuento_pct: 0, descuento_monto: 0, stock: Number(a.stock) });
+  if (it && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; }
   sonar('mas'); vRender(); vFicha(a.sku); document.getElementById('v-q').focus();
 }
 function vCant(i, d) { sonar(d > 0 ? 'mas' : 'menos'); const it = T.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (it.max && it.cantidad > it.max) it.cantidad = it.max; if (it.cantidad === 0) T.items.splice(i, 1); vRender(); }
@@ -1685,7 +1692,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main"><div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.items = []; T.pend = 0; vPend(); T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -2581,6 +2588,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=44"></script>
+<script src="manual.js?v=45"></script>
 </body>
 </html>
