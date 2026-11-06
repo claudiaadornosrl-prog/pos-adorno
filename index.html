@@ -447,8 +447,11 @@ main { max-width: 1500px; }
 .pil.nc { border-style: dashed; } .pil.nc.on { background: #b45309; border-color: #b45309; border-style: solid; } .pil.pr.on { background: #475569; border-color: #475569; } .pil-sep { width: 1px; background: var(--border); margin: 2px 4px; }
 .ncbox { margin-top: 8px; padding: 8px 10px; border: 2px solid #f59e0b; border-radius: 10px; background: #fffbeb; } .ncbox .cli-sin input { font-size: 15px; } .ncbox #v-nc-sel { margin-top: 4px; }
 .pagos-tk { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; } .pagos-tk > .mini { margin-bottom: 6px; } .pagos-tk .fila { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; } .pagos-tk .fila.falta { font-weight: 700; color: var(--primary-dark); }
-.pos { display: grid; grid-template-columns: 3fr 7fr; gap: 16px; align-items: start; }   /* compu: 30% productos, 70% documento (JP) */
-@media (max-width: 900px) { .pos { grid-template-columns: 1fr; } }
+.pos { display: grid; grid-template-columns: var(--pos-izq, 30%) 14px minmax(0, 1fr); gap: 8px; align-items: start; }   /* compu: 30% productos, 70% documento (JP); se cambia desde la barra Pantalla */
+.pos-prod, .pos-ticket { zoom: var(--pos-esc, 1); min-width: 0; overflow-x: auto; }
+.pos-div { align-self: stretch; cursor: col-resize; display: flex; align-items: center; justify-content: center; touch-action: none; } .pos-div span { width: 4px; height: 56px; border-radius: 4px; background: #cbd5e1; } .pos-div:hover span, .pos-div.on span { background: var(--primary); }
+.pantalla { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; } .pant-seg { display: inline-flex; border: 1.5px solid var(--border); border-radius: 999px; overflow: hidden; background: #fff; } .pant-seg button { border: none; background: transparent; padding: 5px 11px; font-weight: 700; font-family: inherit; font-size: 14px; cursor: pointer; color: var(--text); } .pant-seg button:hover { background: var(--primary-bg); } .pant-seg .v { padding: 5px 8px; color: var(--muted); font-size: 12px; align-self: center; } .pil.chico { padding: 5px 11px; font-size: 13px; }
+@media (max-width: 900px) { .pos { grid-template-columns: 1fr; } .pos-div, .pant-rep { display: none; } }
 .pos-prod, .pos-ticket { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
 .pos-ticket { position: sticky; top: 64px; transition: background .2s; }
 .pos-ticket.es-nc { background: #ffedd5; border-color: #fdba74; }   /* nota de crédito: naranja claro, para que se note que no es una factura */
@@ -585,7 +588,14 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
   <main>
 
     <section id="content-vender" class="tab-content active">
-      <div class="pos">
+      <div class="pantalla" id="pantalla">
+        <span class="mini">Pantalla</span>
+        <span class="seg pant-seg" title="Tamaño de letra y números de las ventanas (no cambia la barra de arriba)"><button type="button" onclick="pantEsc(-0.1)" aria-label="Más chico">A−</button><span class="v" id="pant-v">100 %</span><button type="button" onclick="pantEsc(0.1)" aria-label="Más grande">A+</button></span>
+        <span class="pant-rep"><button type="button" class="pil chico" data-p="45" onclick="pantPre(45)">Más productos</button><button type="button" class="pil chico" data-p="38" onclick="pantPre(38)">Mitad y mitad</button><button type="button" class="pil chico" data-p="30" onclick="pantPre(30)">Más ticket</button></span>
+        <button type="button" class="pil chico" onclick="pantReset()" title="Letra 100 % y reparto normal">↺ Volver a lo normal</button>
+        <span class="mini pant-rep">· o arrastrá la barrita del medio · queda guardado en esta compu</span>
+      </div>
+      <div class="pos" id="pos">
         <div class="pos-prod">
           <div class="buscador">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -595,6 +605,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
           <div id="v-ficha" class="pficha" style="display:none"></div>
           <div id="v-lista" class="prod-lista"><div class="empty">Escribí para buscar un producto, o escaneá el QR de la etiqueta.</div></div>
         </div>
+        <div class="pos-div" id="pos-div" title="Arrastrá para repartir el ancho"><span></span></div>
         <div class="pos-ticket">
           <div class="pils tipos" id="v-tipos">
             <span class="tk-acc"><button class="btn ico" onclick="vVaciar()" title="Limpiar el documento (empezar de cero)" aria-label="Limpiar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button><button class="btn ico" onclick="vPreview()" title="Vista previa: comandera y hoja A4" aria-label="Vista previa"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button class="btn ico" onclick="vPreview('imprimir')" title="Imprimir (comandera; desde la vista previa también la A4)" aria-label="Imprimir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button></span>
@@ -837,6 +848,25 @@ async function cargarArticulos() {
 }
 function foto(sku, cls) { const u = IMGS[sku]; return u ? `<img class="foto ${cls || ''}" src="${esc(u)}" alt="" loading="lazy" onclick="event.stopPropagation(); verFoto('${esc(u)}')" title="Ver más grande">` : `<span class="foto sin ${cls || ''}" aria-hidden="true"></span>`; }
 function verFoto(u) { modal(`<div class="m-head"><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div><img src="${esc(u)}" style="max-width:100%;max-height:75vh;display:block;margin:0 auto;border-radius:8px">`); }
+// ═══ Pantalla: tamaño de letra (zoom del contenido de las dos ventanas) y reparto del ancho, guardado por dispositivo ═══
+const PANT = Object.assign({ esc: 1, izq: 30 }, JSON.parse(localStorage.getItem('pos_pantalla') || '{}'));
+function pantPinta() {
+  const r = document.documentElement.style; r.setProperty('--pos-esc', PANT.esc.toFixed(2)); r.setProperty('--pos-izq', PANT.izq + '%');
+  const v = document.getElementById('pant-v'); if (v) v.textContent = Math.round(PANT.esc * 100) + ' %';
+  document.querySelectorAll('.pant-rep .pil').forEach(b => b.classList.toggle('on', Number(b.dataset.p) === Math.round(PANT.izq)));
+  localStorage.setItem('pos_pantalla', JSON.stringify(PANT));
+}
+function pantEsc(d) { PANT.esc = Math.round(Math.min(1.5, Math.max(0.9, PANT.esc + d)) * 100) / 100; pantPinta(); }
+function pantPre(p) { PANT.izq = p; pantPinta(); }
+function pantReset() { PANT.esc = 1; PANT.izq = 30; pantPinta(); }
+(function () {
+  const d = document.getElementById('pos-div'), pos = document.getElementById('pos'); if (!d) return;
+  let drag = false;
+  d.addEventListener('pointerdown', e => { drag = true; d.classList.add('on'); d.setPointerCapture(e.pointerId); e.preventDefault(); });
+  d.addEventListener('pointermove', e => { if (!drag) return; const r = pos.getBoundingClientRect(); PANT.izq = Math.round(Math.min(65, Math.max(20, (e.clientX - r.left) / r.width * 100))); pantPinta(); });
+  d.addEventListener('pointerup', () => { drag = false; d.classList.remove('on'); });
+  pantPinta();
+})();
 function onTab(k) { if (k === 'comprobantes') cargarComprobantes(); if (k === 'vales') cargarVales(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
 
 // ═══ Vender · productos ════════════════════════════════════════════════
@@ -1897,6 +1927,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=33"></script>
+<script src="manual.js?v=34"></script>
 </body>
 </html>
