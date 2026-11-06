@@ -835,6 +835,8 @@ async function init() {
   if (!p.es_admin) document.getElementById('tab-ajustes').style.display = 'none';
   pintarLocal();
   { const aid = new URLSearchParams(location.search).get('autorizar'); if (aid) { history.replaceState(null, '', location.pathname); setTimeout(() => autResponder(Number(aid)), 300); } }
+  // la notificación del pedido (SW del Hub o de RRHH) le avisa a la ventana abierta aunque sea esta (iPhone: la PWA muestra el último módulo)
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', ev => { const d = ev.data || {}; if (d.tipo !== 'abrir-url' || !d.url) return; try { const id = new URL(d.url).searchParams.get('autorizar'); if (id) autResponder(Number(id)); } catch (e) {} });
   const hoy = hoyAR();
   ['c-desde', 'c-hasta', 'k-fecha'].forEach(id => document.getElementById(id).value = hoy);
   const [{ data: m }, { data: pv }, { data: tp }] = await Promise.all([
