@@ -720,18 +720,22 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <div class="et-wrap">
         <div class="card">
           <h3>Etiquetas para imprimir</h3>
-          <div class="buscador" style="margin:8px 0"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="et-q" placeholder="Buscá el producto por SKU o descripción, o escaneá" autocomplete="off" oninput="etBuscar()" onkeydown="if(event.key==='Enter'){event.preventDefault();etEnter()}"></div>
+          <div class="buscador" style="margin:8px 0"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="chip amber" id="et-pend" style="display:none;margin-right:6px"></span><input id="et-q" placeholder="Cantidad y + (ej. 12 +), después el SKU o escaneá · o directo 12 SMINI" autocomplete="off" oninput="etBuscar()" onkeydown="if(event.key==='Enter'){event.preventDefault();etEnter()}"></div>
           <div id="et-res" class="prod-lista mov-res"></div>
           <div id="et-cola"></div>
           <div class="acciones" style="margin-top:10px"><button class="btn" onclick="etVaciar()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar</button><span class="spacer"></span><span class="mini" id="et-tot"></span><button class="btn primary" id="et-imprimir" onclick="etPreview()" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Vista previa e imprimir</button></div>
         </div>
         <div class="card et-rollo">
-          <h3>Rollo</h3>
+          <h3>Así va saliendo el rollo</h3>
+          <div class="mini" id="et-prev-lb" style="margin-bottom:6px"></div>
+          <div class="pv-a4" style="padding:10px;max-height:60vh;overflow:auto"><iframe id="et-prev" style="width:100%;border:none;background:#fff;border-radius:6px;height:60px"></iframe></div>
+          <details style="margin-top:12px"><summary class="mini" style="cursor:pointer">Rollo e impresora (medidas, por fila, nombre)</summary>
           <div class="mini" style="margin-bottom:8px">Medidas en milímetros. Se imprime por el driver de Windows de la impresora (Zebra); en el diálogo de impresión elegí la Zebra y la hoja sale del tamaño de una fila de etiquetas. Queda guardado en esta computadora.</div>
           <div class="et-f"><label>Ancho <input id="et-ancho" inputmode="decimal"></label><label>Alto <input id="et-alto" inputmode="decimal"></label><label>Por fila <input id="et-cols" inputmode="numeric"></label></div>
           <div class="et-f"><label>Separación <input id="et-gap" inputmode="decimal"></label><label>Margen izq. <input id="et-margen" inputmode="decimal"></label><label>Nombre <select id="et-nombre"><option value="Claudia Adorno">Claudia Adorno</option><option value="Atelier Claudia Adorno">Atelier Claudia Adorno</option></select></label></div>
           <div class="acciones" style="margin-top:8px"><button class="btn" onclick="etRolloDefault()">Volver al rollo de siempre (31,7 × 12,7, 3 por fila)</button><span class="spacer"></span><button class="btn" onclick="etGuardarRollo();toast('Rollo guardado','success')">Guardar rollo</button></div>
           <div class="mini" style="margin-top:10px">Diseño C1 (el que elegiste el 30-oct): QR con el SKU a la izquierda, SKU grande y el nombre debajo. Si una fila sale corrida, ajustá separación y margen y volvé a probar con una sola fila.</div>
+          </details>
         </div>
       </div>
     </section>
@@ -1408,20 +1412,29 @@ async function pdCancelar(id) { const m = prompt('Motivo para cancelar el pedido
 // Diseño C1 (JP, 30-oct-2026, medido en la ZD220): etiqueta 31,7 × 12,7 mm, 3 bandas, 3,2 mm entre bandas, la 1ª arranca 1,5 mm antes del
 // cabezal → margen 2,5 mm. QR de 7,9 mm (21 módulos a 3 puntos) a la izquierda; SKU grande en negrita y "Claudia Adorno" debajo (Avant Garde).
 const ET_DEF = { ancho: 31.7, alto: 12.7, cols: 3, gap: 3.2, margen: 2.5, nombre: 'Claudia Adorno' };
-let ET = { cola: [] };
+let ET = { cola: [], pend: 0 };
 function etRollo() { try { return Object.assign({}, ET_DEF, JSON.parse(localStorage.getItem('pos_etiq') || '{}')); } catch (e) { return Object.assign({}, ET_DEF); } }
 function etPintaRollo() { const r = etRollo(); for (const k of ['ancho', 'alto', 'cols', 'gap', 'margen', 'nombre']) { const el = document.getElementById('et-' + k); if (el) el.value = r[k]; } }
 function etGuardarRollo() { const r = {}; for (const k of ['ancho', 'alto', 'cols', 'gap', 'margen']) r[k] = Math.max(0, num(document.getElementById('et-' + k).value)) || ET_DEF[k]; r.cols = Math.max(1, Math.round(r.cols)); r.nombre = document.getElementById('et-nombre').value; localStorage.setItem('pos_etiq', JSON.stringify(r)); }
 function etRolloDefault() { localStorage.removeItem('pos_etiq'); etPintaRollo(); }
 function etBuscar() {
-  const q = document.getElementById('et-q').value.trim().toUpperCase(); const box = document.getElementById('et-res');
-  if (!q) { box.innerHTML = ''; return; }
+  let q = document.getElementById('et-q').value.trim().toUpperCase(); const box = document.getElementById('et-res');
+  const m = q.match(/^(\d+)\s*[+*X\s]\s*(.+)$/); if (m) q = m[2].trim();   // "12 SMINI": buscar por lo que sigue a la cantidad
+  if (!q || /^\d+\s*[+*X]?$/.test(q)) { box.innerHTML = ''; return; }
   box.innerHTML = ARTS.filter(a => (a.sku + ' ' + a.descripcion).toUpperCase().includes(q)).slice(0, 8).map(a => `<button class="prod" onclick="etAgregar('${esc(a.sku)}')">${foto(a.sku, 'chica')}<span class="txt"><span class="sku">${esc(a.sku)}</span><span class="desc">${esc(a.descripcion)}</span></span><span class="stk">${Number(a.stock)}</span><span class="pre">+</span></button>`).join('');
 }
-function etEnter() { const q = document.getElementById('et-q').value.trim().toUpperCase(); const a = ARTS.find(x => x.sku.toUpperCase() === q); if (a) etAgregar(a.sku); else { const b = document.querySelector('#et-res .prod'); if (b) b.click(); } }
+// Las chicas escriben la cantidad primero: "12 +" (o "12+") y después el SKU, o todo junto "12 SMINI" / "12+SMINI"
+function etEnter() {
+  const inp = document.getElementById('et-q'); let q = inp.value.trim().toUpperCase();
+  let m = q.match(/^(\d+)\s*[+*X]?$/); if (m) { ET.pend = Number(m[1]); inp.value = ''; document.getElementById('et-res').innerHTML = ''; etPend(); return; }
+  m = q.match(/^(\d+)\s*[+*X\s]\s*(.+)$/); if (m && !ARTS.find(x => x.sku.toUpperCase() === q)) { ET.pend = Number(m[1]); q = m[2].trim(); inp.value = q; }
+  const a = ARTS.find(x => x.sku.toUpperCase() === q); if (a) etAgregar(a.sku); else { etBuscar(); const b = document.querySelector('#et-res .prod'); if (b) b.click(); else toast('No encontré ' + q, 'error'); }
+}
+function etPend() { const c = document.getElementById('et-pend'); if (!c) return; c.style.display = ET.pend ? '' : 'none'; c.textContent = ET.pend ? ET.pend + ' ×' : ''; }
 function etAgregar(sku, cant) {
   const a = ARTS.find(x => x.sku === sku); if (!a) return;
-  const it = ET.cola.find(x => x.sku === sku); if (it) it.cantidad += cant || 1; else ET.cola.push({ sku: a.sku, descripcion: a.descripcion, cantidad: cant || 1 });
+  const n = cant || ET.pend || 1; ET.pend = 0; etPend();
+  const it = ET.cola.find(x => x.sku === sku); if (it) it.cantidad += n; else ET.cola.push({ sku: a.sku, descripcion: a.descripcion, cantidad: n });
   const q = document.getElementById('et-q'); if (q) { q.value = ''; } const r = document.getElementById('et-res'); if (r) r.innerHTML = '';
   sonar('mas'); etRender(); if (q) q.focus();
 }
@@ -1432,6 +1445,7 @@ function etRender() {
   etPintaRollo();
   const box = document.getElementById('et-cola'); if (!box) return; const tot = ET.cola.reduce((s, i) => s + i.cantidad, 0);
   box.className = 'et-cola'; box.innerHTML = ET.cola.length ? `<table><thead><tr><th>Artículo</th><th class="num">Etiquetas</th><th></th></tr></thead><tbody>` + ET.cola.map((it, i) => `<tr><td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td><td class="num cant"><button class="btn ico chico" onclick="etCant(${i},${it.cantidad + 1})" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="etCant(${i},this.value)" inputmode="numeric"><button class="btn ico chico" onclick="etCant(${i},${it.cantidad - 1})" aria-label="Menos">${_i('minus')}</button></td><td><button class="btn ico chico" onclick="etQuitar(${i})" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">Buscá un producto y tocalo para sumarlo a la cola. Escaneá su QR para ir más rápido.</div>';
+  etPrevVivo();
   const r = etRollo(); document.getElementById('et-tot').textContent = tot ? tot + (tot === 1 ? ' etiqueta' : ' etiquetas') + ' · ' + Math.ceil(tot / r.cols) + (Math.ceil(tot / r.cols) === 1 ? ' fila' : ' filas') : '';
   document.getElementById('et-imprimir').disabled = !tot;
 }
@@ -1455,6 +1469,18 @@ function etHTML(cola) {
   </style></head><body>${filas.map(f => `<div class="fila">${f.map(sku => `<div class="et"><img class="q" src="${qr(sku)}" alt=""><div class="s" style="font-size:${fsSku(sku).toFixed(2)}pt">${esc(sku)}</div><div class="n">${esc(r.nombre || 'Claudia Adorno')}</div></div>`).join('')}</div>`).join('')}</body></html>`;
 }
 async function etDesdeRemito(id) { const { data } = await sb.from('pos_comprobantes_det').select('sku,cantidad,cantidad_recibida').eq('comprobante_id', id); (data || []).forEach(d => { const n = Number(d.cantidad_recibida != null ? d.cantidad_recibida : d.cantidad); if (n > 0) etAgregar(d.sku, n); }); switchTab('etiquetas'); }
+let _etPv;
+function etPrevVivo() {
+  clearTimeout(_etPv);
+  _etPv = setTimeout(() => {
+    const ifr = document.getElementById('et-prev'), lb = document.getElementById('et-prev-lb'); if (!ifr) return; const r = etRollo(); const tot = ET.cola.reduce((s, i) => s + i.cantidad, 0);
+    if (!tot) { ifr.style.height = '60px'; ifr.srcdoc = '<body style="margin:0;font-family:sans-serif;font-size:12px;color:#6b7280;padding:14px">Sumá productos y acá ves cómo sale cada fila del rollo.</body>'; lb.textContent = ''; return; }
+    const filas = Math.ceil(tot / r.cols); const Z = Math.max(1, Math.min(2.2, (ifr.parentElement.clientWidth - 24) / ((r.margen + r.cols * r.ancho + (r.cols - 1) * r.gap) * 3.78)));
+    lb.textContent = tot + (tot === 1 ? ' etiqueta' : ' etiquetas') + ' · ' + filas + (filas === 1 ? ' fila' : ' filas') + ' de ' + r.cols + ' · ' + r.ancho + ' × ' + r.alto + ' mm';
+    ifr.style.height = Math.ceil(r.alto * 3.78 * Z * Math.min(filas, 12) + 14) + 'px';
+    ifr.srcdoc = etHTML(ET.cola.slice(0, 200)).replace('</style>', 'body { zoom: ' + Z.toFixed(2) + '; } .fila { page-break-after: auto; break-after: auto; border-bottom: 1px dashed #cbd5e1; }</style>');
+  }, 150);
+}
 function etPreview() {
   if (!ET.cola.length) return; const r = etRollo(); const tot = ET.cola.reduce((s, i) => s + i.cantidad, 0);
   modal(`<div class="m-head"><h3>Etiquetas · ${tot} en ${Math.ceil(tot / r.cols)} ${Math.ceil(tot / r.cols) === 1 ? 'fila' : 'filas'} de ${r.cols}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
@@ -2555,6 +2581,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=43"></script>
+<script src="manual.js?v=44"></script>
 </body>
 </html>
