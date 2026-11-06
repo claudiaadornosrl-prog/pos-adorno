@@ -463,6 +463,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .pos-ticket.es-nc { background: #ffedd5; border-color: #fdba74; }   /* nota de crédito: naranja claro, para que se note que no es una factura */
 .pos-ticket.es-pr { background: #e0f2fe; border-color: #7dd3fc; }   /* presupuesto: celeste */
 .pos-ticket.es-ma { background: #fee2e2; border-color: #fca5a5; }   /* manual: rojo clarito */
+.renglones tr.cambio td { background: #ede9fe; } .renglones tr.cambio .num b { color: #5b21b6; }
 .pos-ticket.es-re { background: #fef3c7; border-color: #fcd34d; }   /* remito: ámbar */ .pos-ticket.es-re .renglones table { background: white; }
 .rebox { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; } .rebox .sena-h b { color: #92400e; } .re-seg { margin: 0; }
 .pos-ticket.es-tr { background: #ede9fe; border-color: #c4b5fd; } .pos-ticket.es-tr .renglones table { background: white; } .pos-ticket.es-tr .rebox .sena-h b { color: #5b21b6; }
@@ -546,7 +547,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
 .aut-caja { background: var(--primary-bg); border-radius: 12px; padding: 10px 12px; margin-top: 8px; } .aut-caja.sin { background: #fee2e2; } .aut-caja.ok { background: #dcfce7; }
 .aut-p { display: flex; align-items: center; gap: 8px; padding: 5px 0; } .aut-p .nom { flex: 1; } .aut-p .nom .mini { display: block; } .aut-clave { display: flex; gap: 8px; margin-top: 6px; } .aut-clave input { flex: 1; border: 1.5px solid var(--border); border-radius: 999px; padding: 8px 12px; font-family: inherit; font-size: 14px; }
 .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid #cbd5e1; border-top-color: var(--primary); border-radius: 50%; animation: gir 1s linear infinite; vertical-align: middle; margin-right: 6px; } @keyframes gir { to { transform: rotate(360deg); } }
-.cl-res { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow: auto; }
+.cl-res { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow: auto; } .cl-res.sug { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 50; background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.14); } .cli { position: relative; }
 .cl-it { display: flex; gap: 10px; align-items: center; text-align: left; background: #f8fafc; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; } .cl-it:hover { border-color: var(--primary); } .cl-it .ico { color: var(--muted); }
 .medios { display: flex; flex-direction: column; gap: 6px; }
 /* (JP 6-nov) El renglón de pago va SIEMPRE en una sola línea: medio · ícono · zona (Point, vale, dólares) · importe · botón; si no entra, se desplaza a lo ancho */
@@ -656,10 +657,11 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
             <div class="cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><input id="v-re-nota" placeholder="Nota para la entrega: horario, portería, quién recibe… (opcional)" autocomplete="off"></div>
           </div>
           <div class="cli" id="v-cli">
-            <div class="cli-sin" id="v-cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-cli-doc" placeholder="Cliente: DNI o CUIT · o escaneá el DNI" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();cliBuscar();}"><button class="btn ico chico" onclick="buscarPorNombre()" title="Buscar por nombre" aria-label="Buscar por nombre"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button></div>
+            <div class="cli-sin" id="v-cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-cli-doc" placeholder="Cliente: DNI, CUIT o nombre · o escaneá el DNI" autocomplete="off" oninput="cliSugerir()" onkeydown="if(event.key==='Enter'){event.preventDefault();cliEnter();} if(event.key==='Escape'){cliSugCerrar()}"><button class="btn ico chico" onclick="buscarPorNombre()" title="Buscar por nombre" aria-label="Buscar por nombre"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button></div>
             <div class="cli-con" id="v-cli-con" style="display:none" onclick="editarCliente()" title="Tocá para editar la ficha del cliente"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div class="cli-datos"><b id="v-cli-nombre"></b><div class="mini" id="v-cli-det"></div><div class="mini" id="v-cli-arca"></div></div>
               <label class="mini cli-chk" id="v-cli-anombre-lb" style="display:none" onclick="event.stopPropagation()" title="Solo si el cliente pide la factura con sus datos"><input type="checkbox" id="v-cli-anombre" onchange="T.cliente.facturar_a_nombre=this.checked;vRender()"> a su nombre</label>
               <button class="btn ico chico" onclick="event.stopPropagation();quitarCliente()" title="Sacar el cliente del ticket" aria-label="Sacar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div id="v-cli-sug" class="cl-res sug" style="display:none"></div>
           </div>
           <div class="cli-mail" id="v-cli-mail" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="v-mail" type="email" placeholder="Mail del cliente · acá se manda la factura" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();mailGuardar()}" onblur="mailGuardar()"><span class="mini" id="v-mail-st"></span></div>
           <div class="renglones" id="v-renglones"><div class="empty chico">Todavía no agregaste nada.</div></div>
@@ -987,11 +989,11 @@ function vBuscar() {
   }
   const res = ARTS.filter(a => { const t = (a.sku + ' ' + a.descripcion + ' ' + (a.descripcion_adicional || '')).toUpperCase(); return pal.every(p => t.includes(p)); });
   res.sort((a, b) => (a.sku === q ? -1 : b.sku === q ? 1 : 0) || (a.sku.startsWith(q) ? -1 : b.sku.startsWith(q) ? 1 : 0) || (b.stock - a.stock));
-  box.innerHTML = res.length ? res.slice(0, 60).map(a => `
+  box.innerHTML = res.length ? res.slice(0, 5).map(a => `
     <button class="prod${a.sku === FICHA ? ' act' : ''}" onclick="vAgregar('${esc(a.sku)}')" ondblclick="prodFicha('${esc(a.sku)}', 2)" onmouseenter="vFicha('${esc(a.sku)}')" title="Clic: agregar al ticket · doble clic: ficha completa en Productos">
       ${foto(a.sku)}<span class="txt"><span class="sku">${esc(a.sku)}</span><span class="desc">${esc(a.descripcion)}${a.descripcion_adicional ? ' <i>' + esc(a.descripcion_adicional) + '</i>' : ''}</span></span>
       <span class="stk ${a.stock <= 0 ? 'sin' : ''}" title="Stock en ${esc(LOCALES[LOCAL])}${a.reservado ? ' · ' + a.reservado + ' señado' + (a.reservado > 1 ? 's' : '') : ''}">${Number(a.stock)}${a.reservado ? '<small class="res">·' + a.reservado + '</small>' : ''}${a.flash ? '<small class="flash">' + (a.flash > 0 ? '+' : '') + a.flash + '</small>' : ''}</span><span class="pre">${plata(a.precio)}</span></button>`).join('')
-    + (res.length > 60 ? `<div class="mini" style="padding:8px">… y ${res.length - 60} más: afiná la búsqueda.</div>` : '')
+    + (res.length > 5 ? `<div class="mini" style="padding:8px">… y ${res.length - 5} más: seguí escribiendo para afinar.</div>` : '')
     : '<div class="empty">No encontré nada con «' + esc(q) + '».</div>';
   vFicha(res.length ? res[0].sku : null);
 }
@@ -1614,12 +1616,22 @@ function vPreview(modo) {
     <div id="pv-2" class="pv-a4" style="display:none"><iframe id="pv-if" title="Hoja A4"></iframe></div>`, 'preview');
   window._pv = x; pvTab(1);
 }
+// La hoja A4 (595 × 842 px) se escala para que entre entera en la ventana, sin recortes
+function pvEscala() {
+  const box = document.getElementById('pv-2'), f = document.getElementById('pv-if'); if (!box || !f) return;
+  const anchoDisp = Math.max(200, box.clientWidth - 24), altoDisp = Math.max(300, window.innerHeight - box.getBoundingClientRect().top - 40);
+  const esc_ = Math.min(1, anchoDisp / 595, altoDisp / 842);
+  f.style.transform = 'scale(' + esc_.toFixed(3) + ')'; f.style.transformOrigin = 'top center'; f.style.width = '595px'; f.style.height = '842px';
+  let w = box.querySelector('.pv-wrap'); if (!w) { w = document.createElement('div'); w.className = 'pv-wrap'; f.parentNode.insertBefore(w, f); w.appendChild(f); }
+  w.style.width = Math.ceil(595 * esc_) + 'px'; w.style.height = Math.ceil(842 * esc_) + 'px'; w.style.overflow = 'hidden'; w.style.margin = '0 auto';
+}
+window.addEventListener('resize', () => { if (document.getElementById('pv-if')) pvEscala(); });
 function pvTab(n) {
   document.getElementById('pv-1').style.display = n === 1 ? '' : 'none'; document.getElementById('pv-2').style.display = n === 2 ? '' : 'none';
   document.getElementById('pv-t1').classList.toggle('on', n === 1); document.getElementById('pv-t2').classList.toggle('on', n === 2);
   document.getElementById('pv-print').title = n === 1 ? 'Imprimir en la comandera' : 'Imprimir la hoja A4';
   window._pvTab = n;
-  if (n === 2) { const f = document.getElementById('pv-if'); if (!f.dataset.ok) { f.srcdoc = a4HTML(window._pv); f.dataset.ok = 1; } }
+  if (n === 2) { const f = document.getElementById('pv-if'); if (!f.dataset.ok) { f.srcdoc = a4HTML(window._pv); f.dataset.ok = 1; } pvEscala(); }
 }
 function pvImprimir() {
   if (window._pvTab === 2) { imprimirA4(window._pv); return; }
@@ -1743,7 +1755,7 @@ function vDto(i, v) {
   else { it.descuento_monto = Math.min(it.precio_unit, Math.max(0, r2(num(txt)))); it.descuento_pct = it.descuento_monto && it.precio_unit ? it.descuento_monto / it.precio_unit * 100 : 0; }
   vRender();
 }
-function vSet(i, campo, v) { const it = T.items[i]; if (campo === 'precio_unit' && it.descuento_monto > 0) { const p = Math.max(0, num(v)); it.descuento_monto = Math.min(p, it.descuento_monto); it.descuento_pct = p ? it.descuento_monto / p * 100 : 0; } if (campo === 'cantidad') { const nv = Math.max(0, num(v)); if (nv !== it.cantidad) sonar(nv > it.cantidad ? 'mas' : 'menos'); } it[campo] = Math.max(0, num(v)); if (campo === 'cantidad' && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; } if (campo === 'cantidad' && !it.cantidad) T.items.splice(i, 1); vRender(); }
+function vSet(i, campo, v) { const it = T.items[i]; if (campo === 'precio_unit' && it.descuento_monto > 0) { const p = Math.max(0, num(v)); it.descuento_monto = Math.min(p, it.descuento_monto); it.descuento_pct = p ? it.descuento_monto / p * 100 : 0; } if (campo === 'cantidad') { const neg = !it.fijo && (T.tipo === 'FC' || T.tipo === 'MA' || T.tipo === 'NC') && !T.sena && !T.gift; const nv = neg ? num(v) : Math.max(0, num(v)); if (nv !== it.cantidad) sonar(nv > it.cantidad ? 'mas' : 'menos'); it.cantidad = nv; } else it[campo] = Math.max(0, num(v)); if (campo === 'cantidad' && it.cantidad < 0 && it.max) { toast('En una devolución la cantidad negativa quita stock: solo si el cliente se lleva ese artículo', 'error'); } if (campo === 'cantidad' && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; } if (campo === 'cantidad' && !it.cantidad) T.items.splice(i, 1); vRender(); }
 // Descuentos generales: uno o más renglones, cada uno por % o por importe en pesos (la última casilla tocada manda y la otra
 // se muestra calculada). Se aplican en cascada: cada uno sobre lo que queda. El "+" del primer renglón agrega otro.
 function dMontar() { document.getElementById('v-descs').innerHTML = ''; dAgregar(); }
@@ -1777,8 +1789,8 @@ function vTotales() {
 function vRender() {
   const box = document.getElementById('v-renglones');
   box.innerHTML = T.items.length ? `<table><thead><tr><th>Artículo</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto</th><th class="num">Importe</th><th></th></tr></thead><tbody>` +
-    T.items.map((it, i) => `<tr${it.stock <= 0 && !it.fijo ? ' class="sinstock" title="Sin stock en este local"' : ''}>
-      <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}${it.entregado ? ' <span class="chip amber" title="Ya salió con el remito: no vuelve a descontar stock">entregado</span>' : ''}</div></div></div></td>
+    T.items.map((it, i) => `<tr${it.cantidad < 0 ? ' class="cambio" title="Cantidad negativa: el cliente lo trae para cambiar"' : it.stock <= 0 && !it.fijo ? ' class="sinstock" title="Sin stock en este local"' : ''}>
+      <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}${it.entregado ? ' <span class="chip amber" title="Ya salió con el remito: no vuelve a descontar stock">entregado</span>' : ''}${it.cantidad < 0 ? ' <span class="chip viol" title="' + (T.tipo === 'NC' ? 'En la nota de crédito, el negativo SALE del stock' : 'Lo trae para cambiar: ENTRA al stock') + '">cambio · ' + (T.tipo === 'NC' ? 'sale' : 'entra') + '</span>' : ''}</div></div></div></td>
       <td class="num cant">${it.fijo ? '' : `<button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button>`}</td>
       <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? (it.placeholder || 'Importe de la seña') : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
       <td class="num">${it.fijo ? '' : `<input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right">`}</td>
@@ -1832,6 +1844,23 @@ function usarCliente(c) {
   vSenasOfrecer(T.cliente); vRemitosOfrecer(T.cliente);
 }
 function quitarCliente() { T.cliente = null; if (T.tipo === 'FC' && T.letra === 'A') vTipo('FC', 'B'); vRender(); document.getElementById('v-cli-doc').focus(); }
+// Desplegable con las 5 coincidencias mientras escribe (JP 6-nov): nombre, DNI o CUIT; Enter toma la primera
+let _cliSugT, _cliSug = [];
+function cliSugCerrar() { const b = document.getElementById('v-cli-sug'); if (b) { b.style.display = 'none'; b.innerHTML = ''; } _cliSug = []; }
+function cliSugerir() {
+  clearTimeout(_cliSugT); const q = document.getElementById('v-cli-doc').value.trim(); if (q.length < 3 || q.includes('@')) { cliSugCerrar(); return; }
+  _cliSugT = setTimeout(async () => {
+    const dig = q.replace(/\D/g, ''); const soloNum = dig.length === q.replace(/[\s.-]/g, '').length;
+    let qq = sb.from('clientes').select('*').order('ultima_compra_fecha', { ascending: false, nullsFirst: false }).limit(5);
+    qq = soloNum ? qq.or(`dni.ilike.${dig}%,cuit.ilike.%${dig}%`) : qq.ilike('nombre_completo', `%${q}%`);
+    const { data } = await qq; if (document.getElementById('v-cli-doc').value.trim() !== q) return;
+    _cliSug = data || []; const b = document.getElementById('v-cli-sug'); if (!b) return;
+    if (!_cliSug.length) { b.style.display = ''; b.innerHTML = `<div class="mini" style="padding:6px 10px">Ningún cliente con «${esc(q)}»${soloNum && dig.length >= 7 ? ' · Enter para darlo de alta' : ''}</div>`; return; }
+    b.style.display = ''; b.innerHTML = _cliSug.map((c, i) => `<button class="cl-it" onclick="cliSugElegir(${i})">${_i('user') || ''}<span><b>${esc(c.nombre_completo || (c.apellido + ' ' + c.nombre))}</b><div class="mini">${c.dni ? 'DNI ' + esc(c.dni) : c.cuit ? 'CUIT ' + esc(c.cuit) : 'sin documento'}${c.ultima_compra_fecha ? ' · última compra ' + fechaAR(String(c.ultima_compra_fecha).slice(0, 10)) : ''}${c.celular ? ' · ' + esc(c.celular) : ''}</div></span></button>`).join('');
+  }, 300);
+}
+function cliSugElegir(i) { const c = _cliSug[i]; if (!c) return; document.getElementById('v-cli-doc').value = ''; cliSugCerrar(); usarCliente(c); }
+function cliEnter() { const q = document.getElementById('v-cli-doc').value.trim(); const dig = q.replace(/\D/g, ''); if (_cliSug.length && (dig.length < 7 || !/^[\d.\s-]+$/.test(q))) { cliSugElegir(0); return; } cliSugCerrar(); cliBuscar(); }
 async function cliBuscar(txt) {
   const inp = document.getElementById('v-cli-doc'); const s = String(txt ?? inp.value).trim(); if (!s) return; inp.value = '';
   const dni = parseDNI(s); const dig = (dni ? dni.doc : s).replace(/\D/g, '');
@@ -2635,6 +2664,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=46"></script>
+<script src="manual.js?v=47"></script>
 </body>
 </html>
