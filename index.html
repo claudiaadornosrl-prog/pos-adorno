@@ -907,6 +907,8 @@ function pintarLocal() {
   // Admin: cualquier local. Vendedora/encargada: su local o Oficina (nunca el otro local).
   const permitidos = PERFIL.es_admin ? Object.keys(LOCALES) : [...new Set([PERFIL.local, 'oficina'])];
   if (!permitidos.includes(LOCAL)) LOCAL = permitidos[0];
+  // (JP 6-nov) Oficina no pide desde el POS: sus pedidos a proveedores van por Compras. Pedidos es para que el local le pida a Oficina (o a Familia García).
+  { const tp = document.getElementById('tab-pedidos'); if (tp) tp.style.display = LOCAL === 'oficina' ? 'none' : ''; if (LOCAL === 'oficina' && document.getElementById('content-pedidos') && document.getElementById('content-pedidos').classList.contains('active')) switchTab('vender'); }
   el.innerHTML = permitidos.length > 1
     ? `<select onchange="cambiarLocal(this.value)" title="Desde qué local facturás">${permitidos.map(k => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${LOCALES[k]}</option>`).join('')}</select>`
     : `<span>${esc(LOCALES[LOCAL] || LOCAL)}</span>`;
