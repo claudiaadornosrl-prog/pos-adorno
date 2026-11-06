@@ -756,6 +756,10 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <div class="card"><h3>Mi Point en esta caja</h3>
         <div class="mini" style="margin-bottom:8px">Elegí la terminal Mercado Pago Point que está en esta caja. Queda guardado en esta computadora o tablet; cada caja elige la suya.</div>
         <div id="a-point" class="pils"></div></div>
+      <div class="card"><h3>Dólar para cobrar en efectivo</h3>
+        <div class="mini" style="margin-bottom:8px">Promedio entre compra y venta del dólar billete del Banco Nación; se actualiza solo cada hora. Si lo escribís a mano vale por hoy y mañana vuelve al automático.</div>
+        <div id="a-tc" class="mini"></div>
+        <div class="et-f" style="margin-top:8px"><label>Tipo de cambio de hoy <input id="a-tc-in" inputmode="decimal" style="width:130px" onchange="tcManual(this.value)"></label></div></div>
       <div class="card"><h3>Pedidos a Familia García Regueira</h3>
         <div class="mini" style="margin-bottom:8px">Los pedidos del local al proveedor salen por mail (PDF) y por WhatsApp (texto). Si el mail queda vacío no se manda nada.</div>
         <div class="et-f"><label>Mail del proveedor <input id="a-fg-mail" style="width:260px" onchange="guardarParam('fg_mail',this.value)"></label><label>WhatsApp (solo dígitos, con 549) <input id="a-fg-wa" style="width:180px" onchange="guardarParam('fg_wa',this.value)"></label><label>Copia a <input id="a-ped-copia" style="width:260px" onchange="guardarParam('pedidos_copia',this.value)"></label></div></div>
@@ -932,7 +936,7 @@ async function cargarArticulos() {
   cargarTerminales().then(pRender);
   for (const a of ARTS) { a.stock_fisico = Number(a.stock); a.reservado = RESERVAS[a.sku] || 0; if (a.reservado) a.stock = a.stock_fisico - a.reservado; }
   try { const { data: cf } = await sb.from('stock_config').select('valor').eq('clave', 'fuente').maybeSingle(); STOCK_FUENTE = (cf && cf.valor) || 'dragon'; } catch (e) {}
-  cargarParamsPedidos();
+  cargarParamsPedidos(); cargarTC();
   if (!Object.keys(IMGS).length) { let d2 = 0; for (;;) { const { data } = await sb.from('stock_imagenes').select('sku,url').order('sku').range(d2, d2 + 999); (data || []).forEach(r => { IMGS[r.sku] = r.url; }); if (!data || data.length < 1000) break; d2 += 1000; } }
   document.getElementById('v-stat').textContent = ARTS.length ? ARTS.length.toLocaleString('es-AR') + ' artículos' : '';
 }
@@ -1659,7 +1663,7 @@ function a4HTML(x) {
   if (c.cliente_doc && !ma) { cli += `<br>${esc(c.cliente_doc_tipo || '')} ${esc(c.cliente_doc)}`; if ((c.cliente_cond_iva || 'CF') !== 'CF') cli += `<br>${esc(COND[c.cliente_cond_iva] || '')}`; }
   if (x.email && pr) cli += `<br>${esc(x.email)}`;
   if (!pr) cli += '<br>Condición de venta: contado';
-  const pagosH = pagos.map(p => `${esc(mp[p.medio] || p.medio)}${p.referencia ? ' · ' + esc(p.referencia) : ''}<br><b>${plata2(p.importe)}</b>`).join('<br>');
+  const pagosH = pagos.map(p => `${esc(mp[p.medio] || p.medio)}${p.detalle && p.detalle.usd ? ' · US$ ' + Number(p.detalle.usd) + ' × ' + plata2(p.detalle.tc) : ''}${p.referencia ? ' · ' + esc(p.referencia) : ''}<br><b>${plata2(p.importe)}</b>`).join('<br>');
   let side = `<div class="side"><img class="logo${li.logo === 'atelier-logo-der.png' ? ' atelier' : ''}" src="${location.origin + location.pathname.replace(/[^/]*$/, '')}${li.logo || 'logo-ca.png'}" alt="Claudia Adorno"><div class="et">Local</div><b>${esc(LOCALES[c.local] || c.local)}</b><br>${esc(li.domicilio || '')}`;
   if (fiscal) side += `<div class="et">Emisor</div><b>${esc(EMPRESA.razon)}</b><br>CUIT ${EMPRESA.cuit}<br>${esc(EMPRESA.cond)}<br>IIBB ${esc(EMPRESA.iibb)}<br>Inicio de actividades ${esc(EMPRESA.inicio)}`;
   side += `<div class="et">Cliente</div>${cli}`;
@@ -2023,7 +2027,7 @@ function preguntarCliente() {
 
 // ═══ Cobro y emisión ═══════════════════════════════════════════════════
 // Forma de pago en el ticket: renglones con desplegable de medio + importe + referencia; el "+" del primer renglón suma renglones (pagos combinados)
-const MEDIO_ICO = { efectivo: '💵', mp_point: '📱', mp_qr: '🔳', tarjeta: '💳', link: '🔗', transferencia: '🏦', vale: '🎟️', cc: '📒', mp_point_ni: '📱', mp_qr_ni: '🔳' };
+const MEDIO_ICO = { efectivo_usd: '💵', efectivo: '💵', mp_point: '📱', mp_qr: '🔳', tarjeta: '💳', link: '🔗', transferencia: '🏦', vale: '🎟️', cc: '📒', mp_point_ni: '📱', mp_qr_ni: '🔳' };
 const mIco = k => MEDIO_ICO[k] || '💰';
 function pMedios() { return MEDIOS.filter(m => (!m.solo_oficina || LOCAL === 'oficina') && !m.clave.endsWith('_ni')); }
 // Point y QR tienen variante No integrado (clave + '_ni'): se elige con la pastilla partida al lado, Integrado por defecto
@@ -2048,6 +2052,7 @@ function pMedio(sel) {
   const ref = row.querySelector('.ref'); ref.style.display = m && m.pide_referencia && !(sel.value === 'vale' && T.tipo === 'NC') ? '' : 'none';
   ref.placeholder = sel.value === 'vale' ? 'Código del vale / gift card' : 'Nº cupón / ref.';
   if (sel.value === 'vale') { ref.oninput = () => valeDebounce(row); ref.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); valeConsultar(row); } }; } else { ref.oninput = null; ref.onkeydown = null; }
+  { const imp = row.querySelector('.imp'); const usd = sel.value === 'efectivo_usd'; imp.readOnly = usd; imp.title = usd ? 'Se calcula: dólares × tipo de cambio' : 'Importe'; if (!usd) { row.dataset.usd = ''; } row.querySelector('.mp-zona').innerHTML = ''; }
   delete row.dataset.vale; delete row.dataset.valeErr;
   // ícono del medio al lado del desplegable: cambia y hace un saltito cada vez que se elige
   const ico = row.querySelector('.med-ico'); ico.textContent = sel.value ? mIco(sel.value) : ''; ico.classList.remove('pop'); void ico.offsetWidth; ico.classList.add('pop');
@@ -2073,7 +2078,7 @@ function emitirTicket() {
   if (!nc && T.letra === 'B' && T.cliente && T.cliente.cond_iva === 'RI') { toast('A un Responsable Inscripto se le hace factura A', 'error'); vTipo('FC', 'A'); return; }
   emitir(nc);
 }
-function pPagos() { return [...document.querySelectorAll('#v-pagos .medio')].map(r => { const mp = r.dataset.mp ? JSON.parse(r.dataset.mp) : null; return { medio: r.dataset.m || r.querySelector('.med').value, importe: r2(num(r.querySelector('.imp').value)), referencia: r.querySelector('.ref').value || (mp ? mp.payment_id : null), detalle: mp }; }).filter(p => p.medio && p.importe > 0); }
+function pPagos() { return [...document.querySelectorAll('#v-pagos .medio')].map(r => { const mp = r.dataset.mp ? JSON.parse(r.dataset.mp) : null; const usd = r.dataset.m === 'efectivo_usd' && r.querySelector('.usd-in') ? { usd: r2(num(r.querySelector('.usd-in').value)), tc: r2(num(r.querySelector('.tc-in').value)) } : null; return { medio: r.dataset.m || r.querySelector('.med').value, importe: r2(num(r.querySelector('.imp').value)), referencia: r.querySelector('.ref').value || (mp ? mp.payment_id : null), detalle: mp || usd }; }).filter(p => p.medio && p.importe > 0); }
 
 // ═══ Mercado Pago Point integrado ═══
 // El POS no habla con Mercado Pago: le pide a la función mp-point de Supabase (que guarda el token) cobrar en la terminal de esta caja.
@@ -2095,7 +2100,7 @@ function pointElegir(id) { if (id) localStorage.setItem('pos_point_' + LOCAL, id
 function mpZonas() {
   for (const r of document.querySelectorAll('#v-pagos .medio')) {
     const z = r.querySelector('.mp-zona'); if (!z) continue; const imp = r.querySelector('.imp');
-    if (r.dataset.m !== 'mp_point' || T.tipo === 'PR') { z.innerHTML = ''; if (r.dataset.mp) { delete r.dataset.mp; imp.readOnly = false; } continue; }
+    if (r.dataset.m !== 'mp_point' || T.tipo === 'PR') { if (r.dataset.m !== 'efectivo_usd' && r.dataset.m !== 'vale') z.innerHTML = ''; if (r.dataset.mp) { delete r.dataset.mp; imp.readOnly = false; } continue; }
     if (r.dataset.mp) { const d = JSON.parse(r.dataset.mp); z.innerHTML = `<span class="chip green" title="Operación ${esc(d.payment_id || '')}">✔ pagado${d.metodo ? ' · ' + esc(d.metodo) : ''}${d.cuotas > 1 ? ' · ' + d.cuotas + ' cuotas' : ''}</span>`; imp.readOnly = true; continue; }
     if (T.tipo === 'NC') { z.innerHTML = '<span class="mini">se devuelve a la tarjeta al emitir</span>'; continue; }
     const pt = miPoint(); const v = r2(num(imp.value));
@@ -2121,6 +2126,40 @@ async function valeConsultar(row) {
   const imp = row.querySelector('.imp'); const t = vTotales(); const otros = pPagos().filter(p => p.medio !== 'vale' || valeNorm(p.referencia) !== cod).reduce((s, p) => s + p.importe, 0);
   const usar = Math.min(Number(data.saldo), Math.max(0, r2(t.tot - otros)));
   imp.value = plata(usar); imp.dataset.tocado = 1; sonar('mas'); pRender();
+}
+// ═══ Efectivo en dólares (JP 6-nov): US$ × tipo de cambio = pesos. TC = promedio compra/venta del BNA, lo trae pos_cae cada hora ═══
+let TC = { tc: 0, compra: 0, venta: 0, fecha: null, manual: false };
+async function cargarTC() {
+  const { data } = await sb.from('pos_parametros').select('valor,valor_num,actualizado_at,error').eq('clave', 'tc_usd').maybeSingle();
+  if (!data) return; let v = {}; try { v = JSON.parse(data.valor || '{}'); } catch (e) {}
+  TC = { tc: Number(data.valor_num) || 0, compra: Number(v.compra) || 0, venta: Number(v.venta) || 0, fecha: v.fecha || data.actualizado_at, manual: !!v.manual, error: data.error };
+}
+const tcTexto = () => TC.tc ? (TC.manual ? 'fijado a mano hoy' : 'BNA ' + (TC.compra ? 'compra ' + plata(TC.compra) + ' / venta ' + plata(TC.venta) : '') + (TC.fecha ? ' · ' + fechaAR(String(TC.fecha).slice(0, 10)) : '')) : 'sin cotización todavía';
+function usdZonas() {
+  for (const r of document.querySelectorAll('#v-pagos .medio')) {
+    const z = r.querySelector('.mp-zona'); if (!z || r.dataset.m !== 'efectivo_usd' || sinPago()) continue;
+    if (!z.querySelector('.usd-in')) {
+      const t = vTotales(); const otros = pPagos().filter(p => p.medio !== 'efectivo_usd').reduce((s, p) => s + p.importe, 0); const falta = Math.max(0, r2(t.tot - otros));
+      z.innerHTML = `<span class="mini">US$</span><input class="usd-in din" inputmode="decimal" placeholder="dólares" style="width:90px" oninput="usdCalc(this)" value="${TC.tc && falta ? String(Math.ceil(falta / TC.tc * 100) / 100).replace('.', ',') : ''}"><span class="mini">×</span><input class="tc-in" inputmode="decimal" style="width:96px" title="Tipo de cambio (promedio compra/venta BNA)" value="${TC.tc ? String(TC.tc).replace('.', ',') : ''}" oninput="usdCalc(this)"><span class="mini usd-nota">${esc(tcTexto())}</span>`;
+      if (!TC.tc) z.innerHTML += '<span class="chip red">Sin tipo de cambio: cargalo en Ajustes</span>';
+      usdCalc(z.querySelector('.usd-in'));
+      setTimeout(() => z.querySelector('.usd-in').focus(), 30);
+    }
+  }
+}
+function usdCalc(el) {
+  const r = el.closest('.medio'); const usd = num(r.querySelector('.usd-in').value), tc = num(r.querySelector('.tc-in').value); const imp = r.querySelector('.imp');
+  imp.value = usd > 0 && tc > 0 ? plata(r2(usd * tc)) : ''; imp.dataset.tocado = 1; pRender();
+}
+async function tcPintaAjustes() {
+  await cargarTC(); const el = document.getElementById('a-tc'); if (!el) return;
+  el.innerHTML = TC.tc ? `Hoy: <b style="font-size:18px;color:var(--text)">${plata2(TC.tc)}</b> por dólar · ${esc(tcTexto())}${TC.error ? ' <span class="chip red" title="' + esc(TC.error) + '">última lectura falló</span>' : ''}` : 'Todavía no hay cotización cargada' + (TC.error ? ' · <span class="chip red" title="' + esc(TC.error) + '">la lectura falló</span>' : '');
+  const inp = document.getElementById('a-tc-in'); if (inp) inp.value = TC.tc ? String(TC.tc).replace('.', ',') : '';
+}
+async function tcManual(v) {
+  const tc = r2(num(v)); if (!(tc > 0)) { toast('Tipo de cambio inválido', 'error'); return; }
+  const { error } = await sb.from('pos_parametros').update({ valor_num: tc, valor: JSON.stringify({ manual: true, fecha: hoyAR() }), actualizado_at: new Date().toISOString() }).eq('clave', 'tc_usd');
+  if (error) { toast(error.message, 'error'); return; } toast('Tipo de cambio fijado por hoy: ' + plata2(tc), 'success'); tcPintaAjustes();
 }
 function valeZonas() {
   for (const r of document.querySelectorAll('#v-pagos .medio')) {
@@ -2202,14 +2241,14 @@ function pRender() {
   const t = vTotales();
   // un solo renglón sin importe → se le sugiere el total (la vendedora lo puede cambiar)
   const rows = document.querySelectorAll('#v-pagos .medio'); if (rows.length === 1 && T.items.length) { const imp = rows[0].querySelector('.imp'); if (document.activeElement !== imp && !imp.dataset.tocado) imp.value = t.tot ? plata(t.tot) : ''; imp.oninput = () => { imp.dataset.tocado = 1; pRender(); }; }
-  mpZonas(); valeZonas();
+  mpZonas(); valeZonas(); usdZonas();
   const pag = r2(pPagos().reduce((s, p) => s + p.importe, 0)); const falta = r2(t.tot - pag);
   const pointSinCobrar = !sinPago() && T.tipo !== 'NC' && [...rows].some(r => r.dataset.m === 'mp_point' && num(r.querySelector('.imp').value) > 0 && !r.dataset.mp);
   const valeSinOk = !sinPago() && T.tipo !== 'NC' && [...rows].some(r => r.dataset.m === 'vale' && num(r.querySelector('.imp').value) > 0 && !r.dataset.vale);
   document.getElementById('p-pagado').textContent = plata(pag);
   document.getElementById('p-falta-lb').textContent = falta < 0 ? 'Vuelto' : 'Falta';
   document.getElementById('p-falta').textContent = plata(Math.abs(falta));
-  document.getElementById('v-cobrar').disabled = !T.items.length || pointSinCobrar || valeSinOk || (T.tipo === 'NC' && !T.nc_de) || (!sinPago() && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo')));
+  document.getElementById('v-cobrar').disabled = !T.items.length || pointSinCobrar || valeSinOk || (T.tipo === 'NC' && !T.nc_de) || (!sinPago() && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo' || p.medio === 'efectivo_usd')));
 }
 function pFalta() { const t = vTotales(); const rows = [...document.querySelectorAll('#v-pagos .medio')]; const vacio = rows.find(r => !num(r.querySelector('.imp').value)); if (!vacio) return; const otros = pPagos().reduce((s, p) => s + p.importe, 0); vacio.querySelector('.imp').value = plata(Math.max(0, r2(t.tot - otros))); pRender(); }
 async function emitir(esNC) {
@@ -2220,7 +2259,7 @@ async function emitir(esNC) {
       if (aid === null) { btn.disabled = false; return; } if (aid) T.autorizacion_id = aid; } }
   // Vuelto: si pagó de más en efectivo, el efectivo que queda es total - resto
   const pag = pagos.reduce((s, p) => s + p.importe, 0);
-  if (pag > t.tot + 1) { const ef = pagos.find(p => p.medio === 'efectivo'); if (ef) ef.importe = r2(ef.importe - (pag - t.tot)); }
+  if (pag > t.tot + 1) { const ef = pagos.find(p => p.medio === 'efectivo') || pagos.find(p => p.medio === 'efectivo_usd'); if (ef) ef.importe = r2(ef.importe - (pag - t.tot)); }
   const valeCont = esNC ? (document.querySelector('#v-pagos .vale-cont') || {}).value || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && !(t.tot > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
   const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: document.getElementById('v-obs').value.trim() || null,
@@ -2439,7 +2478,7 @@ function ticketHTML(x) {
     ${senaUso}${A ? `<div class="fila"><span>Neto gravado</span><span>${plata2(c.neto)}</span></div><div class="fila"><span>IVA 21%</span><span>${plata2(c.iva)}</span></div>` : ''}
     ${trasl ? `<div class="fila total"><span>UNIDADES</span><span>${det.reduce((s, d) => s + Number(d.cantidad), 0)}</span></div>` : `<div class="fila total"><span>TOTAL</span><span>${A ? plata2(c.total) : plata(c.total)}</span></div>`}
     ${c.letra === 'B' ? `<div class="mini">IVA contenido ${plata2(c.iva)}<br>Otros impuestos nacionales indirectos $ 0,00</div>` : ''}${senaDet}${valesDet}
-    ${pagos.length ? '<div class="sep"></div>' + pagos.map(p => `<div class="fila"><span>${esc(mp[p.medio] || p.medio)}${p.referencia ? ' · ' + esc(p.referencia) : ''}</span><span>${plata(p.importe)}</span></div>`).join('') : ''}
+    ${pagos.length ? '<div class="sep"></div>' + pagos.map(p => `<div class="fila"><span>${esc(mp[p.medio] || p.medio)}${p.detalle && p.detalle.usd ? ' · US$ ' + Number(p.detalle.usd) + ' × ' + plata2(p.detalle.tc) : ''}${p.referencia ? ' · ' + esc(p.referencia) : ''}</span><span>${plata(p.importe)}</span></div>`).join('') : ''}
     ${c.obs ? `<div class="sep"></div><div class="mini">${esc(c.obs)}</div>` : ''}
     ${c.estado === 'anulado' ? `<div class="tk-anulado">ANULADO · ${esc(c.anulado_motivo || '')}</div>` : ''}
     <div class="sep"></div>
@@ -2560,7 +2599,8 @@ async function cargarCaja() {
   const em = (comps || []).filter(c => c.estado === 'emitido');
   const tot = em.reduce((s, c) => s + c.signo * Number(c.total), 0);
   const fisc = em.filter(c => c.letra !== 'X').reduce((s, c) => s + c.signo * Number(c.total), 0);
-  const kp = [['Total del día', plata(tot)], ['Facturado', plata(fisc)], ['Factura manual', plata(tot - fisc)], ['Tickets', em.filter(c => c.tipo !== 'NC').length], ['Notas de crédito', em.filter(c => c.tipo === 'NC').length]];
+  let usd = 0; try { const { data: pu } = await sb.from('pos_pagos').select('detalle,comprobante:comprobante_id(local,fecha,estado,signo)').eq('medio', 'efectivo_usd').eq('comprobante.local', LOCAL).eq('comprobante.fecha', f); usd = (pu || []).filter(p => p.comprobante && p.comprobante.estado === 'emitido').reduce((s, p) => s + (p.comprobante.signo || 1) * Number((p.detalle || {}).usd || 0), 0); } catch (e) {}
+  const kp = [['Total del día', plata(tot)], ['Facturado', plata(fisc)], ['Factura manual', plata(tot - fisc)], ['Tickets', em.filter(c => c.tipo !== 'NC').length], ['Notas de crédito', em.filter(c => c.tipo === 'NC').length]]; if (usd) kp.push(['Dólares en caja', 'US$ ' + usd.toLocaleString('es-AR', { maximumFractionDigits: 2 })]);
   document.getElementById('k-kpis').innerHTML = kp.map(([l, v]) => `<div class="kpi"><div class="lb">${l}</div><div class="v">${v}</div></div>`).join('');
   document.getElementById('k-stat').textContent = (comps || []).filter(c => c.estado === 'anulado').length ? (comps.filter(c => c.estado === 'anulado').length + ' anulados (no cuentan)') : '';
   const filas = (caja || []).filter(r => Number(r.importe) || Number(r.cantidad));
@@ -2571,7 +2611,7 @@ async function cargarCaja() {
 
 // ═══ Ajustes (admin) ═══════════════════════════════════════════════════
 async function cargarAjustes() {
-  pointAjustes(); cargarRangos(); cargarParamsPedidos();
+  pointAjustes(); cargarRangos(); cargarParamsPedidos(); tcPintaAjustes();
   const [{ data: pv }, { data: mp }, { data: tp }] = await Promise.all([sb.from('pos_puntos_venta').select('*').order('local').order('tipo'), sb.from('pos_medios_pago').select('*').order('orden'), sb.from('pos_parametros').select('*').eq('clave', 'tope_cf_arca').maybeSingle()]);
   document.getElementById('a-tope').innerHTML = tp ? `<b style="font-size:18px;color:var(--text)">${plata(tp.valor_num)}</b> · abajo de este importe la factura B sale a Consumidor Final sin datos (el cliente queda igual en nuestra base); desde este importe ARCA exige identificarlo y el POS lo obliga.<br>No se carga a mano: el servicio del CAE lo lee en <a href="${esc(tp.fuente || '')}" target="_blank" rel="noopener">la página de ARCA</a> una vez por mes. Última lectura: ${tp.actualizado_at ? new Date(tp.actualizado_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '—'}.${tp.error ? `<div style="color:var(--red);margin-top:4px">⚠ ${esc(tp.error)}</div>` : ''}` : 'No está configurado el tope (pos_parametros).';
   document.getElementById('a-pv').innerHTML = `<table><thead><tr><th>Local</th><th>Tipo</th><th class="num">Punto de venta</th><th>Activo</th><th>Nota</th></tr></thead><tbody>` +
@@ -2588,6 +2628,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=45"></script>
+<script src="manual.js?v=46"></script>
 </body>
 </html>
