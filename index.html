@@ -506,8 +506,8 @@ main { max-width: 1500px; }
 .renglones table { box-shadow: none; } .renglones td { padding: 6px 6px; } .renglones input { width: 48px; border: 1px solid var(--border); border-radius: 6px; padding: 4px; text-align: right; font-family: inherit; font-size: 14px; }
 .renglones td.cant { white-space: nowrap; } .sena-box { margin: 8px 0 4px; padding: 10px 12px; border: 2px dashed #1d4ed8; border-radius: 12px; background: #eff6ff; } .sena-h b { color: #1d4ed8; font-size: 15px; }
 input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !important; } .sena-h { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; } .sena-h .mini { flex: 1; } .sena-box table { box-shadow: none; background: transparent; } .sena-box td { padding: 4px 6px; border: none; } .sena-box .fila { display: flex; justify-content: space-between; gap: 8px; padding: 2px 6px; }
-.prod.sena { border: 2px dashed #1d4ed8; background: #eff6ff; } .sena-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; } .chip.blue { background: #dbeafe; color: #1d4ed8; } .stk .res { color: #1d4ed8; font-weight: 700; margin-left: 2px; }
-.mp-zona { display: flex; align-items: center; gap: 6px; flex-basis: 100%; } .mp-zona:empty { display: none; } .mp-btn { white-space: nowrap; } #v-pagos .medio { flex-wrap: wrap; } .pils { display: flex; gap: 8px; flex-wrap: wrap; } .pil { border: 1.5px solid var(--border); background: #fff; border-radius: 999px; padding: 7px 14px; font-weight: 600; cursor: pointer; font-family: inherit; } .pil.on { background: var(--teal, #0e7490); color: #fff; border-color: transparent; }
+.prod.sena { border: 2px dashed #1d4ed8; background: #eff6ff; } .prod.gift, .gift-box { border: 2px dashed #0e7490; background: #ecfeff; } .gift-box { margin: 8px 0 4px; padding: 10px 12px; border-radius: 12px; } .gift-box .sena-h b { color: #0e7490; } .gift-f { display: flex; gap: 8px; margin: 6px 0; align-items: center; } .gift-f input:not([type=checkbox]) { flex: 1; min-width: 0; text-align: left; } .code { font-family: ui-monospace, Consolas, monospace; font-weight: 700; letter-spacing: 1px; } .vale-cod { text-align: center; padding: 10px; } .vale-cod .code { font-size: 22px; } .vale-cod img.qr { width: 120px; height: 120px; margin-top: 8px; } .vale-cont { flex: 1; min-width: 180px; } .sena-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; } .chip.blue { background: #dbeafe; color: #1d4ed8; } .stk .res { color: #1d4ed8; font-weight: 700; margin-left: 2px; }
+.mp-zona { display: flex; align-items: center; gap: 6px; flex-basis: 100%; grid-column: 1 / -1; flex-wrap: wrap; min-width: 0; } .mp-zona .mini { white-space: normal; } .mp-zona .chip { white-space: nowrap; } .mp-zona:empty { display: none; } .mp-btn { white-space: nowrap; } #v-pagos .medio { flex-wrap: wrap; } .pils { display: flex; gap: 8px; flex-wrap: wrap; } .pil { border: 1.5px solid var(--border); background: #fff; border-radius: 999px; padding: 7px 14px; font-weight: 600; cursor: pointer; font-family: inherit; } .pil.on { background: var(--teal, #0e7490); color: #fff; border-color: transparent; }
 .mp-wait { text-align: center; padding: 10px 6px; } .mp-imp { font-size: 30px; font-weight: 700; color: var(--teal, #0e7490); margin: 4px 0; } .spin { width: 46px; height: 46px; border: 5px solid #bae6fd; border-top-color: #0e7490; border-radius: 50%; margin: 6px auto 10px; animation: mpspin 1s linear infinite; } @keyframes mpspin { to { transform: rotate(360deg); } }
 .dto-imp, .dto-pct { border-radius: 999px; padding: 3px 9px; } .dto-imp { background: #e0f2fe; color: #0369a1; }   /* descuento en pesos: celeste */ .dto-pct { background: #1d4ed8; color: white; }   /* descuento en %: azul */ tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
 .empty.chico { padding: 22px; }
@@ -571,6 +571,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
     <nav class="tabs" id="tabs">
       <button id="tab-vender" class="active" onclick="switchTab('vender')" title="Vender"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="lb">Vender</span></button>
       <button id="tab-comprobantes" onclick="switchTab('comprobantes')" title="Comprobantes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2V2l-3 2-3-2-3 2-3-2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/></svg><span class="lb">Comprobantes</span></button>
+      <button id="tab-vales" onclick="switchTab('vales')" title="Vales"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg><span class="lb">Vales</span></button>
       <button id="tab-caja" onclick="switchTab('caja')" title="Caja"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg><span class="lb">Caja</span></button>
       <button id="tab-ajustes" onclick="switchTab('ajustes')" title="Ajustes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="lb">Ajustes</span></button>
     </nav>
@@ -651,6 +652,15 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       </div>
       <div class="kpis" id="k-kpis"></div>
       <div id="k-tabla"></div>
+    </section>
+    <section id="content-vales" class="tab-content">
+      <div class="filters">
+        <input id="vl-q" placeholder="Código, nombre o mail" oninput="vlDebounce()">
+        <select id="vl-estado" onchange="cargarVales()"><option value="">Vigentes y usados</option><option value="vigente">Solo vigentes</option><option value="usado">Solo usados</option><option value="anulado">Anulados</option></select>
+        <select id="vl-tipo" onchange="cargarVales()"><option value="">Gift cards y vales</option><option value="gift">Solo gift cards</option><option value="cambio">Solo vales de cambio</option></select>
+        <span class="stat" id="vl-stat"></span>
+      </div>
+      <div id="vl-lista"></div>
     </section>
     <section id="content-ajustes" class="tab-content">
       <div class="card"><h3>Puntos de venta</h3>
@@ -748,7 +758,8 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-wo
 
 // ═══ POS · estado ══════════════════════════════════════════════════════
 let PERFIL = null, LOCAL = null, ARTS = [], ARTS_AT = 0, MEDIOS = [], PV = [], IMGS = {}, RESERVAS = {}, TERMS = [];
-const T = { tipo: 'FC', letra: 'B', items: [], cliente: null, sin_cliente: false, nc_de: null };
+const T = { tipo: 'FC', letra: 'B', items: [], cliente: null, sin_cliente: false, nc_de: null, gift: null };
+const GIFT_URL = 'https://claudiaadornosrl-prog.github.io/pos-adorno/gift/?c=';
 // Tope de ARCA (pos_parametros.tope_cf_arca): desde ese importe la factura va identificada sí o sí.
 const TOPE = { valor: 10000000, at: null, error: null };
 const LOCALES = { alcorta: 'Alcorta', unicenter: 'Unicenter', libertador: 'Atelier Libertador', oficina: 'Oficina' };
@@ -826,7 +837,7 @@ async function cargarArticulos() {
 }
 function foto(sku, cls) { const u = IMGS[sku]; return u ? `<img class="foto ${cls || ''}" src="${esc(u)}" alt="" loading="lazy" onclick="event.stopPropagation(); verFoto('${esc(u)}')" title="Ver más grande">` : `<span class="foto sin ${cls || ''}" aria-hidden="true"></span>`; }
 function verFoto(u) { modal(`<div class="m-head"><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div><img src="${esc(u)}" style="max-width:100%;max-height:75vh;display:block;margin:0 auto;border-radius:8px">`); }
-function onTab(k) { if (k === 'comprobantes') cargarComprobantes(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
+function onTab(k) { if (k === 'comprobantes') cargarComprobantes(); if (k === 'vales') cargarVales(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
 
 // ═══ Vender · productos ════════════════════════════════════════════════
 let _vT = null;
@@ -836,6 +847,10 @@ function vBuscar() {
   const box = document.getElementById('v-lista');
   if (!q) { box.innerHTML = '<div class="empty">Escribí para buscar un producto, o escaneá el QR de la etiqueta.</div>'; vFicha(null); return; }
   const pal = q.split(/\s+/);
+  if (/^GIF/.test(q)) {   // "gift" en el buscador → vender una gift card digital
+    box.innerHTML = `<button class="prod gift" onclick="vGiftIniciar()" title="Vender una gift card"><span class="foto sin"></span><span class="txt"><span class="sku">GIFT CARD</span><span class="desc">Gift card digital: importe libre, le llega por mail o WhatsApp a quien la recibe. Sin vencimiento.</span></span><span></span><span class="pre">+</span></button>`;
+    vFicha(null); return;
+  }
   if (/^SE[ÑN]A/.test(q)) {   // "seña" en el buscador → cargar una seña (plata a cuenta de artículos reservados)
     box.innerHTML = `<button class="prod sena" onclick="vSenaIniciar()" title="Cargar una seña"><span class="foto sin"></span><span class="txt"><span class="sku">SEÑA</span><span class="desc">Seña a cuenta: el cliente deja plata y reserva artículos. Necesita cliente con DNI o CUIT.</span></span><span></span><span class="pre">+</span></button>`;
     vFicha(null); return;
@@ -880,6 +895,8 @@ function vEscanear() {
   const inp = document.getElementById('v-q'); const raw = inp.value.trim();
   if (raw.includes('@')) { inp.value = ''; cliBuscar(raw); return; }   // DNI escaneado con el cursor en artículos: va al cliente
   const q = raw.toUpperCase(); if (!q) return;
+  if (/^GIFT/.test(q)) { inp.value = ''; vGiftIniciar(); return; }
+  if (/^[GV]C-?[A-Z0-9]{4}-?[A-Z0-9]{4}-?[A-Z0-9]{4}$/.test(q)) { inp.value = ''; vBuscar(); valeDesdeEscaneo(q); return; }   // QR de una gift card o vale → va al cobro
   if (/^SE[ÑN]A$/.test(q)) { inp.value = ''; vSenaIniciar(); return; }   // Enter sobre "seña": abre la seña del POS (no el artículo SEÑA del Dragon)
   const a = ARTS.find(x => x.sku.toUpperCase() === q);
   if (a) { vAgregar(a.sku); inp.value = ''; vBuscar(); }
@@ -904,6 +921,7 @@ function sonar(cual) {
 }
 function vAgregar(sku) {
   const a = ARTS.find(x => x.sku === sku); if (!a) return;
+  if (T.gift) { toast('Terminá la gift card primero (o sacala con la ✕)', 'error'); return; }
   if (T.sena) { const si = T.sena.items.find(x => x.sku === sku); if (si) si.cantidad += 1; else T.sena.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: Number(a.precio) || 0 }); sonar('mas'); vRender(); vFicha(a.sku); document.getElementById('v-q').focus(); return; }
   const it = T.items.find(x => x.sku === sku);
   if (it) it.cantidad += 1; else T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: Number(a.precio) || 0, descuento_pct: 0, descuento_monto: 0, stock: Number(a.stock) });
@@ -954,6 +972,30 @@ function vSenaUsar(x) {
   sonar('mas'); vRender(); toast('Seña aplicada: el cliente paga el saldo', 'success');
 }
 function vSenaNoUsar() { T.sena_usar = null; vRender(); }
+// ═══ Gift card ═══
+// "gift" en el buscador → un renglón fijo "Gift card" con el importe y abajo el cuadro: para quién, de parte de quién, mail o
+// WhatsApp y la dedicatoria. Sale como comprobante X (no es factura hasta que se usa) y el código nace al emitir.
+function vGiftIniciar() {
+  if (T.tipo === 'NC' || T.tipo === 'PR') { toast('La gift card se vende desde una venta, no desde una NC ni un presupuesto', 'error'); return; }
+  if (T.sena || T.sena_usar) { toast('La gift card no se mezcla con una seña', 'error'); return; }
+  if (T.gift) { toast('Ya hay una gift card cargada', 'error'); return; }
+  if (T.items.length && !confirm('Hay artículos en el ticket. ¿Los saco y arranco la gift card? (la gift card va sola en su comprobante)')) return;
+  T.gift = { para: '', de_parte: T.cliente ? (T.cliente.nombre || '') : '', contacto: '', mensaje: '', mostrar_importe: false };
+  T.items = [{ sku: 'GIFT', descripcion: 'Gift card', cantidad: 1, precio_unit: 0, descuento_pct: 0, descuento_monto: 0, stock: 1, fijo: true, placeholder: 'Importe de la gift card' }];
+  vTipo('MA', 'X'); dMontar(); document.getElementById('v-q').value = ''; vBuscar(); vRender();
+  setTimeout(() => { const i = document.querySelector('#v-renglones input.din'); if (i) i.focus(); }, 50);
+}
+function vGiftQuitar() { if (!T.gift) return; T.gift = null; T.items = []; vTipo('FC', 'B'); vRender(); }
+function vGiftSet(k, v) { if (!T.gift) return; T.gift[k] = k === 'mostrar_importe' ? !!v : v; if (k === 'mostrar_importe') vRender(); }
+function giftHTML() {
+  if (!T.gift) return '';
+  const g = T.gift;
+  return `<div class="gift-box"><div class="sena-h"><b>🎁 Gift card</b><span class="mini">le llega a quien la recibe por mail o WhatsApp, con la dedicatoria · sin vencimiento</span><button class="btn ico chico" onclick="vGiftQuitar()" title="Cancelar la gift card" aria-label="Cancelar gift card">${_i('x')}</button></div>
+    <div class="gift-f"><input value="${esc(g.para)}" placeholder="Para (nombre de quien la recibe)" oninput="vGiftSet('para',this.value)"><input value="${esc(g.de_parte)}" placeholder="De parte de" oninput="vGiftSet('de_parte',this.value)"></div>
+    <div class="gift-f"><input value="${esc(g.contacto)}" placeholder="Mail o WhatsApp de quien la recibe (si va vacío, no se manda nada)" oninput="vGiftSet('contacto',this.value)" style="flex:2"></div>
+    <div class="gift-f"><input value="${esc(g.mensaje)}" maxlength="220" placeholder="Dedicatoria (opcional) · «¡Feliz cumple! Elegí lo que más te guste»" oninput="vGiftSet('mensaje',this.value)" style="flex:2"></div>
+    <div class="gift-f mini"><label class="cli-chk"><input type="checkbox"${g.mostrar_importe ? ' checked' : ''} onchange="vGiftSet('mostrar_importe',this.checked)"> Mostrar el importe en la tarjeta</label><span>Sin tildar, el regalo no dice el precio: quien la recibe ve su saldo con el link.</span></div></div>`;
+}
 
 // Comprobante ficticio con lo cargado en el ticket (para la vista previa, sin emitir)
 function vPreviewDatos() {
@@ -1065,18 +1107,20 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main"><div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
   const interno = T.tipo === 'MA' || T.tipo === 'PR';
   document.querySelectorAll('#v-tipos .pil').forEach(b => b.classList.toggle('on', b.dataset.t === T.tipo || (b.dataset.t === 'PR' && interno)));
-  const chk = document.getElementById('v-chk-pr'); chk.style.display = interno ? '' : 'none'; document.getElementById('v-chk-pr-in').checked = T.tipo === 'PR';
+  const chk = document.getElementById('v-chk-pr'); chk.style.display = interno && !T.gift ? '' : 'none'; document.getElementById('v-chk-pr-in').checked = T.tipo === 'PR';
+  document.querySelector('#v-tipos .pil[data-t="PR"]').textContent = T.gift ? 'Gift card' : 'Presupuesto';
   document.querySelector('#v-tipos .pil[data-t="FC"]').textContent = 'Factura' + (T.tipo === 'FC' && T.letra === 'A' ? ' A' : '');
   document.querySelector('#v-tipos .pil[data-t="NC"]').textContent = 'Nota de crédito' + (T.tipo === 'NC' ? (T.letra === 'A' ? ' A' : T.letra === 'X' ? ' manual' : '') : '');
 }
 function vTipo(tipo, letra) {
   const eraNC = T.tipo === 'NC';
+  if (T.gift && tipo !== 'MA') { T.gift = null; T.items = T.items.filter(i => i.sku !== 'GIFT'); }
   T.tipo = tipo; T.letra = letra;
   vPils();
   const nc = tipo === 'NC';
@@ -1138,13 +1182,13 @@ function vRender() {
     T.items.map((it, i) => `<tr${it.stock <= 0 && !it.fijo ? ' class="sinstock" title="Sin stock en este local"' : ''}>
       <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td>
       <td class="num cant">${it.fijo ? '' : `<button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button>`}</td>
-      <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? 'Importe de la seña' : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
+      <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? (it.placeholder || 'Importe de la seña') : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
       <td class="num">${it.fijo ? '' : `<input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right">`}</td>
       <td class="num"><b class="${it.descuento_monto > 0 ? 'dto-imp' : it.descuento_pct > 0 ? 'dto-pct' : ''}" title="${it.descuento_monto > 0 ? 'Con descuento en pesos' : it.descuento_pct > 0 ? 'Con descuento en %' : ''}">${plata(lineaBruta(it))}</b></td>
       <td>${it.fijo ? '' : `<button class="btn ico chico" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
-  box.innerHTML += senaHTML();
-  document.getElementById('v-descs').style.display = T.sena ? 'none' : '';
+  box.innerHTML += senaHTML() + giftHTML();
+  document.getElementById('v-descs').style.display = (T.sena || T.gift) ? 'none' : '';
   const t = vTotales();
   { const f = document.getElementById('v-sena-fila'); f.style.display = T.sena_usar ? '' : 'none'; if (T.sena_usar) f.innerHTML = `<span>Seña a cuenta · Factura ${esc(T.sena_usar.letra)} ${esc(T.sena_usar.factura)} <button class="btn ico chico" onclick="vSenaNoUsar()" title="No usar la seña en este ticket" aria-label="No usar">${_i('x')}</button></span><b class="dto-imp">- ${plata(t.sena)}</b>`; }
   for (const f of t.filas) { const e = f.row.querySelector('.dval'); const v = num(f.row.dataset.v);
@@ -1155,7 +1199,7 @@ function vRender() {
   { const a = T.letra === 'A'; document.getElementById('v-iva').style.display = a ? '' : 'none';
     if (a) { const neto = r2(t.tot / 1.21); document.getElementById('v-neto').textContent = plata2(neto); document.getElementById('v-ivam').textContent = plata2(r2(t.tot - neto)); } }
   document.getElementById('v-total').textContent = plata(t.tot);
-  document.getElementById('v-cobrar-lb').textContent = (T.tipo === 'PR' || T.tipo === 'MA') ? 'Emitir presupuesto' : T.tipo === 'NC' ? 'Emitir NC ' + (T.letra === 'X' ? 'manual' : T.letra) : 'Emitir factura ' + T.letra;
+  document.getElementById('v-cobrar-lb').textContent = T.gift ? 'Emitir gift card' : (T.tipo === 'PR' || T.tipo === 'MA') ? 'Emitir presupuesto' : T.tipo === 'NC' ? 'Emitir NC ' + (T.letra === 'X' ? 'manual' : T.letra) : 'Emitir factura ' + T.letra;
   document.getElementById('v-pagos-lb').textContent = T.tipo === 'NC' ? 'Cómo se le devuelve la plata al cliente' : 'Forma de pago · elegí el medio; para pagos combinados sumá otro renglón';
   cliRender(t); pRender();
 }
@@ -1412,7 +1456,10 @@ function pAgregar(medio) {
 }
 function pMedio(sel) {
   const m = MEDIOS.find(x => x.clave === sel.value); const row = sel.closest('.medio');
-  row.querySelector('.ref').style.display = m && m.pide_referencia ? '' : 'none';
+  const ref = row.querySelector('.ref'); ref.style.display = m && m.pide_referencia && !(sel.value === 'vale' && T.tipo === 'NC') ? '' : 'none';
+  ref.placeholder = sel.value === 'vale' ? 'Código del vale / gift card' : 'Nº cupón / ref.';
+  if (sel.value === 'vale') { ref.oninput = () => valeDebounce(row); ref.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); valeConsultar(row); } }; } else { ref.oninput = null; ref.onkeydown = null; }
+  delete row.dataset.vale; delete row.dataset.valeErr;
   // ícono del medio al lado del desplegable: cambia y hace un saltito cada vez que se elige
   const ico = row.querySelector('.med-ico'); ico.textContent = sel.value ? mIco(sel.value) : ''; ico.classList.remove('pop'); void ico.offsetWidth; ico.classList.add('pop');
   const seg = row.querySelector('.seg'); const ni = pTieneNI(sel.value); seg.style.display = ni ? '' : 'none';
@@ -1466,6 +1513,62 @@ function mpZonas() {
                      : `<button type="button" class="btn chico" onclick="switchTab('ajustes')">Elegí tu Point en Ajustes</button>`;
   }
 }
+// ═══ Vales y gift cards en el cobro ═══
+let _vlT = null; function valeDebounce(row) { clearTimeout(_vlT); delete row.dataset.vale; delete row.dataset.valeErr; _vlT = setTimeout(() => valeConsultar(row), 500); }
+function valeNorm(c) { const x = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return x.length === 14 ? x.slice(0, 2) + '-' + x.slice(2, 6) + '-' + x.slice(6, 10) + '-' + x.slice(10) : x; }
+async function valeConsultar(row) {
+  const ref = row.querySelector('.ref'); const cod = valeNorm(ref.value); delete row.dataset.vale; delete row.dataset.valeErr;
+  if (cod.length < 14) { pRender(); return; }
+  ref.value = cod;
+  const { data, error } = await sb.rpc('pos_vale_consultar', { p_codigo: cod });
+  if (error) { row.dataset.valeErr = error.message.replace(/^.*?: /, ''); pRender(); return; }
+  if (!data.ok) { row.dataset.valeErr = data.motivo || 'No existe ese código'; sonar('menos'); pRender(); return; }
+  if (data.estado === 'anulado') { row.dataset.valeErr = `${cod} está anulado${data.anulado_motivo ? ' (' + data.anulado_motivo + ')' : ''}`; sonar('menos'); pRender(); return; }
+  if (data.estado === 'usado' || Number(data.saldo) <= 0) { const u = data.ultimo_uso; row.dataset.valeErr = `${cod} ya se usó entero${u ? ' el ' + fechaAR(u.fecha) + ' en ' + (LOCALES[u.local] || u.local) + ' (Factura ' + u.letra + ' ' + u.numero + ')' : ''}`; sonar('menos'); pRender(); return; }
+  // ya hay otro renglón con el mismo código → no se usa dos veces en el mismo ticket
+  if ([...document.querySelectorAll('#v-pagos .medio')].some(r => r !== row && r.dataset.m === 'vale' && valeNorm(r.querySelector('.ref').value) === cod)) { row.dataset.valeErr = 'Ese código ya está en otro renglón'; pRender(); return; }
+  row.dataset.vale = JSON.stringify(data);
+  const imp = row.querySelector('.imp'); const t = vTotales(); const otros = pPagos().filter(p => p.medio !== 'vale' || valeNorm(p.referencia) !== cod).reduce((s, p) => s + p.importe, 0);
+  const usar = Math.min(Number(data.saldo), Math.max(0, r2(t.tot - otros)));
+  imp.value = plata(usar); imp.dataset.tocado = 1; sonar('mas'); pRender();
+}
+function valeZonas() {
+  for (const r of document.querySelectorAll('#v-pagos .medio')) {
+    const z = r.querySelector('.mp-zona'); if (!z || r.dataset.m !== 'vale' || T.tipo === 'PR') continue;
+    if (T.tipo === 'NC') {   // devolver con vale: nace un vale de cambio por este importe, al emitir
+      if (!z.querySelector('.vale-cont')) { const c = T.cliente || {}; z.innerHTML = `<span class="mini">Al emitir nace un <b>vale de cambio</b> por este importe, sin vencimiento. Se manda a:</span><input class="vale-cont" placeholder="Mail o WhatsApp del cliente" value="${esc(c.email || (c.ficha && (c.ficha.email || c.ficha.celular)) || '')}">`; }
+      continue;
+    }
+    const imp = r.querySelector('.imp');
+    if (r.dataset.valeErr) { z.innerHTML = `<span class="chip red">✖ ${esc(r.dataset.valeErr)}</span>`; continue; }
+    if (!r.dataset.vale) { z.innerHTML = valeNorm(r.querySelector('.ref').value).length >= 14 ? '<span class="mini">consultando…</span>' : '<span class="mini">Tipeá o escaneá el código de la gift card o del vale</span>'; continue; }
+    const d = JSON.parse(r.dataset.vale); const v = r2(num(imp.value));
+    if (v > Number(d.saldo) + 0.01) { imp.value = plata(Number(d.saldo)); toast('El vale tiene saldo ' + plata(d.saldo), 'error'); }
+    const queda = r2(Number(d.saldo) - r2(num(imp.value)));
+    z.innerHTML = `<span class="chip green">✔ ${d.tipo === 'gift' ? 'Gift card' : 'Vale de cambio'} vigente · saldo ${plata(d.saldo)}</span><span class="mini">${d.para ? 'para ' + esc(d.para) + (d.de_parte ? ' de parte de ' + esc(d.de_parte) : '') + ' · ' : ''}${fechaAR(d.fecha)} · ${esc(LOCALES[d.local] || d.local)}${queda > 0 ? ' · quedan <b>' + plata(queda) + '</b> en el mismo código' : ' · se usa entero'}</span>`;
+  }
+}
+// QR escaneado con el cursor en el buscador → va a un renglón de pago "Vale / Gift card"
+function valeDesdeEscaneo(cod) {
+  if (T.tipo === 'NC' || T.tipo === 'PR') { toast('El vale se usa para pagar una venta', 'error'); return; }
+  if (!T.items.length) { toast('Primero cargá los artículos; después el vale', 'error'); return; }
+  let row = [...document.querySelectorAll('#v-pagos .medio')].find(r => r.dataset.m === 'vale' && !valeNorm(r.querySelector('.ref').value));
+  if (!row) { row = [...document.querySelectorAll('#v-pagos .medio')].find(r => !r.dataset.m && !num(r.querySelector('.imp').value)); if (row) { row.querySelector('.med').value = 'vale'; pMedio(row.querySelector('.med')); } }
+  if (!row) { pAgregar('vale'); row = [...document.querySelectorAll('#v-pagos .medio')].pop(); }
+  row.querySelector('.ref').value = valeNorm(cod); valeConsultar(row);
+}
+// Lo que se muestra apenas nace una gift card o un vale de cambio: el código, el link y por dónde se mandó
+function valeModal(codigo, contacto, data, esNC) {
+  const link = GIFT_URL + codigo; const canal = !contacto ? 'ninguno' : contacto.includes('@') ? 'mail' : contacto.replace(/\D/g, '').length >= 8 ? 'wa' : 'ninguno';
+  let tel = contacto ? contacto.replace(/\D/g, '') : ''; if (tel && !tel.startsWith('54')) tel = '549' + tel.replace(/^0/, '').replace(/^15/, '');
+  const txt = esNC ? `Hola${data.para ? ' ' + data.para : ''}! Te dejamos tu vale de cambio de Claudia Adorno por ${plata(data.importe)}. Código ${codigo}. Lo usás en cualquiera de nuestros locales, sin vencimiento: ${link}`
+                   : `Hola${data.para ? ' ' + data.para : ''}! Te llegó un regalo${data.de_parte ? ' de ' + data.de_parte : ''}: una gift card de Claudia Adorno 🎁 Abrila acá: ${link}`;
+  modal(`<div class="m-head"><h3>${esNC ? '🎟 Vale de cambio' : '🎁 Gift card'} emitid${esNC ? 'o' : 'a'}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="vale-cod"><div class="code">${esc(codigo)}</div><div class="mini">${plata(data.importe)} · sin vencimiento · se puede usar en varias compras</div><img class="qr" data-qr="${esc(codigo)}" alt="QR"></div>
+    <div class="mini" style="margin:8px 0">${canal === 'mail' ? 'Se manda por mail a <b>' + esc(contacto) + '</b> en un ratito (lo manda el servicio, como las facturas).' : canal === 'wa' ? 'Tocá el botón y se abre WhatsApp con el mensaje listo para <b>' + esc(contacto) + '</b>.' : 'No cargaste mail ni WhatsApp: copiá el link y pasáselo vos, o reenvialo después desde la pestaña Vales.'}</div>
+    <div class="m-foot">${canal === 'wa' ? `<a class="btn primary" href="https://wa.me/${tel}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">Abrir WhatsApp</a>` : ''}<button class="btn" onclick="navigator.clipboard.writeText('${link}').then(() => toast('Link copiado', 'success'))">Copiar el link</button><a class="btn" href="${link}" target="_blank" rel="noopener">Ver la tarjeta</a><button class="btn" onclick="cerrarModal(); verComprobante(${data.id}, true)">Ver el comprobante</button></div>`);
+  pintarQR(document.querySelector('#ov .vale-cod'));
+}
 let _mpPoll = null;
 async function mpCobrar(btn) {
   const row = btn.closest('.medio'); const imp = row.querySelector('.imp'); const importe = r2(num(imp.value)); const pt = miPoint();
@@ -1509,13 +1612,14 @@ function pRender() {
   const t = vTotales();
   // un solo renglón sin importe → se le sugiere el total (la vendedora lo puede cambiar)
   const rows = document.querySelectorAll('#v-pagos .medio'); if (rows.length === 1 && T.items.length) { const imp = rows[0].querySelector('.imp'); if (document.activeElement !== imp && !imp.dataset.tocado) imp.value = t.tot ? plata(t.tot) : ''; imp.oninput = () => { imp.dataset.tocado = 1; pRender(); }; }
-  mpZonas();
+  mpZonas(); valeZonas();
   const pag = r2(pPagos().reduce((s, p) => s + p.importe, 0)); const falta = r2(t.tot - pag);
   const pointSinCobrar = T.tipo !== 'PR' && T.tipo !== 'NC' && [...rows].some(r => r.dataset.m === 'mp_point' && num(r.querySelector('.imp').value) > 0 && !r.dataset.mp);
+  const valeSinOk = T.tipo !== 'PR' && T.tipo !== 'NC' && [...rows].some(r => r.dataset.m === 'vale' && num(r.querySelector('.imp').value) > 0 && !r.dataset.vale);
   document.getElementById('p-pagado').textContent = plata(pag);
   document.getElementById('p-falta-lb').textContent = falta < 0 ? 'Vuelto' : 'Falta';
   document.getElementById('p-falta').textContent = plata(Math.abs(falta));
-  document.getElementById('v-cobrar').disabled = !T.items.length || pointSinCobrar || (T.tipo === 'NC' && !T.nc_de) || (T.tipo !== 'PR' && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo')));
+  document.getElementById('v-cobrar').disabled = !T.items.length || pointSinCobrar || valeSinOk || (T.tipo === 'NC' && !T.nc_de) || (T.tipo !== 'PR' && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo')));
 }
 function pFalta() { const t = vTotales(); const rows = [...document.querySelectorAll('#v-pagos .medio')]; const vacio = rows.find(r => !num(r.querySelector('.imp').value)); if (!vacio) return; const otros = pPagos().reduce((s, p) => s + p.importe, 0); vacio.querySelector('.imp').value = plata(Math.max(0, r2(t.tot - otros))); pRender(); }
 async function emitir(esNC) {
@@ -1524,7 +1628,9 @@ async function emitir(esNC) {
   // Vuelto: si pagó de más en efectivo, el efectivo que queda es total - resto
   const pag = pagos.reduce((s, p) => s + p.importe, 0);
   if (pag > t.tot + 1) { const ef = pagos.find(p => p.medio === 'efectivo'); if (ef) ef.importe = r2(ef.importe - (pag - t.tot)); }
-  const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, obs: document.getElementById('v-obs').value.trim() || null,
+  const valeCont = esNC ? (document.querySelector('#v-pagos .vale-cont') || {}).value || null : (T.gift ? T.gift.contacto : null);
+  if (T.gift && !(t.tot > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
+  const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: cliPayload(),
     items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_monto > 0 ? 0 : i.descuento_pct, descuento_monto: i.descuento_monto || 0, iva_pct: 21 })),
     pagos: T.tipo === 'PR' ? [] : pagos };
@@ -1533,7 +1639,48 @@ async function emitir(esNC) {
   for (const pg of pagos) if (pg.detalle && pg.detalle.order_id) mpLlamar('vincular', { order_id: pg.detalle.order_id, comprobante_id: data.id }).catch(() => {});
   if (esNC) await mpDevolverNC(data.id, pagos);
   toast((esNC ? 'Nota de crédito ' : T.tipo === 'PR' ? 'Presupuesto ' : (T.tipo === 'MA' ? 'Comprobante ' : 'Factura ' + T.letra + ' ')) + data.numero_fmt + (T.tipo === 'PR' || T.tipo === 'MA' ? ' emitido' : ' emitida'), 'success');
-  vVaciar(); verComprobante(data.id, true);
+  const giftInfo = T.gift ? { ...T.gift } : null; const ncPara = esNC && T.cliente ? T.cliente.nombre : null; const valeImp = esNC ? (pagos.find(x => x.medio === 'vale') || {}).importe : t.tot;
+  vVaciar();
+  if (data.vale_codigo) valeModal(data.vale_codigo, valeCont, { id: data.id, importe: valeImp, para: giftInfo ? giftInfo.para : ncPara, de_parte: giftInfo ? giftInfo.de_parte : null }, esNC); else verComprobante(data.id, true);
+}
+
+// ═══ Vales y gift cards (pestaña) ═══
+let _vlQ; function vlDebounce() { clearTimeout(_vlQ); _vlQ = setTimeout(cargarVales, 500); }
+async function cargarVales() {
+  const q = document.getElementById('vl-q').value.trim(); const est = document.getElementById('vl-estado').value; const tipo = document.getElementById('vl-tipo').value;
+  let qq = sb.from('pos_vales').select('*, comprobante:comprobante_id(tipo,letra,punto_venta,numero,fecha)').order('id', { ascending: false }).limit(300);
+  if (est) qq = qq.eq('estado', est); else qq = qq.neq('estado', 'anulado');
+  if (tipo) qq = qq.eq('tipo', tipo);
+  if (q) qq = qq.or(`codigo.ilike.%${q.replace(/[%,]/g, '')}%,para_nombre.ilike.%${q.replace(/[%,]/g, '')}%,contacto.ilike.%${q.replace(/[%,]/g, '')}%,de_parte.ilike.%${q.replace(/[%,]/g, '')}%`);
+  const { data, error } = await qq; if (error) { toast(error.message, 'error'); return; }
+  const lista = data || []; const puedeAnular = PERFIL.es_admin || PERFIL.rol === 'gerente';
+  document.getElementById('vl-stat').textContent = lista.length + (lista.length === 1 ? ' vale' : ' vales') + ' · saldo vigente ' + plata(lista.filter(v => v.estado === 'vigente').reduce((s, v) => s + Number(v.saldo), 0));
+  document.getElementById('vl-lista').innerHTML = lista.length ? `<table><thead><tr><th>Código</th><th>Para</th><th>Nace de</th><th class="num">Importe</th><th class="num">Saldo</th><th>Envío</th><th></th></tr></thead><tbody>` +
+    lista.map(v => { const c = v.comprobante; return `<tr class="${v.estado === 'anulado' ? 'dim' : ''}">
+      <td><span class="code">${esc(v.codigo)}</span><div class="mini">${v.tipo === 'gift' ? '🎁 Gift card' : '🎟 Vale de cambio'} · ${esc(LOCALES[v.local] || v.local)} · ${new Date(v.creado_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div></td>
+      <td>${esc(v.para_nombre || '')}${v.de_parte ? '<div class="mini">de parte de ' + esc(v.de_parte) + '</div>' : ''}${v.mensaje ? '<div class="mini" title="' + esc(v.mensaje) + '">«' + esc(v.mensaje.slice(0, 40)) + (v.mensaje.length > 40 ? '…' : '') + '»</div>' : ''}</td>
+      <td class="mini">${c ? `<a href="#" onclick="verComprobante(${v.comprobante_id});return false">${TIPO_NOM[c.tipo]} ${c.letra} ${fmtNum(c.punto_venta, c.numero)}</a>` : ''}</td>
+      <td class="num">${plata(v.importe)}</td>
+      <td class="num">${v.estado === 'anulado' ? '<span class="chip red" title="' + esc(v.anulado_motivo || '') + '">Anulado</span>' : v.estado === 'usado' ? '<span class="chip blue">Usado</span>' : '<span class="chip green">' + plata(v.saldo) + '</span>'}</td>
+      <td class="mini">${v.contacto ? esc(v.contacto) + '<br>' : ''}${v.canal === 'mail' ? (v.mail_enviado_at ? '✔ mail enviado' : v.mail_error ? '<span class="chip red" title="' + esc(v.mail_error) + '">mail no salió</span>' : 'mail pendiente') : v.canal === 'wa' ? 'por WhatsApp' : 'sin envío'}</td>
+      <td style="white-space:nowrap"><button class="btn ico" onclick="vlUsos(${v.id},'${v.codigo}')" title="En qué compras se usó" aria-label="Usos">${_i('ver')}</button><button class="btn ico" onclick="vlReenviar('${v.codigo}','${esc(v.contacto || '')}')" title="Reenviar (mail o WhatsApp)" aria-label="Reenviar">${_i('mail')}</button><a class="btn ico" href="${GIFT_URL}${v.codigo}" target="_blank" rel="noopener" title="Ver la tarjeta" aria-label="Tarjeta">${_i('pdf')}</a>${puedeAnular && v.estado === 'vigente' ? `<button class="btn ico" onclick="vlAnular('${v.codigo}')" title="Anular este vale" aria-label="Anular">${_i('x')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>' : '<div class="empty">No hay vales con ese filtro.</div>';
+}
+async function vlUsos(id, codigo) {
+  const { data } = await sb.from('pos_vales_usos').select('importe,usado_at,local,comprobante_id,comprobante:comprobante_id(tipo,letra,punto_venta,numero,fecha)').eq('vale_id', id).order('id');
+  modal(`<div class="m-head"><h3>Usos de ${esc(codigo)}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    ${(data || []).length ? `<table><tbody>${data.map(u => `<tr><td>${fechaAR(u.comprobante.fecha)} · ${esc(LOCALES[u.local] || u.local)}</td><td><a href="#" onclick="cerrarModal();verComprobante(${u.comprobante_id});return false">${TIPO_NOM[u.comprobante.tipo]} ${u.comprobante.letra} ${fmtNum(u.comprobante.punto_venta, u.comprobante.numero)}</a></td><td class="num"><b>${plata(u.importe)}</b></td></tr>`).join('')}</tbody></table>` : '<div class="empty chico">Todavía no se usó.</div>'}`);
+}
+async function vlReenviar(codigo, contacto) {
+  const k = prompt('Mail o WhatsApp al que se reenvía ' + codigo + ':', contacto || ''); if (k === null) return;
+  const { data, error } = await sb.rpc('pos_vale_reenviar', { p_codigo: codigo, p_contacto: k.trim() || null });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  const { data: v } = await sb.from('pos_vales').select('importe,para_nombre,de_parte,tipo,comprobante_id').eq('codigo', codigo).single();
+  valeModal(codigo, data.contacto, { id: v.comprobante_id, importe: v.importe, para: v.para_nombre, de_parte: v.de_parte }, v.tipo === 'cambio'); cargarVales();
+}
+async function vlAnular(codigo) {
+  const m = prompt('Motivo para anular ' + codigo + ' (queda registrado):'); if (!m) return;
+  const { error } = await sb.rpc('pos_vale_anular', { p_codigo: codigo, p_motivo: m }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  toast('Vale anulado', 'success'); cargarVales();
 }
 
 // ═══ Comprobantes ══════════════════════════════════════════════════════
@@ -1572,14 +1719,17 @@ async function traerComprobante(id) {
   let sena_items = null, sena_de = null;
   if (c && c.es_sena) { const r = await sb.from('pos_senas').select('id,pos_senas_det(sku,descripcion,cantidad,precio_unit,nro_item)').eq('comprobante_id', c.id).maybeSingle(); sena_items = r.data ? (r.data.pos_senas_det || []).sort((a, b) => a.nro_item - b.nro_item) : []; }
   if (c && c.sena_id) { const r = await sb.from('pos_senas').select('comprobante:comprobante_id(letra,punto_venta,numero)').eq('id', c.sena_id).maybeSingle(); if (r.data && r.data.comprobante) sena_de = r.data.comprobante.letra + ' ' + fmtNum(r.data.comprobante.punto_venta, r.data.comprobante.numero); }
-  return { c, det: det || [], pagos: pagos || [], rel, sena_items, sena_de };
+  let vales = []; if (c) { const r = await sb.from('pos_vales').select('codigo,tipo,importe,saldo,estado,para_nombre,de_parte,contacto,canal').eq('comprobante_id', c.id); vales = r.data || []; }
+  return { c, det: det || [], pagos: pagos || [], rel, sena_items, sena_de, vales };
 }
 function ticketHTML(x) {
   const { c, det, pagos, rel } = x; const mp = Object.fromEntries(MEDIOS.map(m => [m.clave, m.nombre]));
   const fiscal = c.letra !== 'X', A = c.letra === 'A', nc = c.tipo === 'NC', li = LOCAL_INFO[c.local] || {};
   // Factura A: los precios se muestran sin IVA (los de lista son con IVA incluido) y el IVA se discrimina abajo
   const u = v => A ? Number(v) / 1.21 : Number(v); const $ = v => A ? plata2(u(v)) : plata(u(v));
-  const titulo = c.tipo === 'MA' ? 'Factura manual' : c.tipo === 'PR' ? 'Presupuesto' : TIPO_NOM[c.tipo] + ' ' + c.letra;
+  const esGift = (x.vales || []).some(v => v.tipo === 'gift');
+  const titulo = esGift ? 'Gift card' : c.tipo === 'MA' ? 'Factura manual' : c.tipo === 'PR' ? 'Presupuesto' : TIPO_NOM[c.tipo] + ' ' + c.letra;
+  const valesDet = (x.vales || []).map(v => `<div class="sep"></div><div class="mini" style="text-align:center"><b>${v.tipo === 'gift' ? 'Gift card' : 'Vale de cambio'}</b>${v.para_nombre ? ' para ' + esc(v.para_nombre) : ''}${v.de_parte ? ' de parte de ' + esc(v.de_parte) : ''}<br><span class="code">${esc(v.codigo)}</span><br>${plata(v.importe)} · sin vencimiento${v.estado !== 'vigente' ? ' · ' + v.estado : Number(v.saldo) < Number(v.importe) ? ' · saldo ' + plata(v.saldo) : ''}<br>${esc(GIFT_URL + v.codigo)}</div>`).join('');
   const senaDet = x.sena_items && x.sena_items.length ? `<div class="sep"></div><div class="mini" style="text-align:center"><b>Artículos señados</b></div><table class="tk-det">${x.sena_items.map(d => `<tr><td>${Number(d.cantidad)} × ${esc(d.descripcion)}</td><td class="num">${plata(Number(d.cantidad) * Number(d.precio_unit))}</td></tr>`).join('')}</table><div class="mini" style="text-align:center">Esta seña se descuenta cuando retirás los artículos. No vence.</div>` : '';
   const senaUso = Number(c.sena_monto) > 0 ? `<div class="fila"><span>Seña a cuenta${x.sena_de ? ' · Factura ' + esc(x.sena_de) : ''}</span><span>- ${plata(c.sena_monto)}</span></div>` : '';
   const devuelve = nc && rel ? `Devuelve la ${rel.tipo === 'MA' ? 'Factura manual' : TIPO_NOM[rel.tipo] + ' ' + rel.letra} ${fmtNum(rel.punto_venta, rel.numero)}` : nc ? 'Devuelve el comprobante #' + c.relacionado_id : '';
@@ -1599,7 +1749,7 @@ function ticketHTML(x) {
     ${Number(c.descuento_monto) > 0 ? `<div class="fila"><span>Subtotal</span><span>${$(c.subtotal)}</span></div><div class="fila"><span>Descuento${c.descuento_pct > 0 ? ' ' + c.descuento_pct + '%' : ''}</span><span>- ${$(c.descuento_monto)}</span></div>` : ''}
     ${senaUso}${A ? `<div class="fila"><span>Neto gravado</span><span>${plata2(c.neto)}</span></div><div class="fila"><span>IVA 21%</span><span>${plata2(c.iva)}</span></div>` : ''}
     <div class="fila total"><span>TOTAL</span><span>${A ? plata2(c.total) : plata(c.total)}</span></div>
-    ${c.letra === 'B' ? `<div class="mini">IVA contenido ${plata2(c.iva)}<br>Otros impuestos nacionales indirectos $ 0,00</div>` : ''}${senaDet}
+    ${c.letra === 'B' ? `<div class="mini">IVA contenido ${plata2(c.iva)}<br>Otros impuestos nacionales indirectos $ 0,00</div>` : ''}${senaDet}${valesDet}
     ${pagos.length ? '<div class="sep"></div>' + pagos.map(p => `<div class="fila"><span>${esc(mp[p.medio] || p.medio)}${p.referencia ? ' · ' + esc(p.referencia) : ''}</span><span>${plata(p.importe)}</span></div>`).join('') : ''}
     ${c.obs ? `<div class="sep"></div><div class="mini">${esc(c.obs)}</div>` : ''}
     ${c.estado === 'anulado' ? `<div class="tk-anulado">ANULADO · ${esc(c.anulado_motivo || '')}</div>` : ''}
@@ -1747,6 +1897,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=32"></script>
+<script src="manual.js?v=33"></script>
 </body>
 </html>

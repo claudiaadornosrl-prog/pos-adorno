@@ -1,0 +1,87 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gift card · Claudia Adorno</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../icon-192-v2.png">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;min-height:100vh;background:#4A3F35 url('https://cdn.shopify.com/s/files/1/0827/7635/9129/files/mails-fondo-teca.jpg?v=1789414736&width=1400') center / cover fixed;font-family:Jost,sans-serif;color:#1C1612;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box}
+.hint{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#FAF7F2;text-shadow:0 1px 6px rgba(0,0,0,.5);margin:0 0 14px;text-align:center}
+.scene{width:min(440px,100%);aspect-ratio:1.6;perspective:1400px;cursor:pointer}
+.card{position:relative;width:100%;height:100%;transition:transform .9s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.scene.flip .card{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 18px 40px rgba(28,22,18,.22);padding:26px 30px;box-sizing:border-box;overflow:hidden}
+.frente{background:rgba(250,247,242,.86);backdrop-filter:blur(2px);display:flex;flex-direction:column}
+.frente .logo{width:150px;filter:brightness(0);display:block}
+.frente .regalo{margin-top:auto;font-family:'Cormorant Garamond',serif;font-weight:300;font-size:28px;line-height:1.05}
+.frente .regalo b{font-weight:600}
+.frente .dedic{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;line-height:1.3;margin-top:10px;color:#43464A;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.frente .firma{font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:10px;color:#8a837a}
+.frente .sep{height:1.5px;background:#1C1612;width:46px;margin:10px 0 0}
+.dorso{background:rgba(28,22,18,.9);backdrop-filter:blur(2px);color:#FAF7F2;transform:rotateY(180deg);display:flex;flex-direction:column}
+.dorso .logo{width:150px;filter:brightness(0) invert(1);display:block}
+.dorso .tit{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#b8b0a4;margin-top:6px}
+.dorso .abajo{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.dorso .cod{font-family:ui-monospace,Consolas,monospace;font-size:17px;letter-spacing:2px}
+.dorso .para{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;margin-bottom:6px}
+.dorso .uso{font-size:11px;color:#b8b0a4;margin-top:6px;line-height:1.5}
+.dorso .qr{width:92px;height:92px;background:#fff;border-radius:8px;flex:none;padding:6px;box-sizing:border-box}.dorso .qr img,.dorso .qr canvas{width:100%;height:100%}
+.dorso .monto{position:absolute;right:30px;top:26px;font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600}
+.saldo{margin-top:22px;background:rgba(250,247,242,.86);border-radius:999px;padding:10px 22px;font-size:13px;color:#43464A;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center}
+.saldo b{color:#1C1612}.saldo.mal{background:rgba(254,226,226,.92);color:#991b1b}
+.pie{margin-top:12px;font-size:11px;color:#43464A;background:rgba(250,247,242,.86);border-radius:14px;padding:8px 16px;text-align:center;line-height:1.6;max-width:420px}
+.pie a{color:#1C1612}
+@media (max-width:420px){.face{padding:20px 22px}.frente .regalo{font-size:24px}.frente .logo,.dorso .logo{width:120px}.dorso .cod{font-size:14px}.dorso .qr{width:76px;height:76px}}
+</style></head><body>
+<p class="hint" id="hint">Buscando tu tarjeta…</p>
+<div class="scene" id="scene" style="display:none" onclick="this.classList.toggle('flip')"><div class="card">
+  <div class="face frente">
+    <img class="logo" src="../logo-ca.png" alt="Claudia Adorno">
+    <div class="regalo" id="regalo"></div>
+    <div class="dedic" id="dedic"></div>
+    <div class="sep"></div>
+    <div class="firma" id="firma"></div>
+  </div>
+  <div class="face dorso">
+    <img class="logo" src="../logo-ca.png" alt="Claudia Adorno">
+    <div class="tit" id="tit">Gift card</div>
+    <div class="monto" id="monto"></div>
+    <div class="abajo">
+      <div><div class="para" id="para2"></div><div class="cod" id="cod"></div>
+        <div class="uso" id="uso">Mostrá este código en Alcorta, Unicenter o el Atelier.<br>Sin vencimiento · podés usarla en varias compras.</div></div>
+      <div class="qr" id="qr"></div>
+    </div>
+  </div>
+</div></div>
+<div class="saldo" id="saldo" style="display:none"></div>
+<div class="pie" id="pie" style="display:none">Vale en los locales de Claudia Adorno (Alcorta, Unicenter y Atelier Libertador). El saldo se actualiza cada vez que la usás. Dudas: <a href="https://wa.me/5491169784561">WhatsApp</a> · <a href="https://claudiaadorno.com">claudiaadorno.com</a></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const SUPA = 'https://jfwtiagteuwmyvblgwms.supabase.co', KEY = 'sb_publishable_udSPma98Sw9eskeeLCgdCw_S2vIX0Fk';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const plata = n => '$ ' + Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+const fecha = s => { if (!s) return ''; const [y, m, d] = s.split('-'); return `${d}-${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][m - 1]}-${y}`; };
+(async () => {
+  const c = new URLSearchParams(location.search).get('c') || '';
+  if (!c) { $('hint').textContent = 'Falta el código de la tarjeta'; return; }
+  let v = null;
+  try { const r = await fetch(SUPA + '/rest/v1/rpc/pos_vale_publico', { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_codigo: c }) }); v = await r.json(); } catch (e) {}
+  if (!v || !v.ok) { $('hint').textContent = 'No encontramos una tarjeta con ese código'; return; }
+  const gift = v.tipo === 'gift';
+  $('hint').textContent = 'Tocá la tarjeta para darla vuelta';
+  $('regalo').innerHTML = gift ? `¡Felicitaciones!<br>Te llegó un regalo${v.de_parte ? ' de <b>' + esc(v.de_parte) + '</b>' : ''}` : `Tu vale de cambio${v.para ? ', <b>' + esc(v.para) + '</b>' : ''}`;
+  $('dedic').textContent = gift ? (v.mensaje ? '«' + v.mensaje + '»' : 'Elegí lo que más te guste en nuestros locales.') : (v.nc ? 'Nace de la ' + v.nc + '. Lo usás como plata en cualquiera de nuestros locales, sin vencimiento.' : 'Lo usás como plata en cualquiera de nuestros locales, sin vencimiento.');
+  $('firma').textContent = (v.para && gift ? 'Para ' + v.para + ' · ' : '') + (gift ? 'gift card' : 'vale de cambio');
+  $('tit').textContent = gift ? 'Gift card' : 'Vale de cambio';
+  $('monto').textContent = v.importe != null ? plata(v.importe) : '';
+  $('para2').textContent = v.para ? (gift ? 'Para ' + v.para + (v.de_parte ? ', de parte de ' + v.de_parte : '') : v.para) : '';
+  $('cod').textContent = v.codigo;
+  if (!gift) $('uso').innerHTML = 'Mostrá este código en Alcorta, Unicenter o el Atelier.<br>Sin vencimiento · podés usarlo en varias compras.';
+  new QRCode($('qr'), { text: v.codigo, width: 80, height: 80, correctLevel: QRCode.CorrectLevel.M });
+  const s = $('saldo');
+  if (v.estado === 'anulado') { s.className = 'saldo mal'; s.textContent = 'Esta tarjeta fue anulada. Si creés que es un error, escribinos.'; }
+  else if (v.estado === 'usado' || Number(v.saldo) <= 0) { s.className = 'saldo mal'; s.textContent = 'Ya se usó entera · emitida el ' + fecha(v.fecha); }
+  else s.innerHTML = `Saldo disponible <b>${plata(v.saldo)}</b> · vigente · emitida el ${fecha(v.fecha)}`;
+  $('scene').style.display = ''; s.style.display = ''; $('pie').style.display = '';
+})();
+</script>
+</body></html>
