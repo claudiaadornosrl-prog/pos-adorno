@@ -493,6 +493,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .cli-mail input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 15px; font-family: inherit; color: var(--text); padding: 2px 0; }
 .cli-mail.falta { border-color: var(--amber); background: #fffbeb; } .cli-mail.falta #v-mail-st { color: #b45309; font-weight: 600; white-space: nowrap; }
 #ov .box.ficha { max-width: 940px; padding: 0; overflow: hidden; }
+#ov .box.ficha-prod { max-width: 1100px; width: 96vw; padding: 10px 12px 12px; } .prod-if { width: 100%; height: 80vh; border: none; border-radius: 12px; background: #fff; margin-top: 8px; } .pf-link { color: var(--primary-dark); white-space: nowrap; }
 #ov .box.preview { max-width: 860px; } .pv-a4 { background: #cfcac0; padding: 10px; border-radius: 10px; display: flex; justify-content: center; } .pv-a4 iframe { width: 595px; height: 842px; border: 0; background: white; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
 .fb { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-height: 90vh; }
 .fb-side { background: var(--primary-dark); color: #fff; padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: auto; }
@@ -919,7 +920,7 @@ function vBuscar() {
   const res = ARTS.filter(a => { const t = (a.sku + ' ' + a.descripcion + ' ' + (a.descripcion_adicional || '')).toUpperCase(); return pal.every(p => t.includes(p)); });
   res.sort((a, b) => (a.sku === q ? -1 : b.sku === q ? 1 : 0) || (a.sku.startsWith(q) ? -1 : b.sku.startsWith(q) ? 1 : 0) || (b.stock - a.stock));
   box.innerHTML = res.length ? res.slice(0, 60).map(a => `
-    <button class="prod${a.sku === FICHA ? ' act' : ''}" onclick="vAgregar('${esc(a.sku)}')" onmouseenter="vFicha('${esc(a.sku)}')" title="Agregar al ticket">
+    <button class="prod${a.sku === FICHA ? ' act' : ''}" onclick="vAgregar('${esc(a.sku)}')" ondblclick="prodFicha('${esc(a.sku)}', 2)" onmouseenter="vFicha('${esc(a.sku)}')" title="Clic: agregar al ticket · doble clic: ficha completa en Productos">
       ${foto(a.sku)}<span class="txt"><span class="sku">${esc(a.sku)}</span><span class="desc">${esc(a.descripcion)}${a.descripcion_adicional ? ' <i>' + esc(a.descripcion_adicional) + '</i>' : ''}</span></span>
       <span class="stk ${a.stock <= 0 ? 'sin' : ''}" title="Stock en ${esc(LOCALES[LOCAL])}${a.reservado ? ' · ' + a.reservado + ' señado' + (a.reservado > 1 ? 's' : '') : ''}">${Number(a.stock)}${a.reservado ? '<small class="res">·' + a.reservado + '</small>' : ''}${a.flash ? '<small class="flash">' + (a.flash > 0 ? '+' : '') + a.flash + '</small>' : ''}</span><span class="pre">${plata(a.precio)}</span></button>`).join('')
     + (res.length > 60 ? `<div class="mini" style="padding:8px">… y ${res.length - 60} más: afiná la búsqueda.</div>` : '')
@@ -934,18 +935,28 @@ function vFicha(sku) {
   document.querySelectorAll('#v-lista .prod').forEach(b => b.classList.toggle('act', b.getAttribute('onclick').includes("'" + FICHA + "'")));
   if (!a) { box.style.display = 'none'; box.innerHTML = ''; return; }
   const u = IMGS[a.sku];
-  box.style.display = ''; box.innerHTML = `
+  box.style.display = ''; box.ondblclick = () => prodFicha(a.sku); box.innerHTML = `
     ${u ? `<img class="pf-img" src="${esc(u)}" alt="" onclick="verFoto('${esc(u)}')" title="Ver más grande">` : '<span class="pf-img foto sin"></span>'}
     <div class="pf-datos">
       <div class="pf-sku">${esc(a.sku)}</div>
       <div class="pf-desc">${esc(a.descripcion)}</div>
       ${a.descripcion_adicional ? `<div class="mini">${esc(a.descripcion_adicional)}</div>` : ''}
-      <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')}</div>
+      <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')} <a href="#" class="pf-link" onclick="prodFicha('${esc(a.sku)}');return false" title="Abrir la ficha completa del módulo Productos (también con doble clic)">Ficha completa ›</a></div>
       <div class="pf-stock" id="pf-stock"><span class="${a.stock <= 0 ? 'sin' : ''}">${esc(LOCALES[LOCAL])}: <b>${Number(a.stock)}</b></span></div>
       <div class="pf-pie"><span class="pf-pre">${plata(a.precio)}</span><button class="pf-mas" onclick="vAgregar('${esc(a.sku)}')" title="Agregar al ticket" aria-label="Agregar al ticket">+</button></div>
       <div class="pf-hist" id="pf-hist"></div>
     </div>`;
   vStockOtros(a.sku); vHistorial(a.sku);
+}
+// Doble clic sobre un producto (JP 6-nov): la ficha completa del módulo Productos en una subventana (misma sesión).
+// El doble clic sobre la lista también dispara dos clics simples (dos unidades al ticket): se deshacen.
+function prodFicha(sku, deshacer) {
+  if (deshacer) { const i = T.items.findIndex(x => x.sku === sku && !x.fijo); if (i >= 0) { T.items[i].cantidad = r2(T.items[i].cantidad - deshacer); if (T.items[i].cantidad <= 0) T.items.splice(i, 1); vRender(); } }
+  // el SSO entra directo a un módulo solo si ya se abrió en esta compu: lo marcamos (misma persona, misma sesión)
+  try { ADORNO_SSO.recordar('productos', PERFIL && PERFIL.email); } catch (e) {}
+  const url = '../productos-adorno/?sku=' + encodeURIComponent(sku);
+  modal(`<div class="m-head"><h3>${esc(sku)} · ficha en Productos</h3><span class="spacer"></span><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Abrir en pestaña aparte</a><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <iframe class="prod-if" src="${esc(url)}" title="Ficha del producto ${esc(sku)}"></iframe>`, 'ficha-prod');
 }
 // Libro de stock: qué fue cada movimiento, para la ficha y el modal
 function movTexto(m) {
@@ -2163,6 +2174,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=37"></script>
+<script src="manual.js?v=38"></script>
 </body>
 </html>
