@@ -679,7 +679,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
     <section id="content-remitos" class="tab-content">
       <div class="filters" id="rm-filtros">
         <button class="btn primary" id="rm-nuevo" onclick="rmNuevo()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo remito</button>
-        <span class="pils"><button class="pil on" data-f="pend" onclick="rmFiltro('pend')">Sin facturar</button><button class="pil" data-f="tr" onclick="rmFiltro('tr')">En tránsito<span class="badge" id="rm-tr-n" style="display:none"></span></button><button class="pil" data-f="todos" onclick="rmFiltro('todos')">Todos</button><span class="pil-sep"></span><button class="pil" data-f="mov" onclick="rmFiltro('mov')" title="Entradas, bajas y ajustes de stock hechos a mano (solo encargada)">Movimientos</button></span>
+        <span class="pils"><button class="pil on" data-f="pend" onclick="rmFiltro('pend')">Sin facturar</button><button class="pil" data-f="ped" onclick="rmFiltro('ped')" title="Mercadería que otros locales le pidieron a este (módulo Stock): se arma el remito de traslado desde acá">Pedidos<span class="badge" id="rm-ped-n" style="display:none"></span></button><button class="pil" data-f="tr" onclick="rmFiltro('tr')">En tránsito<span class="badge" id="rm-tr-n" style="display:none"></span></button><button class="pil" data-f="todos" onclick="rmFiltro('todos')">Todos</button><span class="pil-sep"></span><button class="pil" data-f="mov" onclick="rmFiltro('mov')" title="Entradas, bajas y ajustes de stock hechos a mano (solo encargada)">Movimientos</button></span>
         <label>Buscar <input id="rm-q" placeholder="cliente, número, dirección" oninput="rmDebounce()"></label>
         <span class="stat" id="rm-stat"></span>
       </div>
@@ -1139,6 +1139,7 @@ async function cargarRemitos() {
   document.querySelectorAll('#rm-filtros .pil[data-f]').forEach(b => b.classList.toggle('on', b.dataset.f === RM.filtro));
   rmBadge();
   if (RM.filtro === 'tr') return cargarTransito();
+  if (RM.filtro === 'ped') return cargarPedidos();
   if (RM.filtro === 'mov') return cargarMovimientos();
   let qq = sb.from('pos_comprobantes').select('*, fact:facturado_en(tipo,letra,punto_venta,numero)').eq('local', LOCAL).eq('tipo', 'RE').order('id', { ascending: false }).limit(300);
   if (RM.filtro === 'pend') qq = qq.is('facturado_en', null).is('destino_local', null).eq('estado', 'emitido');
@@ -1168,6 +1169,7 @@ function trChip(c) {
 async function rmBadge() {
   const { count } = await sb.from('pos_comprobantes').select('id', { count: 'exact', head: true }).eq('tipo', 'RE').eq('destino_local', LOCAL).eq('transito_estado', 'en_transito').eq('estado', 'emitido');
   const b = document.getElementById('rm-tr-n'); if (!b) return; b.textContent = count || ''; b.style.display = count ? '' : 'none';
+  const { data: ped } = await sb.rpc('pos_pedidos_para_remito', { p_local: LOCAL }); const n = (ped || []).length; const p = document.getElementById('rm-ped-n'); if (p) { p.textContent = n || ''; p.style.display = n ? '' : 'none'; }
 }
 const puedeRecibir = () => (PERFIL.rol === 'gerente' || PERFIL.es_admin) && !!PERFIL.empleado_id;
 // En tránsito: lo que viene a este local y lo que este local mandó
@@ -1217,6 +1219,39 @@ async function recAceptar(id) {
   cerrarModal(); toast(data.estado === 'recibido' ? 'Mercadería recibida: ' + data.unidades + ' unidades entraron al stock' : 'Recibido con diferencia: ' + data.unidades + ' unidades entraron; lo que falta quedó marcado', data.estado === 'recibido' ? 'success' : 'error');
   if (STOCK_FUENTE === 'libro') for (const it of items) { const a = ARTS.find(z => z.sku === it.sku); if (a && it.cantidad) { a.stock_fisico = Number(a.stock_fisico) + it.cantidad; a.stock = a.stock_fisico - (a.reservado || 0); a.flash = it.cantidad; delete _fStock[it.sku]; setTimeout(() => { delete a.flash; }, 6000); } }
   cargarRemitos();
+}
+// Pedidos de mercadería del módulo Stock (otro local le pidió a este): se arma el remito de traslado con un clic
+let PED = [];
+async function cargarPedidos() {
+  const { data, error } = await sb.rpc('pos_pedidos_para_remito', { p_local: LOCAL }); if (error) { toast(error.message, 'error'); return; }
+  PED = data || []; const q = document.getElementById('rm-q').value.trim().toUpperCase();
+  const vis = q ? PED.filter(p => (p.sku + ' ' + (p.descripcion || '') + ' ' + (p.quien || '') + ' ' + p.solicitante).toUpperCase().includes(q)) : PED;
+  document.getElementById('rm-stat').textContent = vis.length + (vis.length === 1 ? ' pedido' : ' pedidos') + ' a ' + LOCALES[LOCAL];
+  document.getElementById('rm-lista').innerHTML = `<div class="mini" style="margin-bottom:8px">Lo que otros locales le pidieron a ${esc(LOCALES[LOCAL])} desde el módulo Stock. Marcá los que van juntos (al mismo local) y armá el remito de traslado: salen del stock de acá y quedan en tránsito.</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><button class="btn primary" id="ped-armar" onclick="pedArmar()" disabled>${_i('plus')} Armar el remito con los marcados</button><span class="mini" id="ped-msg"></span></div>` +
+    (vis.length ? `<table><thead><tr><th></th><th>Pedido</th><th>Para</th><th>Artículo</th><th class="num">Cant.</th><th>Estado</th><th></th></tr></thead><tbody>` +
+    vis.map(p => `<tr><td><input type="checkbox" data-id="${p.id}" data-loc="${esc(p.solicitante)}" onchange="pedPinta()"></td><td><b>#${p.id}</b><div class="mini">${fechaAR(String(p.fecha).slice(0, 10))}</div></td><td><b>${esc(LOCALES[p.solicitante] || p.solicitante)}</b><div class="mini">${p.quien && !String(p.quien).includes('@') ? esc(pila(p.quien)) : ''}</div></td><td><div class="art">${foto(p.sku, 'chica')}<div><b>${esc(p.sku)}</b><div class="mini">${esc(p.descripcion || '')}</div></div></div></td><td class="num"><b>${Number(p.cantidad)}</b></td>
+      <td>${p.estado === 'apartado' ? '<span class="chip green">Apartado</span>' : p.estado === 'revisando' ? '<span class="chip amber">Revisando' + (p.revisando_por ? ' · ' + esc(pila(p.revisando_por)) : '') + '</span>' : '<span class="chip gray">Pendiente</span>'}</td>
+      <td class="acc"><button class="btn ico" onclick="pedCerrar(${p.id})" title="Ya salió sin remito: cerrar el pedido" aria-label="Ya salió">${_i('ok')}</button></td></tr>`).join('') + '</tbody></table>'
+    : `<div class="empty">Ningún local le está pidiendo mercadería a ${esc(LOCALES[LOCAL])}.</div>`);
+}
+function pedPinta() {
+  const marc = [...document.querySelectorAll('#rm-lista input[type=checkbox]:checked')]; const locs = [...new Set(marc.map(c => c.dataset.loc))];
+  const b = document.getElementById('ped-armar'), m = document.getElementById('ped-msg');
+  b.disabled = !marc.length || locs.length > 1; m.textContent = locs.length > 1 ? 'Marcá pedidos de un solo local por remito' : marc.length ? marc.length + ' para ' + LOCALES[locs[0]] : '';
+}
+function pedArmar() {
+  const marc = [...document.querySelectorAll('#rm-lista input[type=checkbox]:checked')]; if (!marc.length) return;
+  const ids = marc.map(c => Number(c.dataset.id)), dest = marc[0].dataset.loc; const peds = PED.filter(p => ids.includes(p.id));
+  rmNuevo(); reDestino('loc'); document.getElementById('v-re-dest').value = dest; T.re_destino = dest; T.re_pedidos = ids;
+  for (const p of peds) { const a = ARTS.find(x => x.sku === p.sku); const it = T.items.find(x => x.sku === p.sku); if (it) it.cantidad += Number(p.cantidad); else T.items.push({ sku: p.sku, descripcion: p.descripcion || (a ? a.descripcion : p.sku), cantidad: Number(p.cantidad), precio_unit: a ? Number(a.precio) || 0 : 0, descuento_pct: 0, descuento_monto: 0, stock: a ? Number(a.stock) : 0 }); }
+  document.getElementById('v-re-nota').value = 'Pedidos de traslado ' + ids.map(i => '#' + i).join(', ');
+  reDestino('loc'); vRender(); toast('Remito armado con ' + peds.length + (peds.length === 1 ? ' pedido' : ' pedidos') + ' para ' + LOCALES[dest] + ': revisá y emití', 'success');
+}
+async function pedCerrar(id) {
+  if (!confirm('¿El pedido #' + id + ' ya salió sin remito? Queda cerrado como enviado, sin mover stock.')) return;
+  const { error } = await sb.rpc('pos_pedido_cerrar', { p_id: id }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  toast('Pedido cerrado', 'success'); cargarRemitos();
 }
 // Movimientos manuales (JP 6-nov): entrada, baja o ajuste con motivo; solo encargada/admin con legajo; quedan en el libro con quién y por qué
 const MOV_NOM = { alta: 'Entrada', baja: 'Baja', ajuste: 'Ajuste' };
@@ -1408,7 +1443,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main"><div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.items = []; T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -1940,7 +1975,7 @@ async function emitir(esNC) {
   const valeCont = esNC ? (document.querySelector('#v-pagos .vale-cont') || {}).value || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && !(t.tot > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
   const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: document.getElementById('v-obs').value.trim() || null,
-    relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
+    relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? document.getElementById('v-re-nota').value.trim() || null : undefined,
     items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_monto > 0 ? 0 : i.descuento_pct, descuento_monto: i.descuento_monto || 0, iva_pct: 21 })),
     pagos: sinPago() ? [] : pagos };
@@ -2304,6 +2339,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=40"></script>
+<script src="manual.js?v=41"></script>
 </body>
 </html>
