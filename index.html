@@ -462,7 +462,10 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .rebox { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; } .rebox .sena-h b { color: #92400e; } .re-seg { margin: 0; }
 .pos-ticket.es-tr { background: #ede9fe; border-color: #c4b5fd; } .pos-ticket.es-tr .renglones table { background: white; } .pos-ticket.es-tr .rebox .sena-h b { color: #5b21b6; }
 .badge { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; background: #7c3aed; color: #fff; font-size: 11px; font-weight: 700; margin-left: 6px; text-align: center; } .pil.on .badge { background: #fff; color: #5b21b6; }
-.chip.viol { background: #ede9fe; color: #5b21b6; } .mov-f { display: flex; flex-direction: column; gap: 8px; } .mov-f .cli-sin input { width: 100%; } .mov-res { max-height: 180px; overflow: auto; } .mov-res .prod { padding: 4px 6px; } .rec-t td input { width: 70px; text-align: right; } .rec-t td input.dif { border-color: var(--red); background: #fee2e2; }
+.chip.viol { background: #ede9fe; color: #5b21b6; }
+.et-wrap { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; align-items: start; } @media (max-width: 900px) { .et-wrap { grid-template-columns: 1fr; } }
+.et-f { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; } .et-f label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 3px; } .et-f input, .et-f select { width: 96px; }
+.et-cola table td.num input { width: 64px; text-align: center; } .mov-f { display: flex; flex-direction: column; gap: 8px; } .mov-f .cli-sin input { width: 100%; } .mov-res { max-height: 180px; overflow: auto; } .mov-res .prod { padding: 4px 6px; } .rec-t td input { width: 70px; text-align: right; } .rec-t td input.dif { border-color: var(--red); background: #fee2e2; }
 .pf-hist { margin-top: 6px; border-top: 1px dashed #93c5fd; padding-top: 6px; font-size: 12px; } .pf-hist .t { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 3px; }
 .pf-hist table { width: 100%; border-collapse: collapse; } .pf-hist td { padding: 2px 2px; border-bottom: 1px solid #e3eef5; vertical-align: top; } .pf-hist td.f { white-space: nowrap; color: var(--muted); width: 64px; } .pf-hist td.c { text-align: right; font-weight: 700; width: 36px; white-space: nowrap; }
 .pf-hist .menos { color: var(--red); } .pf-hist .mas { color: #15803d; } .pf-hist a { color: var(--primary-dark); } .pf-hist .ver { display: inline-block; margin-top: 3px; cursor: pointer; color: var(--primary-dark); }
@@ -590,6 +593,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <button id="tab-vender" class="active" onclick="switchTab('vender')" title="Vender"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="lb">Vender</span></button>
       <button id="tab-comprobantes" onclick="switchTab('comprobantes')" title="Comprobantes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2V2l-3 2-3-2-3 2-3-2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/></svg><span class="lb">Comprobantes</span></button>
       <button id="tab-remitos" onclick="switchTab('remitos')" title="Remitos"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span class="lb">Remitos</span></button>
+      <button id="tab-etiquetas" onclick="switchTab('etiquetas')" title="Etiquetas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg><span class="lb">Etiquetas</span></button>
       <button id="tab-vales" onclick="switchTab('vales')" title="Vales"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg><span class="lb">Vales</span></button>
       <button id="tab-caja" onclick="switchTab('caja')" title="Caja"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg><span class="lb">Caja</span></button>
       <button id="tab-ajustes" onclick="switchTab('ajustes')" title="Ajustes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="lb">Ajustes</span></button>
@@ -693,6 +697,25 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       </div>
       <div class="kpis" id="k-kpis"></div>
       <div id="k-tabla"></div>
+    </section>
+    <section id="content-etiquetas" class="tab-content">
+      <div class="et-wrap">
+        <div class="card">
+          <h3>Etiquetas para imprimir</h3>
+          <div class="buscador" style="margin:8px 0"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="et-q" placeholder="Buscá el producto por SKU o descripción, o escaneá" autocomplete="off" oninput="etBuscar()" onkeydown="if(event.key==='Enter'){event.preventDefault();etEnter()}"></div>
+          <div id="et-res" class="prod-lista mov-res"></div>
+          <div id="et-cola"></div>
+          <div class="acciones" style="margin-top:10px"><button class="btn" onclick="etVaciar()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar</button><span class="spacer"></span><span class="mini" id="et-tot"></span><button class="btn primary" id="et-imprimir" onclick="etPreview()" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Vista previa e imprimir</button></div>
+        </div>
+        <div class="card et-rollo">
+          <h3>Rollo</h3>
+          <div class="mini" style="margin-bottom:8px">Medidas en milímetros. Se imprime por el driver de Windows de la impresora (Zebra); en el diálogo de impresión elegí la Zebra y la hoja sale del tamaño de una fila de etiquetas. Queda guardado en esta computadora.</div>
+          <div class="et-f"><label>Ancho <input id="et-ancho" inputmode="decimal"></label><label>Alto <input id="et-alto" inputmode="decimal"></label><label>Por fila <input id="et-cols" inputmode="numeric"></label></div>
+          <div class="et-f"><label>Separación <input id="et-gap" inputmode="decimal"></label><label>Margen izq. <input id="et-margen" inputmode="decimal"></label><label>Nombre <select id="et-nombre"><option value="Claudia Adorno">Claudia Adorno</option><option value="Atelier Claudia Adorno">Atelier Claudia Adorno</option></select></label></div>
+          <div class="acciones" style="margin-top:8px"><button class="btn" onclick="etRolloDefault()">Volver al rollo de siempre (31,7 × 12,7, 3 por fila)</button><span class="spacer"></span><button class="btn" onclick="etGuardarRollo();toast('Rollo guardado','success')">Guardar rollo</button></div>
+          <div class="mini" style="margin-top:10px">Diseño C1 (el que elegiste el 30-oct): QR con el SKU a la izquierda, SKU grande y el nombre debajo. Si una fila sale corrida, ajustá separación y margen y volvé a probar con una sola fila.</div>
+        </div>
+      </div>
     </section>
     <section id="content-vales" class="tab-content">
       <div class="filters">
@@ -904,7 +927,7 @@ function pantReset() { PANT.esc = 1; PANT.izq = 30; pantPinta(); }
   d.addEventListener('pointerup', () => { drag = false; d.classList.remove('on'); });
   pantPinta();
 })();
-function onTab(k) { if (k !== 'remitos') rmModo('lista'); if (k === 'remitos') cargarRemitos(); if (k === 'comprobantes') cargarComprobantes(); if (k === 'vales') cargarVales(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
+function onTab(k) { if (k !== 'remitos') rmModo('lista'); if (k === 'remitos') cargarRemitos(); if (k === 'etiquetas') { etRender(); setTimeout(() => document.getElementById('et-q').focus(), 50); } if (k === 'comprobantes') cargarComprobantes(); if (k === 'vales') cargarVales(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
 
 // ═══ Vender · productos ════════════════════════════════════════════════
 let _vT = null;
@@ -946,7 +969,7 @@ function vFicha(sku) {
       <div class="pf-sku">${esc(a.sku)}</div>
       <div class="pf-desc">${esc(a.descripcion)}</div>
       ${a.descripcion_adicional ? `<div class="mini">${esc(a.descripcion_adicional)}</div>` : ''}
-      <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')} <a href="#" class="pf-link" onclick="prodFicha('${esc(a.sku)}');return false" title="Abrir la ficha completa del módulo Productos (también con doble clic)">Ficha completa ›</a></div>
+      <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')} <a href="#" class="pf-link" onclick="prodFicha('${esc(a.sku)}');return false" title="Abrir la ficha completa del módulo Productos (también con doble clic)">Ficha completa ›</a> <a href="#" class="pf-link" onclick="etAgregar('${esc(a.sku)}');switchTab('etiquetas');return false" title="Sumar a la cola de etiquetas">Etiquetas ›</a></div>
       <div class="pf-stock" id="pf-stock"><span class="${a.stock <= 0 ? 'sin' : ''}">${esc(LOCALES[LOCAL])}: <b>${Number(a.stock)}</b></span></div>
       <div class="pf-pie"><span class="pf-pre">${plata(a.precio)}</span><button class="pf-mas" onclick="vAgregar('${esc(a.sku)}')" title="Agregar al ticket" aria-label="Agregar al ticket">+</button></div>
       <div class="pf-hist" id="pf-hist"></div>
@@ -1188,7 +1211,7 @@ async function cargarTransito() {
       <td>${c.local === LOCAL ? '<b>' + esc(LOCALES[c.local]) + '</b>' : esc(LOCALES[c.local])} → ${c.destino_local === LOCAL ? '<b>' + esc(LOCALES[c.destino_local]) + '</b>' : esc(LOCALES[c.destino_local])}</td>
       <td class="mini">${(dets[c.id] || []).map(d => Number(d.cantidad) + ' × ' + esc(d.sku) + (d.cantidad_recibida != null && Number(d.cantidad_recibida) < Number(d.cantidad) ? ' <span class="chip red">llegaron ' + Number(d.cantidad_recibida) + '</span>' : '')).join(' · ')}${c.entrega_nota ? '<div>«' + esc(c.entrega_nota) + '»</div>' : ''}</td>
       <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : trChip(c)}</td>
-      <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
+      <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>${c.destino_local === LOCAL && (c.transito_estado === 'recibido' || c.transito_estado === 'con_diferencia') ? `<button class="btn ico" onclick="etDesdeRemito(${c.id})" title="Etiquetar lo recibido" aria-label="Etiquetas">${_i('print')}</button>` : ''}${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
         ${c.destino_local === LOCAL && c.estado === 'emitido' && c.transito_estado === 'en_transito' ? (puedeRecibir() ? `<button class="btn primary chico" onclick="rmRecibir(${c.id})">Recibir</button>` : '<span class="mini">recibe la encargada</span>') : ''}
         ${puedeAnular && c.local === LOCAL && c.estado === 'emitido' && c.transito_estado === 'en_transito' ? `<button class="btn ico peligro" onclick="anular(${c.id}).then(cargarRemitos)" title="Anular (la mercadería vuelve al stock de ${esc(LOCALES[LOCAL])})" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : `<div class="empty">No hay mercadería en tránsito desde ni hacia ${esc(LOCALES[LOCAL])}.</div>`;
@@ -1217,6 +1240,7 @@ async function recAceptar(id) {
   const { data, error } = await sb.rpc('pos_transito_recibir', { p_id: id, p_items: items, p_obs: document.getElementById('rec-obs').value.trim() || null });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); document.getElementById('rec-ok').disabled = false; return; }
   cerrarModal(); toast(data.estado === 'recibido' ? 'Mercadería recibida: ' + data.unidades + ' unidades entraron al stock' : 'Recibido con diferencia: ' + data.unidades + ' unidades entraron; lo que falta quedó marcado', data.estado === 'recibido' ? 'success' : 'error');
+  window._recItems = items.filter(it => it.cantidad > 0);
   if (STOCK_FUENTE === 'libro') for (const it of items) { const a = ARTS.find(z => z.sku === it.sku); if (a && it.cantidad) { a.stock_fisico = Number(a.stock_fisico) + it.cantidad; a.stock = a.stock_fisico - (a.reservado || 0); a.flash = it.cantidad; delete _fStock[it.sku]; setTimeout(() => { delete a.flash; }, 6000); } }
   cargarRemitos();
 }
@@ -1252,6 +1276,71 @@ async function pedCerrar(id) {
   if (!confirm('¿El pedido #' + id + ' ya salió sin remito? Queda cerrado como enviado, sin mover stock.')) return;
   const { error } = await sb.rpc('pos_pedido_cerrar', { p_id: id }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
   toast('Pedido cerrado', 'success'); cargarRemitos();
+}
+// ═══ Etiquetas (JP 6-nov): logo + SKU + QR con el SKU; cola de productos × cantidad; se imprime por el driver de la Zebra ═══
+// Diseño C1 (JP, 30-oct-2026, medido en la ZD220): etiqueta 31,7 × 12,7 mm, 3 bandas, 3,2 mm entre bandas, la 1ª arranca 1,5 mm antes del
+// cabezal → margen 2,5 mm. QR de 7,9 mm (21 módulos a 3 puntos) a la izquierda; SKU grande en negrita y "Claudia Adorno" debajo (Avant Garde).
+const ET_DEF = { ancho: 31.7, alto: 12.7, cols: 3, gap: 3.2, margen: 2.5, nombre: 'Claudia Adorno' };
+let ET = { cola: [] };
+function etRollo() { try { return Object.assign({}, ET_DEF, JSON.parse(localStorage.getItem('pos_etiq') || '{}')); } catch (e) { return Object.assign({}, ET_DEF); } }
+function etPintaRollo() { const r = etRollo(); for (const k of ['ancho', 'alto', 'cols', 'gap', 'margen', 'nombre']) { const el = document.getElementById('et-' + k); if (el) el.value = r[k]; } }
+function etGuardarRollo() { const r = {}; for (const k of ['ancho', 'alto', 'cols', 'gap', 'margen']) r[k] = Math.max(0, num(document.getElementById('et-' + k).value)) || ET_DEF[k]; r.cols = Math.max(1, Math.round(r.cols)); r.nombre = document.getElementById('et-nombre').value; localStorage.setItem('pos_etiq', JSON.stringify(r)); }
+function etRolloDefault() { localStorage.removeItem('pos_etiq'); etPintaRollo(); }
+function etBuscar() {
+  const q = document.getElementById('et-q').value.trim().toUpperCase(); const box = document.getElementById('et-res');
+  if (!q) { box.innerHTML = ''; return; }
+  box.innerHTML = ARTS.filter(a => (a.sku + ' ' + a.descripcion).toUpperCase().includes(q)).slice(0, 8).map(a => `<button class="prod" onclick="etAgregar('${esc(a.sku)}')">${foto(a.sku, 'chica')}<span class="txt"><span class="sku">${esc(a.sku)}</span><span class="desc">${esc(a.descripcion)}</span></span><span class="stk">${Number(a.stock)}</span><span class="pre">+</span></button>`).join('');
+}
+function etEnter() { const q = document.getElementById('et-q').value.trim().toUpperCase(); const a = ARTS.find(x => x.sku.toUpperCase() === q); if (a) etAgregar(a.sku); else { const b = document.querySelector('#et-res .prod'); if (b) b.click(); } }
+function etAgregar(sku, cant) {
+  const a = ARTS.find(x => x.sku === sku); if (!a) return;
+  const it = ET.cola.find(x => x.sku === sku); if (it) it.cantidad += cant || 1; else ET.cola.push({ sku: a.sku, descripcion: a.descripcion, cantidad: cant || 1 });
+  const q = document.getElementById('et-q'); if (q) { q.value = ''; } const r = document.getElementById('et-res'); if (r) r.innerHTML = '';
+  sonar('mas'); etRender(); if (q) q.focus();
+}
+function etCant(i, v) { const it = ET.cola[i]; it.cantidad = Math.max(0, Math.round(num(v))); if (!it.cantidad) ET.cola.splice(i, 1); etRender(); }
+function etQuitar(i) { ET.cola.splice(i, 1); etRender(); }
+function etVaciar() { ET.cola = []; etRender(); }
+function etRender() {
+  etPintaRollo();
+  const box = document.getElementById('et-cola'); if (!box) return; const tot = ET.cola.reduce((s, i) => s + i.cantidad, 0);
+  box.className = 'et-cola'; box.innerHTML = ET.cola.length ? `<table><thead><tr><th>Artículo</th><th class="num">Etiquetas</th><th></th></tr></thead><tbody>` + ET.cola.map((it, i) => `<tr><td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td><td class="num cant"><button class="btn ico chico" onclick="etCant(${i},${it.cantidad + 1})" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="etCant(${i},this.value)" inputmode="numeric"><button class="btn ico chico" onclick="etCant(${i},${it.cantidad - 1})" aria-label="Menos">${_i('minus')}</button></td><td><button class="btn ico chico" onclick="etQuitar(${i})" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">Buscá un producto y tocalo para sumarlo a la cola. Escaneá su QR para ir más rápido.</div>';
+  const r = etRollo(); document.getElementById('et-tot').textContent = tot ? tot + (tot === 1 ? ' etiqueta' : ' etiquetas') + ' · ' + Math.ceil(tot / r.cols) + (Math.ceil(tot / r.cols) === 1 ? ' fila' : ' filas') : '';
+  document.getElementById('et-imprimir').disabled = !tot;
+}
+// HTML de las etiquetas: una "hoja" por fila del rollo; @page del tamaño exacto para que el driver no escale nada
+function etHTML(cola) {
+  const r = etRollo(); const unidades = []; cola.forEach(it => { for (let k = 0; k < it.cantidad; k++) unidades.push(it.sku); });
+  const filas = []; for (let i = 0; i < unidades.length; i += r.cols) filas.push(unidades.slice(i, i + r.cols));
+  const W = r.margen + r.cols * r.ancho + (r.cols - 1) * r.gap, H = r.alto;
+  const qr = sku => { try { const q = qrcode(0, 'M'); q.addData(sku); q.make(); return q.createDataURL(4, 0); } catch (e) { return ''; } };
+  const qrmm = 7.9, izq = 2.5, der = 2, tx = izq + qrmm + 1.25, anchoTx = Math.max(8, r.ancho - der - tx);
+  const fsSku = sku => Math.max(5, Math.min(10.6, anchoTx / (0.82 * Math.max(3, sku.length)) * 2.835));   // pt: entra en el ancho (~0,82 em por mayúscula en URW Gothic negrita)
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Etiquetas</title><style>
+    @page { size: ${W}mm ${H}mm; margin: 0; } html, body { margin: 0; padding: 0; }
+    .fila { width: ${W}mm; height: ${H}mm; display: flex; align-items: center; page-break-after: always; break-after: page; padding-left: ${r.margen}mm; box-sizing: border-box; gap: ${r.gap}mm; overflow: hidden; }
+    .fila:last-child { page-break-after: auto; break-after: auto; }
+    @font-face { font-family: 'URW Gothic'; src: url('fonts/URWGothic-Book.ttf') format('truetype'); font-weight: 400; }   /* solo Book: la negrita del SKU la sintetiza el navegador */
+    .et { width: ${r.ancho}mm; height: ${r.alto}mm; position: relative; box-sizing: border-box; overflow: hidden; font-family: 'URW Gothic', 'ITC Avant Garde Gothic', Avenir, Arial, sans-serif; color: #000; background: #fff; }
+    .et img.q { position: absolute; left: ${izq}mm; top: ${((r.alto - qrmm) / 2).toFixed(2)}mm; width: ${qrmm}mm; height: ${qrmm}mm; image-rendering: pixelated; }
+    .et .s { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; top: ${(r.alto / 2 - 5.2).toFixed(2)}mm; height: 4.4mm; line-height: 4.4mm; font-weight: 700; white-space: nowrap; overflow: hidden; letter-spacing: 0; }
+    .et .n { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; top: ${(r.alto / 2 + 0.3).toFixed(2)}mm; height: 2.6mm; line-height: 2.6mm; font-size: ${Math.min(6.4, anchoTx / 9.2 * 2.835).toFixed(2)}pt; font-weight: 400; letter-spacing: 0.1mm; white-space: nowrap; overflow: hidden; }
+  </style></head><body>${filas.map(f => `<div class="fila">${f.map(sku => `<div class="et"><img class="q" src="${qr(sku)}" alt=""><div class="s" style="font-size:${fsSku(sku).toFixed(2)}pt">${esc(sku)}</div><div class="n">${esc(r.nombre || 'Claudia Adorno')}</div></div>`).join('')}</div>`).join('')}</body></html>`;
+}
+async function etDesdeRemito(id) { const { data } = await sb.from('pos_comprobantes_det').select('sku,cantidad,cantidad_recibida').eq('comprobante_id', id); (data || []).forEach(d => { const n = Number(d.cantidad_recibida != null ? d.cantidad_recibida : d.cantidad); if (n > 0) etAgregar(d.sku, n); }); switchTab('etiquetas'); }
+function etPreview() {
+  if (!ET.cola.length) return; const r = etRollo(); const tot = ET.cola.reduce((s, i) => s + i.cantidad, 0);
+  modal(`<div class="m-head"><h3>Etiquetas · ${tot} en ${Math.ceil(tot / r.cols)} ${Math.ceil(tot / r.cols) === 1 ? 'fila' : 'filas'} de ${r.cols}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="mini" style="margin:6px 0 8px">Así sale cada fila del rollo (${r.ancho} × ${r.alto} mm). Si está bien, Imprimir abre el diálogo: elegí la Zebra.</div>
+    <div class="pv-a4" style="padding:14px"><iframe id="et-if" style="width:${Math.ceil((r.margen + r.cols * r.ancho + (r.cols - 1) * r.gap) * 3.78 * 2.5) + 6}px;height:${Math.ceil(r.alto * 3.78 * 2.5 * Math.min(3, Math.ceil(tot / r.cols))) + 12}px;border:none;background:#fff;border-radius:6px;max-width:100%"></iframe></div>
+    <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" onclick="etImprimir()">${_i('print')} Imprimir</button></div>`, 'preview');
+  const ifr = document.getElementById('et-if'); ifr.srcdoc = etHTML(ET.cola).replace('</style>', 'body { zoom: 2.5; overflow: hidden; } .fila { page-break-after: auto; break-after: auto; border-bottom: 1px dashed #cbd5e1; }</style>');
+}
+function etImprimir() {
+  const ifr = document.getElementById('et-if'); if (!ifr) return;
+  const w = ifr.contentWindow; const html = etHTML(ET.cola);
+  const doc = w.document; doc.open(); doc.write(html); doc.close();
+  setTimeout(() => { try { w.focus(); w.print(); } catch (e) { toast('No pude abrir el diálogo de impresión', 'error'); } }, 400);
 }
 // Movimientos manuales (JP 6-nov): entrada, baja o ajuste con motivo; solo encargada/admin con legajo; quedan en el libro con quién y por qué
 const MOV_NOM = { alta: 'Entrada', baja: 'Baja', ajuste: 'Ajuste' };
@@ -2339,6 +2428,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=41"></script>
+<script src="manual.js?v=42"></script>
 </body>
 </html>
