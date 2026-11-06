@@ -530,6 +530,9 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
 .btn-cobrar:disabled { opacity: .4; cursor: default; } .btn-cobrar .ico { width: 22px; height: 22px; }
 .m-head { display: flex; align-items: center; gap: 8px; } .m-head h3 { margin: 0; } .spacer { flex: 1; }
 .m-foot { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.aut-caja { background: var(--primary-bg); border-radius: 12px; padding: 10px 12px; margin-top: 8px; } .aut-caja.sin { background: #fee2e2; } .aut-caja.ok { background: #dcfce7; }
+.aut-p { display: flex; align-items: center; gap: 8px; padding: 5px 0; } .aut-p .nom { flex: 1; } .aut-p .nom .mini { display: block; } .aut-clave { display: flex; gap: 8px; margin-top: 6px; } .aut-clave input { flex: 1; border: 1.5px solid var(--border); border-radius: 999px; padding: 8px 12px; font-family: inherit; font-size: 14px; }
+.spin { display: inline-block; width: 13px; height: 13px; border: 2px solid #cbd5e1; border-top-color: var(--primary); border-radius: 50%; animation: gir 1s linear infinite; vertical-align: middle; margin-right: 6px; } @keyframes gir { to { transform: rotate(360deg); } }
 .cl-res { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow: auto; }
 .cl-it { display: flex; gap: 10px; align-items: center; text-align: left; background: #f8fafc; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; } .cl-it:hover { border-color: var(--primary); } .cl-it .ico { color: var(--muted); }
 .medios { display: flex; flex-direction: column; gap: 6px; }
@@ -702,6 +705,9 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <div class="card"><h3>Mi Point en esta caja</h3>
         <div class="mini" style="margin-bottom:8px">Elegí la terminal Mercado Pago Point que está en esta caja. Queda guardado en esta computadora o tablet; cada caja elige la suya.</div>
         <div id="a-point" class="pils"></div></div>
+      <div class="card"><h3>Rangos y autorizaciones</h3>
+        <div class="mini" style="margin-bottom:8px">Todos entran con el usuario genérico del local y ven todo. Nota de crédito, comprobante X rojo, remito y anulación piden autorización de una <b>encargada</b>, una <b>cajera</b> o un admin (siempre una persona con legajo, nunca el genérico): la vendedora elige a quién pedirle entre quienes están en el local y le llega un aviso al celu (app RRHH); si no, usuario y clave en la caja.</div>
+        <div id="a-rangos"></div></div>
       <div class="card"><h3>Medios de pago</h3><div id="a-mp"></div></div>
     </section>
     <div id="ov" style="display:none"></div>
@@ -828,6 +834,7 @@ async function init() {
   document.getElementById('user-info').textContent = p.nombre;
   if (!p.es_admin) document.getElementById('tab-ajustes').style.display = 'none';
   pintarLocal();
+  { const aid = new URLSearchParams(location.search).get('autorizar'); if (aid) { history.replaceState(null, '', location.pathname); setTimeout(() => autResponder(Number(aid)), 300); } }
   const hoy = hoyAR();
   ['c-desde', 'c-hasta', 'k-fecha'].forEach(id => document.getElementById(id).value = hoy);
   const [{ data: m }, { data: pv }, { data: tp }] = await Promise.all([
@@ -1102,14 +1109,14 @@ async function cargarRemitos() {
   const { data, error } = await qq; if (error) { toast(error.message, 'error'); return; }
   const q = document.getElementById('rm-q').value.trim().toUpperCase();
   let lista = data || []; if (q) lista = lista.filter(c => (c.cliente_nombre + ' ' + c.numero + ' ' + (c.entrega_dir || '') + ' ' + (c.cliente_doc || '') + ' ' + (c.vendedora_nombre || '')).toUpperCase().includes(q));
-  const puedeAnular = PERFIL.es_admin || PERFIL.rol === 'gerente';
+  const puedeAnular = true;   // el genérico ve todo; anular pide autorización
   document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' remito' : ' remitos') + (RM.filtro === 'pend' ? ' sin facturar' : '');
   document.getElementById('rm-lista').innerHTML = lista.length ? `<table><thead><tr><th>Remito</th><th>Cliente</th><th>Entrega</th><th>Vendedora</th><th class="num">Referencia</th><th>Estado</th><th></th></tr></thead><tbody>` +
     lista.map(c => `<tr class="${c.estado === 'anulado' ? 'dim' : ''}">
       <td><b>${fmtNum(c.punto_venta, c.numero)}</b><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)}</div></td>
       <td>${esc(c.cliente_nombre)}<div class="mini">${c.cliente_doc ? (c.cliente_doc_tipo || '') + ' ' + c.cliente_doc : ''}${c.cliente_tel ? ' · ' + esc(c.cliente_tel) : ''}</div></td>
       <td class="mini">${esc(c.entrega_dir || '')}${c.entrega_nota ? '<div>' + esc(c.entrega_nota) + '</div>' : ''}</td>
-      <td class="mini">${esc(c.vendedora_nombre || '')}</td>
+      <td class="mini">${esc(c.vendedora_nombre || '')}${c.autorizado_por && c.autorizado_modo !== 'propia' ? '<div>autorizó ' + esc(pila(c.autorizado_por)) + ' <span class="chip green">' + c.autorizado_modo + '</span></div>' : ''}</td>
       <td class="num"><b>${plata(c.total)}</b></td>
       <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.fact ? `<span class="chip green">Facturado</span> <a href="#" class="mini" onclick="verComprobante(${c.facturado_en});return false">${TIPO_NOM[c.fact.tipo]} ${c.fact.letra} ${fmtNum(c.fact.punto_venta, c.fact.numero)}</a>` : '<span class="chip amber">Sin facturar</span>'}</td>
       <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
@@ -1782,13 +1789,16 @@ function pFalta() { const t = vTotales(); const rows = [...document.querySelecto
 async function emitir(esNC) {
   const btn = document.getElementById('v-cobrar'); btn.disabled = true;
   const t = vTotales(); let pagos = pPagos();
+  { const accion = esNC ? 'nc' : T.tipo === 'RE' ? 're' : (T.tipo === 'MA' && !T.gift) ? 'ma' : null; T.autorizacion_id = undefined;
+    if (accion) { const aid = await autorizar(accion, (esNC ? 'Nota de crédito ' + (T.letra === 'X' ? 'manual' : T.letra) : T.tipo === 'RE' ? 'Remito' : 'Comprobante X') + ' · ' + plata(t.tot) + (T.cliente ? ' · ' + tit(T.cliente.nombre) : ''));
+      if (aid === null) { btn.disabled = false; return; } if (aid) T.autorizacion_id = aid; } }
   // Vuelto: si pagó de más en efectivo, el efectivo que queda es total - resto
   const pag = pagos.reduce((s, p) => s + p.importe, 0);
   if (pag > t.tot + 1) { const ef = pagos.find(p => p.medio === 'efectivo'); if (ef) ef.importe = r2(ef.importe - (pag - t.tot)); }
   const valeCont = esNC ? (document.querySelector('#v-pagos .vale-cont') || {}).value || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && !(t.tot > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
   const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: document.getElementById('v-obs').value.trim() || null,
-    relacionado_id: esNC ? T.nc_de : null, cliente: cliPayload(), remito_id: !esNC && T.remito ? T.remito.id : undefined,
+    relacionado_id: esNC ? T.nc_de : null, cliente: cliPayload(), autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? document.getElementById('v-re-nota').value.trim() || null : undefined,
     items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_monto > 0 ? 0 : i.descuento_pct, descuento_monto: i.descuento_monto || 0, iva_pct: 21 })),
     pagos: sinPago() ? [] : pagos };
@@ -1842,6 +1852,96 @@ async function vlAnular(codigo) {
   toast('Vale anulado', 'success'); cargarVales();
 }
 
+// ═══ Autorización de rango mayor (JP 6-nov) ═══
+// El genérico ve todo; NC, X rojo, remito y anulación piden autorización. La vendedora elige a quién pedirle entre quienes están en el
+// local (reloj de hoy; respaldo: turno), le llega un push al celu y Aceptar autoriza; respaldo: usuario y clave acá. La traba está en la base.
+const ACCION_NOM = { nc: 'una nota de crédito', ma: 'un comprobante X', re: 'un remito', anular: 'una anulación' };
+const pila = n => n ? tit((String(n).split(',')[1] || n).trim()) : '';
+let AUT = null;
+function autorizar(accion, resumen) {
+  if (PERFIL.autoriza) return Promise.resolve(0);   // 0 = no hace falta: la que emite ya tiene rango
+  return new Promise(resolve => {
+    AUT = { accion, resumen, resolve, id: null, poll: null, fin: false, desde: 0, lista: [] };
+    modal(`<div class="m-head"><h3>Esta operación necesita autorización</h3><span class="spacer"></span><button class="btn ico" onclick="autCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
+      <div class="mini">${esc(resumen)} · pide ${esc(pila(PERFIL.nombre))}</div>
+      <div class="aut-caja" id="aut-caja"><div class="mini"><span class="spin"></span>Buscando quién está en ${esc(LOCALES[LOCAL])}…</div></div>
+      <div class="mini" style="margin-top:12px">¿No tienen el celu a mano? Que lo autorice acá con su clave:</div>
+      <div class="aut-clave"><input id="aut-mail" type="email" placeholder="Usuario (mail)" autocomplete="off"><input id="aut-pass" type="password" placeholder="Clave" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();autClave()}"></div>
+      <div class="m-foot"><span class="spacer"></span><button class="btn" onclick="autCancelar()">Cancelar</button><button class="btn primary" onclick="autClave()">Autorizar con clave</button></div>`);
+    sb.rpc('pos_presentes', { p_local: LOCAL }).then(({ data, error }) => { if (!AUT || AUT.fin) return; if (error) { toast(error.message, 'error'); } AUT.lista = data || []; autLista(); });
+  });
+}
+function autFin(v) { if (!AUT || AUT.fin) return; AUT.fin = true; clearInterval(AUT.poll); const r = AUT.resolve; AUT = null; cerrarModal(); r(v); }
+function autCancelar() { if (AUT && AUT.id) sb.rpc('pos_autorizacion_cancelar', { p_id: AUT.id }); autFin(null); }
+function autPersona(p, boton) {
+  return `<div class="aut-p"><span class="nom"><b>${esc(pila(p.nombre))}</b> <span class="chip ${p.rol === 'admin' ? 'gray' : 'amber'}">${p.rol === 'gerente' ? 'encargada' : p.rol}</span><span class="mini">${p.fuente === 'reloj' ? 'fichó ' + p.hora : p.fuente === 'turno' ? 'turno desde ' + p.hora : p.rol === 'admin' ? 'fuera del local' : 'no está'}${p.push ? '' : ' · sin notificaciones en el celu'}</span></span>
+    ${boton ? `<button class="btn primary chico" ${p.push ? '' : 'disabled title="No tiene las notificaciones activadas en el celu"'} onclick="autPedir(${p.empleado_id})">Pedir a ${esc(pila(p.nombre).split(' ')[0])}</button>` : ''}</div>`;
+}
+function autLista(msg) {
+  if (!AUT) return; const caja = document.getElementById('aut-caja'); if (!caja) return;
+  const pres = AUT.lista.filter(p => p.presente), admins = AUT.lista.filter(p => p.rol === 'admin');
+  caja.className = 'aut-caja' + (pres.length ? '' : ' sin');
+  caja.innerHTML = (msg ? `<div class="mini" style="color:var(--red);margin-bottom:4px">${esc(msg)}</div>` : '') + (pres.length
+    ? `<b>Quiénes están en ${esc(LOCALES[LOCAL])} ahora</b>${pres.map(p => autPersona(p, true)).join('')}`
+    : `<b>No hay encargada ni cajera en ${esc(LOCALES[LOCAL])} ahora</b><div class="mini">Según el reloj hoy no fichó entrada ninguna autorizadora y ninguna tiene turno a esta hora. Podés pedirle a un admin, o que alguien autorice con su clave.</div>${admins.map(p => autPersona(p, true)).join('')}`);
+}
+async function autPedir(empId) {
+  if (!AUT) return; const p = AUT.lista.find(x => x.empleado_id === empId); if (!p) return;
+  const { data, error } = await sb.rpc('pos_autorizacion_pedir', { p_local: LOCAL, p_accion: AUT.accion, p_detalle: { resumen: AUT.resumen, pedido_por: PERFIL.nombre, pedido_por_email: PERFIL.email }, p_empleado_id: empId });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  if (!AUT) return; AUT.id = data.id; AUT.desde = Date.now();
+  const caja = document.getElementById('aut-caja'); caja.className = 'aut-caja';
+  const pinta = () => { const seg = Math.round((Date.now() - AUT.desde) / 1000); caja.innerHTML = `<b>Le avisamos a ${esc(pila(p.nombre))} al celu</b><div class="mini"><span class="spin"></span>Esperando que acepte… ${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}</div><div class="mini" style="margin-top:6px"><a href="#" onclick="autOtra();return false">Pedirle a otra persona</a></div>`; };
+  pinta();
+  clearInterval(AUT.poll);
+  AUT.poll = setInterval(async () => {
+    if (!AUT || AUT.id !== data.id) return;
+    pinta();
+    if (Date.now() - AUT.desde > 180000) { clearInterval(AUT.poll); sb.rpc('pos_autorizacion_cancelar', { p_id: data.id }); AUT.id = null; autLista('Nadie respondió en 3 minutos. Probá de nuevo o usá la clave.'); return; }
+    const { data: r } = await sb.from('pos_autorizaciones').select('estado,autorizadora_nombre').eq('id', data.id).maybeSingle();
+    if (!r || !AUT || AUT.id !== data.id) return;
+    if (r.estado === 'aceptada') { toast('Autorizó ' + pila(r.autorizadora_nombre) + ' desde el celu', 'success'); autFin(data.id); }
+    else if (r.estado === 'rechazada') { clearInterval(AUT.poll); AUT.id = null; autLista(pila(r.autorizadora_nombre) + ' rechazó el pedido.'); }
+    else if (r.estado === 'cancelada') { clearInterval(AUT.poll); AUT.id = null; autLista('El pedido venció. Probá de nuevo.'); }
+  }, 2000);
+}
+function autOtra() { if (!AUT) return; clearInterval(AUT.poll); if (AUT.id) sb.rpc('pos_autorizacion_cancelar', { p_id: AUT.id }); AUT.id = null; autLista(); }
+// Respaldo: la autorizadora se loguea en un cliente aparte (no toca la sesión del genérico) y crea la autorización ya aceptada
+async function autClave() {
+  if (!AUT) return; const mail = document.getElementById('aut-mail').value.trim(), pass = document.getElementById('aut-pass').value;
+  if (!mail || !pass) { toast('Cargá el usuario y la clave de quien autoriza', 'error'); return; }
+  const sb2 = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { error } = await sb2.auth.signInWithPassword({ email: mail, password: pass });
+  if (error) { toast('Usuario o clave incorrectos', 'error'); document.getElementById('aut-pass').value = ''; return; }
+  const { data, error: e2 } = await sb2.rpc('pos_autorizacion_clave', { p_local: LOCAL, p_accion: AUT.accion, p_detalle: { resumen: AUT.resumen, pedido_por: PERFIL.nombre, pedido_por_email: PERFIL.email } });
+  try { await sb2.auth.signOut({ scope: 'local' }); } catch (e) {}
+  if (e2) { toast(e2.message.replace(/^.*?: /, ''), 'error'); return; }
+  if (AUT && AUT.id) sb.rpc('pos_autorizacion_cancelar', { p_id: AUT.id });
+  toast('Autorizó ' + pila(data.autorizadora) + ' con su clave', 'success'); autFin(data.id);
+}
+// Desde el celu: el push abre el POS con ?autorizar=ID → Aceptar / Rechazar
+async function autResponder(id) {
+  const { data: a } = await sb.from('pos_autorizaciones').select('*').eq('id', id).maybeSingle();
+  if (!a) { toast('No encontré ese pedido de autorización', 'error'); return; }
+  if (a.estado !== 'pendiente') { toast('Ese pedido ya está ' + a.estado + (a.autorizadora_nombre ? ' · ' + pila(a.autorizadora_nombre) : ''), 'error'); return; }
+  const r = async acepta => { const { data, error } = await sb.rpc('pos_autorizacion_resolver', { p_id: id, p_acepta: acepta }); cerrarModal(); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+    toast(data.ya ? 'Ya la había resuelto ' + pila(data.autorizadora) : data.estado === 'vencida' ? 'El pedido venció (10 minutos)' : acepta ? 'Listo: ' + pila(a.pedido_por_nombre) + ' ya puede emitir' : 'Rechazado', acepta && !data.ya ? 'success' : 'error'); };
+  window._autR = r;
+  modal(`<div class="m-head"><h3>${esc(pila(a.pedido_por_nombre))} pide autorizar ${esc(ACCION_NOM[a.accion] || a.accion)}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div style="margin:8px 0 4px;font-size:15px">${esc(LOCALES[a.local] || a.local)} · ${esc((a.detalle || {}).resumen || '')}</div>
+    <div class="mini">Pedido ${fechaAR(a.creado_at.slice(0, 10))} ${new Date(a.creado_at).toTimeString().slice(0, 5)} · vence a los 10 minutos</div>
+    <div class="m-foot"><button class="btn" onclick="_autR(false)">Rechazar</button><span class="spacer"></span><button class="btn primary" onclick="_autR(true)">Aceptar</button></div>`);
+}
+// Ajustes: rangos de las personas (admin)
+async function cargarRangos() {
+  const el = document.getElementById('a-rangos'); if (!el) return;
+  const { data } = await sb.rpc('pos_usuarios_rangos'); const lista = data || [];
+  el.innerHTML = lista.length ? `<table><thead><tr><th>Persona</th><th>Local</th><th>Rango</th><th>Celu</th></tr></thead><tbody>` + lista.map(u => `<tr><td>${esc(tit(u.nombre || ''))}<div class="mini">${esc(u.email)}</div></td><td>${esc(LOCALES[u.local] || u.local || '')}</td>
+    <td><select onchange="setRango('${esc(u.email)}',this.value)"><option value="empleado"${u.rol === 'empleado' ? ' selected' : ''}>Empleada</option><option value="cajera"${u.rol === 'cajera' ? ' selected' : ''}>Cajera</option><option value="gerente"${u.rol === 'gerente' ? ' selected' : ''}>Encargada</option></select></td>
+    <td class="mini">${u.push ? '✔ recibe avisos' : 'sin notificaciones'}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">No hay personas con usuario y legajo.</div>';
+}
+async function setRango(email, rol) { const { error } = await sb.rpc('pos_set_rango', { p_email: email, p_rol: rol }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); cargarRangos(); return; } toast('Rango guardado', 'success'); }
+
 // ═══ Comprobantes ══════════════════════════════════════════════════════
 let _cT; function cDebounce() { clearTimeout(_cT); _cT = setTimeout(cargarComprobantes, 600); }
 let COMPS = [];
@@ -1853,14 +1953,14 @@ async function cargarComprobantes() {
   COMPS = data || [];
   let lista = COMPS;
   if (q) { const Q = q.toUpperCase(); lista = COMPS.filter(c => (c.cliente_nombre + ' ' + (c.cliente_interno || '') + ' ' + c.numero + ' ' + (c.cliente_doc || '') + ' ' + (c.vendedora_nombre || '')).toUpperCase().includes(Q)); }
-  const puedeAnular = PERFIL.es_admin || PERFIL.rol === 'gerente';
+  const puedeAnular = true;   // el genérico ve todo; anular pide autorización
   document.getElementById('c-stat').textContent = lista.length + ' comprobantes · ' + plata(lista.filter(c => c.estado === 'emitido').reduce((s, c) => s + c.signo * Number(c.total), 0));
   document.getElementById('c-lista').innerHTML = lista.length ? `<table><thead><tr><th>Comprobante</th><th>Fecha</th><th>Cliente</th><th>Vendedora</th><th class="num">Total</th><th>Estado</th><th></th></tr></thead><tbody>` +
     lista.map(c => `<tr class="${c.estado === 'anulado' ? 'dim' : ''}">
       <td><b>${TIPO_NOM[c.tipo]}${c.tipo === 'RE' ? '' : ' ' + c.letra}</b> ${fmtNum(c.punto_venta, c.numero)}${c.relacionado_id ? '<div class="mini">devuelve #' + c.relacionado_id + '</div>' : ''}${c.remito_id ? '<div class="mini">sobre un remito</div>' : ''}</td>
       <td>${fechaAR(c.fecha)} <span class="mini">${String(c.hora).slice(0, 5)}</span></td>
       <td>${esc(c.cliente_nombre)}<div class="mini">${c.cliente_doc ? (c.cliente_doc_tipo || '') + ' ' + c.cliente_doc : ''}${c.cliente_informado === false && c.cliente_interno ? '<span title="Cliente registrado en nuestra base; a ARCA fue como Consumidor Final">👤 ' + esc(c.cliente_interno) + '</span>' : (!c.cliente_globalid && !c.cliente_doc && c.tipo !== 'NC' ? '<span title="Se vendió sin cargar cliente">sin cliente</span>' : '')}</div></td>
-      <td class="mini">${esc(c.vendedora_nombre || '')}</td>
+      <td class="mini">${esc(c.vendedora_nombre || '')}${c.autorizado_por && c.autorizado_modo !== 'propia' ? '<div>autorizó ' + esc(pila(c.autorizado_por)) + ' <span class="chip green">' + c.autorizado_modo + '</span></div>' : ''}</td>
       <td class="num"><b>${c.signo < 0 ? '- ' : ''}${plata(c.total)}</b></td>
       <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'pendiente' ? '<span class="chip amber" title="Esperando el CAE de ARCA">CAE…</span>' : c.cae_estado === 'ok' ? '<span class="chip green" title="CAE ' + esc(c.cae) + '">CAE</span>' : c.cae_estado === 'error' ? '<span class="chip red" title="' + esc(c.cae_error || '') + '">CAE rechazado</span>' : c.tipo === 'RE' ? (c.facturado_en ? '<span class="chip green">Remito facturado</span>' : '<span class="chip amber">Remito sin facturar</span>') : c.tipo === 'PR' ? '<span class="chip amber">Presupuesto</span>' : '<span class="chip gray">Manual</span>'}${c.es_sena ? ' <span class="chip blue">Seña</span>' : ''}${Number(c.sena_monto) > 0 ? ' <span class="chip blue" title="Descontó una seña de ' + plata(c.sena_monto) + '">Usa seña</span>' : ''}</td>
       <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
@@ -2015,7 +2115,9 @@ async function iniciarNC(id) {
 }
 async function anular(id) {
   const motivo = prompt('Motivo de la anulación (queda registrado):'); if (motivo === null) return;
-  const { error } = await sb.rpc('pos_anular', { p_id: id, p_motivo: motivo });
+  const c = COMPS.find(x => x.id === id);
+  const aid = await autorizar('anular', 'Anular ' + (c ? (TIPO_NOM[c.tipo] || '') + (c.tipo === 'RE' ? '' : ' ' + c.letra) + ' ' + fmtNum(c.punto_venta, c.numero) + ' · ' + plata(c.total) : 'el comprobante #' + id)); if (aid === null) return;
+  const { error } = await sb.rpc('pos_anular', { p_id: id, p_motivo: motivo, p_autorizacion_id: aid || null });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
   toast('Anulado', 'success'); cargarComprobantes();
 }
@@ -2041,7 +2143,7 @@ async function cargarCaja() {
 
 // ═══ Ajustes (admin) ═══════════════════════════════════════════════════
 async function cargarAjustes() {
-  pointAjustes();
+  pointAjustes(); cargarRangos();
   const [{ data: pv }, { data: mp }, { data: tp }] = await Promise.all([sb.from('pos_puntos_venta').select('*').order('local').order('tipo'), sb.from('pos_medios_pago').select('*').order('orden'), sb.from('pos_parametros').select('*').eq('clave', 'tope_cf_arca').maybeSingle()]);
   document.getElementById('a-tope').innerHTML = tp ? `<b style="font-size:18px;color:var(--text)">${plata(tp.valor_num)}</b> · abajo de este importe la factura B sale a Consumidor Final sin datos (el cliente queda igual en nuestra base); desde este importe ARCA exige identificarlo y el POS lo obliga.<br>No se carga a mano: el servicio del CAE lo lee en <a href="${esc(tp.fuente || '')}" target="_blank" rel="noopener">la página de ARCA</a> una vez por mes. Última lectura: ${tp.actualizado_at ? new Date(tp.actualizado_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '—'}.${tp.error ? `<div style="color:var(--red);margin-top:4px">⚠ ${esc(tp.error)}</div>` : ''}` : 'No está configurado el tope (pos_parametros).';
   document.getElementById('a-pv').innerHTML = `<table><thead><tr><th>Local</th><th>Tipo</th><th class="num">Punto de venta</th><th>Activo</th><th>Nota</th></tr></thead><tbody>` +
@@ -2058,6 +2160,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=36"></script>
+<script src="manual.js?v=37"></script>
 </body>
 </html>
