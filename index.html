@@ -1922,8 +1922,9 @@ async function autClave() {
 // Desde el celu: el push abre el POS con ?autorizar=ID → Aceptar / Rechazar
 async function autResponder(id) {
   const { data: a } = await sb.from('pos_autorizaciones').select('*').eq('id', id).maybeSingle();
-  if (!a) { toast('No encontré ese pedido de autorización', 'error'); return; }
-  if (a.estado !== 'pendiente') { toast('Ese pedido ya está ' + a.estado + (a.autorizadora_nombre ? ' · ' + pila(a.autorizadora_nombre) : ''), 'error'); return; }
+  const aviso = (t, sub) => modal(`<div class="m-head"><h3>${esc(t)}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div><div class="mini" style="margin-top:6px">${esc(sub)}</div><div class="m-foot"><span class="spacer"></span><button class="btn primary" onclick="cerrarModal()">Listo</button></div>`);
+  if (!a) { aviso('No encontré ese pedido de autorización', 'Puede que lo hayan cancelado o que sea de otro local.'); return; }
+  if (a.estado !== 'pendiente') { const q = a.autorizadora_nombre ? ' · lo resolvió ' + pila(a.autorizadora_nombre) : ''; aviso(a.estado === 'aceptada' || a.estado === 'usada' ? 'Ese pedido ya estaba aceptado' : a.estado === 'rechazada' ? 'Ese pedido ya estaba rechazado' : 'Ese pedido se canceló o venció', esc((a.detalle || {}).resumen || '') + q); return; }
   const r = async acepta => { const { data, error } = await sb.rpc('pos_autorizacion_resolver', { p_id: id, p_acepta: acepta }); cerrarModal(); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
     toast(data.ya ? 'Ya la había resuelto ' + pila(data.autorizadora) : data.estado === 'vencida' ? 'El pedido venció (10 minutos)' : acepta ? 'Listo: ' + pila(a.pedido_por_nombre) + ' ya puede emitir' : 'Rechazado', acepta && !data.ya ? 'success' : 'error'); };
   window._autR = r;
