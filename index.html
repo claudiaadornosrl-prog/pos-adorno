@@ -448,10 +448,11 @@ main { max-width: 1500px; }
 .ncbox { margin-top: 8px; padding: 8px 10px; border: 2px solid #f59e0b; border-radius: 10px; background: #fffbeb; } .ncbox .cli-sin input { font-size: 15px; } .ncbox #v-nc-sel { margin-top: 4px; }
 .pagos-tk { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; } .pagos-tk > .mini { margin-bottom: 6px; } .pagos-tk .fila { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; } .pagos-tk .fila.falta { font-weight: 700; color: var(--primary-dark); }
 .pos { display: grid; grid-template-columns: var(--pos-izq, 30%) 14px minmax(0, 1fr); gap: 8px; align-items: start; }   /* compu: 30% productos, 70% documento (JP); se cambia desde la barra Pantalla */
-.pos-prod, .pos-ticket { zoom: var(--pos-esc, 1); min-width: 0; overflow-x: auto; }
+main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, números, casillas y fotos de todas las pestañas */
+.pos-prod, .pos-ticket { min-width: 0; overflow-x: auto; }
 .pos-div { align-self: stretch; cursor: col-resize; display: flex; align-items: center; justify-content: center; touch-action: none; } .pos-div span { width: 4px; height: 56px; border-radius: 4px; background: #cbd5e1; } .pos-div:hover span, .pos-div.on span { background: var(--primary); }
-.pantalla { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; } .pant-seg { display: inline-flex; border: 1.5px solid var(--border); border-radius: 999px; overflow: hidden; background: #fff; } .pant-seg button { border: none; background: transparent; padding: 5px 11px; font-weight: 700; font-family: inherit; font-size: 14px; cursor: pointer; color: var(--text); } .pant-seg button:hover { background: var(--primary-bg); } .pant-seg .v { padding: 5px 8px; color: var(--muted); font-size: 12px; align-self: center; } .pil.chico { padding: 5px 11px; font-size: 13px; }
-@media (max-width: 900px) { .pos { grid-template-columns: 1fr; } .pos-div, .pant-rep { display: none; } }
+.hzoom { display: inline-flex; align-items: center; } .hzoom .hbtn { padding: 0 6px; font-weight: 700; } .hz-v { color: #fff; opacity: .85; font-size: 12px; min-width: 38px; text-align: center; }
+@media (max-width: 900px) { .pos { grid-template-columns: 1fr; } .pos-div, .hzoom, .hzoom + .hbtn + .hsep, .hzoom + .hbtn { display: none; } }
 .pos-prod, .pos-ticket { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
 .pos-ticket { position: sticky; top: 64px; transition: background .2s; }
 .pos-ticket.es-nc { background: #ffedd5; border-color: #fdba74; }   /* nota de crédito: naranja claro, para que se note que no es una factura */
@@ -579,6 +580,9 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <button id="tab-ajustes" onclick="switchTab('ajustes')" title="Ajustes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="lb">Ajustes</span></button>
     </nav>
     <div class="header-right">
+      <span class="hzoom" title="Tamaño de letra y números (queda guardado en esta compu)"><button class="hbtn" onclick="pantEsc(-0.1)" aria-label="Letra más chica">A−</button><span class="hz-v" id="pant-v">100 %</span><button class="hbtn" onclick="pantEsc(0.1)" aria-label="Letra más grande">A+</button></span>
+      <button class="hbtn" onclick="pantReset()" title="Volver a lo normal: letra 100 % y ventanas de Vender como siempre" aria-label="Volver a lo normal"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <span class="hsep"></span>
       <button class="hbtn" onclick="abrirManual()" title="Manual de uso" aria-label="Manual"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span class="lb">Manual</span></button>
       <span class="hsep"></span>
       <a class="hbtn" href="https://claudiaadornosrl-prog.github.io/hub/" title="Volver al Hub" aria-label="Volver al Hub"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="lb">Hub</span></a>
@@ -588,13 +592,6 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
   <main>
 
     <section id="content-vender" class="tab-content active">
-      <div class="pantalla" id="pantalla">
-        <span class="mini">Pantalla</span>
-        <span class="seg pant-seg" title="Tamaño de letra y números de las ventanas (no cambia la barra de arriba)"><button type="button" onclick="pantEsc(-0.1)" aria-label="Más chico">A−</button><span class="v" id="pant-v">100 %</span><button type="button" onclick="pantEsc(0.1)" aria-label="Más grande">A+</button></span>
-        <span class="pant-rep"><button type="button" class="pil chico" data-p="45" onclick="pantPre(45)">Más productos</button><button type="button" class="pil chico" data-p="38" onclick="pantPre(38)">Mitad y mitad</button><button type="button" class="pil chico" data-p="30" onclick="pantPre(30)">Más ticket</button></span>
-        <button type="button" class="pil chico" onclick="pantReset()" title="Letra 100 % y reparto normal">↺ Volver a lo normal</button>
-        <span class="mini pant-rep">· o arrastrá la barrita del medio · queda guardado en esta compu</span>
-      </div>
       <div class="pos" id="pos">
         <div class="pos-prod">
           <div class="buscador">
@@ -848,16 +845,14 @@ async function cargarArticulos() {
 }
 function foto(sku, cls) { const u = IMGS[sku]; return u ? `<img class="foto ${cls || ''}" src="${esc(u)}" alt="" loading="lazy" onclick="event.stopPropagation(); verFoto('${esc(u)}')" title="Ver más grande">` : `<span class="foto sin ${cls || ''}" aria-hidden="true"></span>`; }
 function verFoto(u) { modal(`<div class="m-head"><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div><img src="${esc(u)}" style="max-width:100%;max-height:75vh;display:block;margin:0 auto;border-radius:8px">`); }
-// ═══ Pantalla: tamaño de letra (zoom del contenido de las dos ventanas) y reparto del ancho, guardado por dispositivo ═══
+// ═══ Letra A−/A+ del banner (zoom de todas las pestañas) y reparto del ancho en Vender arrastrando la barrita, guardado por dispositivo ═══
 const PANT = Object.assign({ esc: 1, izq: 30 }, JSON.parse(localStorage.getItem('pos_pantalla') || '{}'));
 function pantPinta() {
   const r = document.documentElement.style; r.setProperty('--pos-esc', PANT.esc.toFixed(2)); r.setProperty('--pos-izq', PANT.izq + '%');
   const v = document.getElementById('pant-v'); if (v) v.textContent = Math.round(PANT.esc * 100) + ' %';
-  document.querySelectorAll('.pant-rep .pil').forEach(b => b.classList.toggle('on', Number(b.dataset.p) === Math.round(PANT.izq)));
   localStorage.setItem('pos_pantalla', JSON.stringify(PANT));
 }
 function pantEsc(d) { PANT.esc = Math.round(Math.min(1.5, Math.max(0.9, PANT.esc + d)) * 100) / 100; pantPinta(); }
-function pantPre(p) { PANT.izq = p; pantPinta(); }
 function pantReset() { PANT.esc = 1; PANT.izq = 30; pantPinta(); }
 (function () {
   const d = document.getElementById('pos-div'), pos = document.getElementById('pos'); if (!d) return;
@@ -1927,6 +1922,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=34"></script>
+<script src="manual.js?v=35"></script>
 </body>
 </html>
