@@ -724,6 +724,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
         <label>Buscar <input id="pd-q" placeholder="producto o proveedor" oninput="pdDebounce()"></label>
         <label class="mini cli-chk" id="pd-solo-lb"><input type="checkbox" id="pd-solo" checked onchange="pdRender()"> Solo bajo mínimo</label>
         <span class="stat" id="pd-stat"></span>
+        <button class="btn" id="pd-libre" onclick="pdLibre()" title="Pedir algo que no está en la lista: otro artículo o un renglón libre (resma de papel, cinta, lapiceras…)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Agregar fuera de la lista</button>
         <button class="btn" id="pd-todos" onclick="pdMarcarTodos()" title="Marcar todo lo que está bajo mínimo en la lista">Marcar todos</button>
         <button class="btn primary" id="pd-armar" onclick="pdArmar()" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Armar pedido con los marcados</button>
       </div>
@@ -1416,7 +1417,7 @@ const PD_NOM = { familia_garcia: 'Familia García Regueira', espalma: 'Espalma',
 // (JP 9-nov) filtro por proveedor en Qué falta: primero se arma el pedido de Familia García y después el de Oficina
 function pdProv(p) { PD.prov = p; document.querySelectorAll('#pd-prov .pil').forEach(b => b.classList.toggle('on', b.dataset.p === p)); pdRender(); }
 function pdDebounce() { clearTimeout(_pdT); _pdT = setTimeout(pdRender, 400); }
-function pdVista(v) { PD.vista = v; document.querySelectorAll('#pd-filtros .pil[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.getElementById('pd-solo-lb').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-prov').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-armar').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-todos').style.display = v === 'falta' ? '' : 'none'; cargarPedidosLocal(); }
+function pdVista(v) { PD.vista = v; document.querySelectorAll('#pd-filtros .pil[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.getElementById('pd-solo-lb').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-prov').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-armar').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-todos').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-libre').style.display = v === 'falta' ? '' : 'none'; cargarPedidosLocal(); }
 async function cargarPedidosLocal() {
   if (PD.vista === 'falta') { const { data, error } = await sb.rpc('pos_que_falta', { p_local: LOCAL }); if (error) { toast(error.message, 'error'); return; } PD.falta = data || []; const n = PD.falta.filter(x => Number(x.falta) > 0).length; const b = document.getElementById('pd-falta-n'); b.textContent = n || ''; b.style.display = n ? '' : 'none'; }
   else if (PD.vista === 'hechos') { const { data, error } = await sb.rpc('pos_pedidos_listar', { p_local: LOCAL }); if (error) { toast(error.message, 'error'); return; } PD.hechos = data || []; }
@@ -1470,9 +1471,9 @@ function pdRender() {
         est = rec === its.length ? '<span class="chip green">Recibido</span>' : env ? '<span class="chip viol">En tránsito</span> <span class="mini">' + [...new Set(its.filter(i => i.remito).map(i => 'remito ' + i.remito))].join(', ') + '</span>' : '<span class="chip amber">Pendiente en Oficina</span>' + (its.some(i => i.traslado === 'apartado') ? ' <span class="mini">apartado</span>' : ''); }
       else est = '<span class="chip amber">Pendiente de entrega</span> <span class="mini">' + (p.mail_enviado_at ? 'mail ✔' : p.mail_error ? '<span class="chip red" title="' + esc(p.mail_error) + '">mail no salió</span>' : p.mail_para ? 'mail en camino' : 'sin mail configurado') + ' · ' + (p.wa_abierto_at ? 'WhatsApp ✔' : 'WhatsApp pendiente') + '</span>';
       return `<tr class="${p.estado === 'cancelado' ? 'dim' : ''}"><td><b>${esc(p.numero)}</b><div class="mini">${fechaAR(String(p.creado_at).slice(0, 10))} ${new Date(p.creado_at).toTimeString().slice(0, 5)} · ${esc(pila(p.por))}</div></td><td>${esc(PD_NOM[p.destino] || p.destino)}</td>
-        <td class="mini">${its.map(i => Number(i.cantidad) + ' × ' + esc(i.sku) + (i.recibida != null && Number(i.recibida) < Number(i.cantidad) ? ' <span class="chip red">llegaron ' + Number(i.recibida) + '</span>' : '')).join(' · ')}${p.nota ? '<div>«' + esc(p.nota) + '»</div>' : ''}</td>
+        <td class="mini">${its.map(i => Number(i.cantidad) + ' × ' + esc(i.sku === 'VARIOS' ? (i.descripcion || 'varios') : i.sku) + (i.recibida != null && Number(i.recibida) < Number(i.cantidad) ? ' <span class="chip red">llegaron ' + Number(i.recibida) + '</span>' : '')).join(' · ')}${p.nota ? '<div>«' + esc(p.nota) + '»</div>' : ''}</td>
         <td>${est}</td>
-        <td class="acc">${!ofi && p.pdf_url ? `<a class="btn ico" href="${esc(p.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}${!ofi && p.estado === 'enviado' && p.wa_para ? `<button class="btn ico" onclick="pdWA(${p.id})" title="Abrir el WhatsApp con el pedido" aria-label="WhatsApp">${_i('mail')}</button>` : ''}
+        <td class="acc">${!ofi && p.pdf_url ? `<a class="btn ico" href="${esc(p.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}${!ofi && p.xlsx_url ? `<a class="btn chico" href="${esc(p.xlsx_url)}" title="Bajar el pedido en Excel" aria-label="Excel">Excel</a>` : ''}${!ofi && p.estado === 'enviado' && p.wa_para ? `<button class="btn ico" onclick="pdWA(${p.id})" title="Abrir el WhatsApp con el pedido" aria-label="WhatsApp">${_i('mail')}</button>` : ''}
           ${!ofi && p.estado === 'enviado' ? `<button class="btn ico" onclick="pdRecibir(${p.id})" title="Llegó el pedido: marcarlo recibido" aria-label="Recibido">${_i('ok')}</button>` : ''}${p.estado === 'enviado' ? `<button class="btn ico peligro" onclick="pdCancelar(${p.id})" title="Cancelar el pedido" aria-label="Cancelar">${_i('anular')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>'
       : `<div class="empty">Todavía no hay pedidos de ${esc(LOCALES[LOCAL])}.</div>`;
   } else {
@@ -1508,14 +1509,27 @@ function pdArmar() {
   PD.cola = []; for (const k of ['fg', 'espalma', 'oficina']) { const its = items.filter(i => i.k === k); if (its.length) PD.cola.push({ destino: PD_DEST[k], items: its }); }
   pdModal();
 }
+// (JP 9-nov) pedir algo que no está en Qué falta: abre el pedido con lo marcado (si hay) y deja sumar artículos del sistema o renglones libres
+function pdLibre() {
+  const marc = document.querySelectorAll('#pd-lista input[type=checkbox]:checked').length;
+  if (marc) { pdArmar(); return; }
+  PD.cola = [{ destino: PD.prov ? PD_DEST[PD.prov] : 'oficina', items: [] }]; pdModal();
+  setTimeout(() => { const n = document.getElementById('pd-libre-d'); if (n) n.focus(); }, 80);
+}
+function pdAddLibre(v) {
+  const d = String(v || '').replace(/\s+/g, ' ').trim(); if (!d) return; const g = PD.cola[0];
+  g.items.push({ sku: 'VARIOS', descripcion: d, cantidad: 1, k: PD_KDE[g.destino], deposito: 0, libre: true }); g.nota = document.getElementById('pd-nota').value; pdModal();
+  setTimeout(() => { const n = document.getElementById('pd-libre-d'); if (n) n.focus(); }, 80);
+}
 function pdModal() {
   const g = PD.cola[0]; if (!g) { cargarPedidosLocal(); return; } const fg = g.destino !== 'oficina';   // fg = va a un proveedor (Familia García o Espalma)
   modal(`<div class="m-head"><h3>Pedido a ${PD_NOM[g.destino]} · ${esc(LOCALES[LOCAL])}${PD.cola.length > 1 ? ' <span class="mini">(1 de ' + PD.cola.length + ')</span>' : ''}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="pils" style="margin:6px 0 8px"><button class="pil ${g.destino === 'familia_garcia' ? 'on' : ''}" onclick="pdDestino('familia_garcia')">A Familia García</button><button class="pil ${g.destino === 'espalma' ? 'on' : ''}" onclick="pdDestino('espalma')">A Espalma</button><button class="pil ${g.destino === 'oficina' ? 'on' : ''}" onclick="pdDestino('oficina')">A Oficina</button></div>
-    <table class="pd-items"><thead><tr><th>Artículo</th>${fg ? '' : '<th class="num">Depósito</th>'}<th class="num">Cant.</th><th></th></tr></thead><tbody>${g.items.map((it, i) => `<tr><td><b>${esc(it.sku)}</b> <span class="mini">${esc(it.descripcion || '')}</span></td>${fg ? '' : '<td class="num mini">' + it.deposito + '</td>'}<td class="num"><input value="${it.cantidad}" inputmode="numeric" onchange="PD.cola[0].items[${i}].cantidad=Math.max(0,Math.round(num(this.value)))"></td><td><button class="btn ico chico" onclick="PD.cola[0].items.splice(${i},1);pdModal()" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('')}</tbody></table>
+    <table class="pd-items"><thead><tr><th>Artículo</th>${fg ? '' : '<th class="num">Depósito</th>'}<th class="num">Cant.</th><th></th></tr></thead><tbody>${g.items.map((it, i) => `<tr><td>${it.libre ? '<span class="chip gray">fuera de lista</span> <b>' + esc(it.descripcion) + '</b>' : '<b>' + esc(it.sku) + '</b> <span class="mini">' + esc(it.descripcion || '') + '</span>'}</td>${fg ? '' : '<td class="num mini">' + (it.libre ? '' : it.deposito) + '</td>'}<td class="num"><input value="${it.cantidad}" inputmode="numeric" onchange="PD.cola[0].items[${i}].cantidad=Math.max(0,Math.round(num(this.value)))"></td><td><button class="btn ico chico" onclick="PD.cola[0].items.splice(${i},1);pdModal()" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('')}</tbody></table>
     <div class="cli-sin" style="margin-top:8px">${_i('buscar')}<input id="pd-add" placeholder="Agregar otro artículo: SKU y Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();pdAdd(this.value)}"></div>
+    <div class="cli-sin" style="margin-top:6px">${_i('plus')}<input id="pd-libre-d" placeholder="Renglón libre, lo que no está en el sistema: resma de papel, cinta, lapiceras… y Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();pdAddLibre(this.value)}"></div>
     <div class="cli-sin" style="margin-top:6px">${_i('ver')}<input id="pd-nota" placeholder="${fg ? 'Nota para el proveedor: entrega, horario… (opcional)' : 'Nota para Oficina (opcional)'}" value="${esc(g.nota || '')}"></div>
-    <div class="aviso" style="margin-top:8px">${fg ? '✉ Sale por mail con el pedido en PDF (y copia a Oficina) y 💬 se abre el WhatsApp con el texto del pedido listo para mandar. Hoy el mail va a <b>' + (MODO === 'prueba' ? (PRUEBA && PRUEBA.mail || '') + ' (prueba: no sale al proveedor)' : PARAMS_PED[PD_PAR[g.destino] + '_mail'] || '(sin configurar: Ajustes)') + '</b>.' : '📦 Se crean los pedidos de traslado: Oficina los ve en su POS en Remitos → Pedidos, arma el remito con un clic y acá entran por En tránsito. Le avisamos al celu de la encargada de Oficina.'}</div>
+    <div class="aviso" style="margin-top:8px">${fg ? '✉ Sale por mail con el pedido en PDF y en Excel (y copia a Oficina) y 💬 se abre el WhatsApp con el texto del pedido listo para mandar. Hoy el mail va a <b>' + (MODO === 'prueba' ? (PRUEBA && PRUEBA.mail || '') + ' (prueba: no sale al proveedor)' : PARAMS_PED[PD_PAR[g.destino] + '_mail'] || '(sin configurar: Ajustes)') + '</b>.' : '📦 Se crean los pedidos de traslado: Oficina los ve en su POS en Remitos → Pedidos, arma el remito con un clic y acá entran por En tránsito. Le avisamos al celu de la encargada de Oficina.'}</div>
     <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="pd-ok" onclick="pdEnviar()">${fg ? 'Enviar pedido' : 'Pedir a Oficina'}</button></div>`);
   setTimeout(() => { const n = document.getElementById('pd-nota'); if (n) n.focus(); }, 50);
 }
@@ -1524,19 +1538,19 @@ function pdAdd(v) { const q = String(v || '').trim().toUpperCase(); const a = AR
 let PARAMS_PED = {};
 async function cargarParamsPedidos() { const { data } = await sb.from('pos_parametros').select('clave,valor').in('clave', ['fg_mail', 'fg_wa', 'es_mail', 'es_wa', 'pedidos_copia']); PARAMS_PED = Object.fromEntries((data || []).map(r => [r.clave, r.valor || ''])); for (const k of ['fg_mail', 'fg_wa', 'es_mail', 'es_wa']) { const el = document.getElementById('a-' + k.replace('_', '-')); if (el) el.value = PARAMS_PED[k] || ''; } const c = document.getElementById('a-ped-copia'); if (c) c.value = PARAMS_PED.pedidos_copia || ''; }
 async function guardarParam(clave, valor) { const { error } = await sb.from('pos_parametros').update({ valor: valor.trim() }).eq('clave', clave); if (error) { toast(error.message, 'error'); return; } toast('Guardado', 'success'); cargarParamsPedidos(); }
-function pdTextoWA(numero, items, nota) { return `Pedido ${numero} · Claudia Adorno ${LOCALES[LOCAL]}\n` + items.map(i => `• ${i.cantidad} × ${i.sku}${i.descripcion ? ' · ' + tit(i.descripcion) : ''}`).join('\n') + (nota ? `\nNota: ${nota}` : '') + `\nGracias.`; }
+function pdTextoWA(numero, items, nota) { return `Pedido ${numero} · Claudia Adorno ${LOCALES[LOCAL]}\n` + items.map(i => i.sku === 'VARIOS' ? `• ${i.cantidad} × ${i.descripcion}` : `• ${i.cantidad} × ${i.sku}${i.descripcion ? ' · ' + tit(i.descripcion) : ''}`).join('\n') + (nota ? `\nNota: ${nota}` : '') + `\nGracias.`; }
 async function pdEnviar() {
   const g = PD.cola[0]; const items = g.items.filter(i => i.cantidad > 0); if (!items.length) { toast('El pedido no tiene cantidades', 'error'); return; }
   const nota = document.getElementById('pd-nota').value.trim(); g.nota = nota; document.getElementById('pd-ok').disabled = true;
   // el cartel de autorización reemplaza esta ventana: si se cancela o falla, se vuelve a abrir el pedido como estaba
   const aid = await pdAut('pedido', 'Pedido a ' + PD_NOM[g.destino] + ' · ' + LOCALES[LOCAL] + ' · ' + items.reduce((s, i) => s + i.cantidad, 0) + ' unidades en ' + items.length + ' artículos'); if (aid === null) { pdModal(); return; }
-  const { data, error } = await sb.rpc('pos_pedido_crear', { p_local: LOCAL, p_destino: g.destino, p_items: items.map(i => ({ sku: i.sku, cantidad: i.cantidad })), p_nota: nota || null, p_autorizacion_id: aid || null });
+  const { data, error } = await sb.rpc('pos_pedido_crear', { p_local: LOCAL, p_destino: g.destino, p_items: items.map(i => i.libre ? { sku: 'VARIOS', cantidad: i.cantidad, descripcion: i.descripcion } : { sku: i.sku, cantidad: i.cantidad }), p_nota: nota || null, p_autorizacion_id: aid || null });
   if (error) { pdAutFallo('pedido', error); pdModal(); return; }
   PD.cola.shift(); cerrarModal();
   if (g.destino !== 'oficina') {
     const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoWA(data.numero_fmt, items, nota); window._pdTxt = txt;
     modal(`<div class="m-head"><h3>Pedido ${esc(data.numero_fmt)} a ${PD_NOM[g.destino]} armado</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal();pdModal()" aria-label="Cerrar">${_i('x')}</button></div>
-      <div style="margin:8px 0">${data.mail_para ? '✉ El mail con el PDF sale solo en un minuto a <b>' + esc(data.mail_para) + '</b>' + (PARAMS_PED.pedidos_copia ? ' con copia a ' + esc(PARAMS_PED.pedidos_copia) : '') + '.' : '✉ No hay mail del proveedor configurado (Ajustes): no se manda mail.'}</div>
+      <div style="margin:8px 0">${data.mail_para ? '✉ El mail con el pedido en PDF y en Excel sale solo en un minuto a <b>' + esc(data.mail_para) + '</b>' + (PARAMS_PED.pedidos_copia ? ' con copia a ' + esc(PARAMS_PED.pedidos_copia) : '') + '.' : '✉ No hay mail del proveedor configurado (Ajustes): no se manda mail.'}</div>
       <div class="mini" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
       <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))">Copiar texto</button><span class="spacer"></span>${wa ? `<a class="btn primary" href="https://wa.me/${wa}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener" onclick="sb.rpc('pos_pedido_wa',{p_id:${data.id}});setTimeout(()=>{cerrarModal();pdModal()},300)">💬 Abrir WhatsApp</a>` : '<span class="mini">Sin WhatsApp del proveedor (Ajustes)</span>'}</div>`);
   } else { toast('Pedido ' + data.numero_fmt + ' a Oficina: ' + data.unidades + ' unidades', 'success'); pdModal(); }
@@ -2840,6 +2854,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=59"></script>
+<script src="manual.js?v=60"></script>
 </body>
 </html>
