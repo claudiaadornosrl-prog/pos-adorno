@@ -1872,9 +1872,10 @@ function vRender() {
 // viejo (2009-2012) "@DNI@A@1@APELLIDO@NOMBRE@PAIS@fnac@SEXO@femision@tramite…".
 const tit = s => String(s || '').trim().toLowerCase().replace(/(^|[\s'’-])\p{L}/gu, m => m.toUpperCase());
 const sexoDNI = s => ({ F: 'Femenino', M: 'Masculino' })[String(s || '').trim().toUpperCase()] || String(s || '').trim();
-const fIso = s => { const m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(s || ''); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };
+const fIso = s => { const m = /(\d{2})[\/-](\d{2})[\/-](\d{4})/.exec(s || ''); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };
 function parseDNI(s) {
-  if (!s || !s.includes('@')) return null; const p = s.split('@');
+  // (JP 9-nov) con el teclado de Windows en español el lector escribe comillas (") en vez de @ y guiones en vez de barras: se toma igual
+  s = String(s || '').replace(/"/g, '@'); if (!s.includes('@')) return null; const p = s.split('@');
   if (p.length >= 8 && /^\d{6,}$/.test(p[0].trim())) return { doc: p[4].replace(/\D/g, ''), apellido: tit(p[1]), nombre: tit(p[2]), sexo: sexoDNI(p[3]), fecha_nacimiento: fIso(p[6]) };
   if (p.length >= 9 && /^\d{7,8}\s*$/.test(p[1])) return { doc: p[1].replace(/\D/g, ''), apellido: tit(p[4]), nombre: tit(p[5]), fecha_nacimiento: fIso(p[7]), sexo: sexoDNI(p[8]) };
   return null;
@@ -1900,7 +1901,7 @@ const cuitFiltro = d => `cuit.ilike.%${d}%` + (d.length === 11 ? `,cuit.ilike.%$
 let _cliSugT, _cliSug = [];
 function cliSugCerrar() { const b = document.getElementById('v-cli-sug'); if (b) { b.style.display = 'none'; b.innerHTML = ''; } _cliSug = []; }
 function cliSugerir() {
-  clearTimeout(_cliSugT); const q = document.getElementById('v-cli-doc').value.trim(); if (q.length < 3 || q.includes('@')) { cliSugCerrar(); return; }
+  clearTimeout(_cliSugT); const q = document.getElementById('v-cli-doc').value.trim(); if (q.length < 3 || q.includes('@') || q.includes('"')) { cliSugCerrar(); return; }
   _cliSugT = setTimeout(async () => {
     const dig = q.replace(/\D/g, ''); const soloNum = dig.length === q.replace(/[\s.-]/g, '').length;
     let qq = sb.from('clientes').select('*').order('ultima_compra_fecha', { ascending: false, nullsFirst: false }).limit(5);
@@ -1912,7 +1913,7 @@ function cliSugerir() {
   }, 300);
 }
 function cliSugElegir(i) { const c = _cliSug[i]; if (!c) return; document.getElementById('v-cli-doc').value = ''; cliSugCerrar(); usarCliente(c); }
-function cliEnter() { const q = document.getElementById('v-cli-doc').value.trim(); const dig = q.replace(/\D/g, ''); if (_cliSug.length && (dig.length < 7 || !/^[\d.\s-]+$/.test(q))) { cliSugElegir(0); return; } cliSugCerrar(); cliBuscar(); }
+function cliEnter() { const q = document.getElementById('v-cli-doc').value.trim(); if (parseDNI(q)) { cliSugCerrar(); cliBuscar(); return; } const dig = q.replace(/\D/g, ''); if (_cliSug.length && (dig.length < 7 || !/^[\d.\s-]+$/.test(q))) { cliSugElegir(0); return; } cliSugCerrar(); cliBuscar(); }
 function cfDocLimpio(el) { const d = el.value.replace(/\D/g, ''); el.value = d; const t = document.getElementById('cf-tipo'); if (t && d.length === 11 && [...t.options].some(o => o.value === 'CUIT') && t.value === 'DNI') { t.value = 'CUIT'; t.dispatchEvent(new Event('change')); } }
 async function cliBuscar(txt) {
   const inp = document.getElementById('v-cli-doc'); const s = String(txt ?? inp.value).trim(); if (!s) return; inp.value = '';
@@ -2763,6 +2764,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=50"></script>
+<script src="manual.js?v=51"></script>
 </body>
 </html>
