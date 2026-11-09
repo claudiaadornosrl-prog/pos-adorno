@@ -498,6 +498,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .foto { width: 44px; height: 44px; border-radius: 6px; object-fit: contain; background: white; border: 1px solid #e2e8f0; cursor: zoom-in; flex: none; display: block; } .foto.sin { cursor: default; background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f1f5f9 4px, #f1f5f9 8px); } .foto.chica { width: 30px; height: 30px; border-radius: 4px; }
 .art { display: flex; align-items: center; gap: 8px; }
 .cli { margin: 10px 0; padding: 8px 10px; border: 2px solid var(--primary); border-radius: 10px; background: var(--primary-bg); color: var(--text); } .cli.con { border: 1px solid var(--border); background: white; }
+.pd-t td.pd-otros { white-space: nowrap; } .pd-t td.pd-otros .chip { margin-right: 3px; }
 .pd-t tr.pd-sub > td { background: var(--gray-light); font-size: 12px; font-weight: 600; color: var(--muted); padding: 5px 10px; text-transform: none; } .pd-t tr.pd-junto > td { background: #fff7ed; } .pd-t tr.pd-junto > td:first-child { box-shadow: inset 4px 0 0 #f59e0b; } .pd-t tr.pd-junto-h > td { background: #ffedd5; color: #9a3412; font-size: 12px; font-weight: 600; padding: 4px 10px; } .pd-t tr.pd-junto-h > td:first-child { box-shadow: inset 4px 0 0 #f59e0b; }
 .cli-sin, .cli-con { display: flex; align-items: center; gap: 8px; } .cli .ico { color: var(--muted); flex: none; }
 .cli-sin input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 16px; font-family: inherit; padding: 4px 0; color: var(--text); }
@@ -1381,6 +1382,8 @@ async function pedCerrar(id) {
 // ═══ Pedidos del local (JP 6-nov): mínimos por producto, qué falta, pedido a Oficina (traslado) o a Familia García (mail + WhatsApp) ═══
 const PD = { vista: 'falta', falta: [], hechos: [], min: [], prov: '' }; let _pdT;
 // (JP 9-nov) tres destinos: Familia García y Espalma (proveedores: mail + WhatsApp) y Oficina (depósito, ordenado por proveedor)
+// (JP 9-nov) stock del mismo artículo en las demás sucursales (solo las que tienen), para ver si conviene pedírselo a otro local
+function pdOtros(x) { const o = x.otros || {}; const ks = Object.keys(o).sort((a, b) => (a === 'oficina') - (b === 'oficina') || a.localeCompare(b)); return ks.length ? ks.map(k => `<span class="chip ${k === 'oficina' ? 'gray' : 'green'}" title="${esc(LOCALES[k] || tit(k))} tiene ${Number(o[k])}">${esc(k === 'oficina' ? 'Depósito' : (LOCALES[k] || tit(k)))} <b>${Number(o[k])}</b></span>`).join(' ') : '<span class="mini">no hay en otro lado</span>'; }
 const PD_K = x => x.prov || (x.fg ? 'fg' : 'oficina');
 const PD_DEST = { fg: 'familia_garcia', espalma: 'espalma', oficina: 'oficina' }, PD_KDE = { familia_garcia: 'fg', espalma: 'espalma', oficina: 'oficina' };
 const PD_NOM = { familia_garcia: 'Familia García Regueira', espalma: 'Espalma', oficina: 'Oficina' }, PD_PAR = { familia_garcia: 'fg', espalma: 'es' };
@@ -1394,7 +1397,9 @@ async function cargarPedidosLocal() {
   else { const { data } = await sb.from('stock_minimos').select('sku,minimo,fuente,actualizado_por,actualizado_at').eq('local', LOCAL); PD.min = data || []; }
   pdRender();
 }
-const puedeMinimos = () => (PERFIL.rol === 'gerente' || PERFIL.es_admin) && !!PERFIL.empleado_id;
+// (JP 9-nov) pedidos y mínimos: solo encargada, cajera o admin, cada una con su usuario (el genérico del local solo mira)
+const puedeMinimos = () => (PERFIL.rol === 'gerente' || PERFIL.rol === 'cajero' || PERFIL.es_admin) && !!PERFIL.empleado_id;
+const puedePedir = puedeMinimos;
 function pdRender() {
   const q = document.getElementById('pd-q').value.trim().toUpperCase(); const box = document.getElementById('pd-lista');
   if (PD.vista === 'falta') {
@@ -1404,18 +1409,18 @@ function pdRender() {
     for (const [k, id] of [['fg', 'pd-prov-fg'], ['espalma', 'pd-prov-es'], ['oficina', 'pd-prov-of']]) { const n = lista.filter(x => PD_K(x) === k).length; const b = document.getElementById(id); b.textContent = n || ''; b.style.display = n ? '' : 'none'; }
     if (PD.prov) lista = lista.filter(x => PD_K(x) === PD.prov);
     if (q) lista = lista.filter(x => (x.sku + ' ' + (x.descripcion || '') + ' ' + (x.proveedor || '')).toUpperCase().includes(q));
-    document.getElementById('pd-stat').textContent = lista.length + (lista.length === 1 ? ' artículo' : ' artículos') + (solo ? ' bajo mínimo' : ' con mínimo');
+    { const nb = lista.filter(x => Number(x.falta) > 0).length; document.getElementById('pd-stat').textContent = solo ? nb + (nb === 1 ? ' artículo' : ' artículos') + ' bajo mínimo' : lista.length + ' artículos con mínimo'; }
     if (!lista.length) { box.innerHTML = `<div class="empty">${PD.falta.length ? 'Nada bajo mínimo en ' + esc(LOCALES[LOCAL]) + (PD.prov ? ' para ' + PD_NOM[PD_DEST[PD.prov]] : '') + '.' : 'Todavía no hay mínimos cargados para ' + esc(LOCALES[LOCAL]) + ': cargalos en la pestaña Mínimos.'}</div>`; pdMarcados(); return; }
     const grupos = []; for (const x of lista) { const k = PD_K(x); let g = grupos.find(z => z.k === k); if (!g) { g = { k, items: [] }; grupos.push(g); } g.items.push(x); }
-    box.innerHTML = `<table class="pd-t"><thead><tr><th></th><th>Artículo</th><th class="num">Stock</th><th class="num">En tránsito</th><th class="num">Ya pedido</th><th class="num">Mínimo</th><th class="num">Falta</th><th class="num">Pedir</th></tr></thead><tbody>` +
-      grupos.map(g => `<tr class="pd-prov"><td colspan="8">${g.k === 'oficina' ? 'Oficina (depósito) · lo que Oficina ya compró · ordenado por proveedor' : PD_NOM[PD_DEST[g.k]] + ' · se le pide directo al proveedor'} · ${g.items.filter(x => Number(x.falta) > 0).length} bajo mínimo</td></tr>` +
+    box.innerHTML = `<table class="pd-t"><thead><tr><th></th><th>Artículo</th><th class="num">Stock</th><th>Otras sucursales</th><th class="num">En tránsito</th><th class="num">Ya pedido</th><th class="num">Mínimo</th><th class="num">Falta</th><th class="num">Pedir</th></tr></thead><tbody>` +
+      grupos.map(g => `<tr class="pd-prov"><td colspan="9">${g.k === 'oficina' ? 'Oficina (depósito) · lo que Oficina ya compró · ordenado por proveedor' : PD_NOM[PD_DEST[g.k]] + ' · se le pide directo al proveedor'} · ${g.items.filter(x => Number(x.falta) > 0).length} bajo mínimo</td></tr>` +
         g.items.map((x, i) => { const junto = x.grupo ? g.items.filter(z => z.grupo === x.grupo && z.sku !== x.sku).map(z => z.sku) : []; const prim = junto.length && (i === 0 || g.items[i - 1].grupo !== x.grupo);
           const pv = (x.proveedor || 'Sin proveedor cargado'); const sub = g.k === 'oficina' && (i === 0 || (g.items[i - 1].proveedor || 'Sin proveedor cargado').toUpperCase() !== pv.toUpperCase());
-          return `${sub ? `<tr class="pd-sub"><td></td><td colspan="7">${esc(tit(pv))} · ${g.items.filter(z => (z.proveedor || 'Sin proveedor cargado').toUpperCase() === pv.toUpperCase()).length} artículos</td></tr>` : ''}${prim ? `<tr class="pd-junto-h"><td></td><td colspan="7">Vienen juntos del proveedor · ${esc(tit(x.grupo))} · miralos como un solo artículo</td></tr>` : ''}<tr class="${junto.length ? 'pd-junto' : ''}"><td><input type="checkbox" data-sku="${esc(x.sku)}" data-k="${g.k}" data-g="${esc(junto.length ? x.grupo : '')}" onchange="pdJunto(this);pdMarcados()"></td>
-          <td><div class="art">${foto(x.sku, 'chica')}<div><b>${esc(x.sku)}</b><div class="mini">${esc(x.descripcion || '')}${g.k === 'oficina' ? ' · depósito tiene ' + Number(x.deposito) : ''}${junto.length ? ' · <b>va con ' + esc(junto.join(', ')) + '</b>' + (Number(x.falta) > 0 ? '' : Number(x.minimo) ? ' · este tiene stock' : ' · sin mínimo cargado') : ''}</div></div></div></td>
-          <td class="num ${Number(x.stock) < Number(x.minimo) ? 'rojo' : ''}">${Number(x.stock)}</td><td class="num">${Number(x.transito) || ''}</td><td class="num">${Number(x.pedido) || ''}</td><td class="num">${Number(x.minimo)}</td><td class="num ${Number(x.falta) > 0 ? 'rojo' : ''}">${Number(x.falta)}</td>
+          return `${sub ? `<tr class="pd-sub"><td></td><td colspan="8">${esc(tit(pv))} · ${g.items.filter(z => (z.proveedor || 'Sin proveedor cargado').toUpperCase() === pv.toUpperCase()).length} artículos</td></tr>` : ''}${prim ? `<tr class="pd-junto-h"><td></td><td colspan="8">Vienen juntos del proveedor · ${esc(tit(x.grupo))} · miralos como un solo artículo</td></tr>` : ''}<tr class="${junto.length ? 'pd-junto' : ''}"><td><input type="checkbox" data-sku="${esc(x.sku)}" data-k="${g.k}" data-g="${esc(junto.length ? x.grupo : '')}" onchange="pdJunto(this);pdMarcados()"></td>
+          <td><div class="art">${foto(x.sku, 'chica')}<div><b>${esc(x.sku)}</b><div class="mini">${esc(x.descripcion || '')}${junto.length ? ' · <b>va con ' + esc(junto.join(', ')) + '</b>' + (Number(x.falta) > 0 ? '' : Number(x.minimo) ? ' · este tiene stock' : ' · sin mínimo cargado') : ''}</div></div></div></td>
+          <td class="num ${Number(x.stock) < Number(x.minimo) ? 'rojo' : ''}">${Number(x.stock)}</td><td class="pd-otros">${pdOtros(x)}</td><td class="num">${Number(x.transito) || ''}</td><td class="num">${Number(x.pedido) || ''}</td><td class="num">${Number(x.minimo)}</td><td class="num ${Number(x.falta) > 0 ? 'rojo' : ''}">${Number(x.falta)}</td>
           <td class="num"><input value="${Number(x.falta)}" inputmode="numeric" data-sku="${esc(x.sku)}" oninput="this.classList.add('ed')"></td></tr>`; }).join('')).join('') + '</tbody></table>' +
-      '<div class="mini" style="margin-top:6px">Falta = mínimo − stock − en tránsito − ya pedido (nunca menos de 0). Lo de Familia García y lo de Espalma se le pide directo al proveedor; lo demás, al depósito de Oficina (ordenado por proveedor). "Pedir" viene con lo que falta y se puede cambiar. Los artículos que vienen juntos del proveedor (desglose) se muestran juntos aunque a uno solo le falte: al marcar uno se marca el otro con la misma cantidad.</div>';
+      '<div class="mini" style="margin-top:6px">Falta = mínimo − stock − en tránsito − ya pedido (nunca menos de 0). «Otras sucursales» muestra cuánto hay del mismo artículo en los otros locales y en el depósito. Lo de Familia García y lo de Espalma se le pide directo al proveedor; lo demás, al depósito de Oficina (ordenado por proveedor). "Pedir" viene con lo que falta y se puede cambiar.' + (puedePedir() ? '' : ' <b>Con este usuario solo se mira: el pedido lo arma la encargada o la cajera con su usuario.</b>') + ' Los artículos que vienen juntos del proveedor (desglose) se muestran juntos aunque a uno solo le falte: al marcar uno se marca el otro con la misma cantidad.</div>';
     pdMarcados();
   } else if (PD.vista === 'hechos') {
     let lista = PD.hechos; if (q) lista = lista.filter(p => (p.numero + ' ' + (p.items || []).map(i => i.sku).join(' ') + ' ' + (p.por || '')).toUpperCase().includes(q));
@@ -1440,7 +1445,7 @@ function pdRender() {
     if (!q) arts = ARTS.filter(a => mins[a.sku] && !a.discontinuado);   // los discontinuados (tilde importado del Dragon) no se piden
     arts = arts.slice(0, 150);
     document.getElementById('pd-stat').textContent = (q ? arts.length + ' encontrados' : PD.min.length + ' con mínimo') + (puede ? '' : ' · solo lectura');
-    box.innerHTML = `<div class="mini" style="margin-bottom:8px">${puede ? 'Escribí el mínimo que tiene que haber en ' + esc(LOCALES[LOCAL]) + ' y salí de la casilla: queda guardado con tu nombre. Cero lo saca. Buscá arriba para cargar uno nuevo.' : 'Los mínimos los carga la encargada. Hasta el cierre del año los que no se tocaron vienen del Dragonfish.'}</div>` +
+    box.innerHTML = `<div class="mini" style="margin-bottom:8px">${puede ? 'Escribí el mínimo que tiene que haber en ' + esc(LOCALES[LOCAL]) + ' y salí de la casilla: queda guardado con tu nombre. Cero lo saca. Buscá arriba para cargar uno nuevo.' : 'Los mínimos los cargan la encargada o la cajera, cada una con su usuario. Hasta el cierre del año los que no se tocaron vienen del Dragonfish.'}</div>` +
       (arts.length ? `<table class="pd-t"><thead><tr><th>Artículo</th><th class="num">Stock</th><th class="num">Mínimo ${esc(LOCALES[LOCAL])}</th><th>Quién · cuándo</th></tr></thead><tbody>` + arts.map(a => { const m = mins[a.sku]; return `<tr><td><div class="art">${foto(a.sku, 'chica')}<div><b>${esc(a.sku)}</b><div class="mini">${esc(a.descripcion)}</div></div></div></td><td class="num ${m && Number(a.stock) < Number(m.minimo) ? 'rojo' : ''}">${Number(a.stock)}</td>
         <td class="num"><input value="${m ? Number(m.minimo) : ''}" inputmode="numeric" ${puede ? '' : 'disabled'} onchange="pdMinimo('${esc(a.sku)}',this.value,this)"></td><td class="mini">${m ? (m.fuente === 'pos' ? esc(pila(m.actualizado_por)) + ' · ' + fechaAR(String(m.actualizado_at).slice(0, 10)) : 'Dragonfish') : ''}</td></tr>`; }).join('') + '</tbody></table>' : '<div class="empty chico">Buscá un producto para cargarle el mínimo.</div>');
   }
@@ -1454,13 +1459,14 @@ function pdJunto(cb) {
   for (const c of cbs) { c.checked = true; const i = inp(c); if (!(Math.round(num(i.value)) > 0)) { i.value = max; i.classList.add('ed'); } }
 }
 function pdMarcarTodos() { const cbs = [...document.querySelectorAll('#pd-lista input[type=checkbox]')]; const todos = cbs.length && cbs.every(c => c.checked); cbs.forEach(c => { c.checked = !todos; }); if (!todos) cbs.forEach(pdJunto); pdMarcados(); }
-function pdMarcados() { const n = document.querySelectorAll('#pd-lista input[type=checkbox]:checked').length; const b = document.getElementById('pd-armar'); b.disabled = !n; b.innerHTML = _i('plus') + ' Armar pedido con los marcados' + (n ? ' (' + n + ')' : ''); }
+function pdMarcados() { const n = document.querySelectorAll('#pd-lista input[type=checkbox]:checked').length; const b = document.getElementById('pd-armar'); b.disabled = !n || !puedePedir(); b.title = puedePedir() ? '' : 'Los pedidos los arman la encargada o la cajera, cada una con su usuario'; b.innerHTML = _i('plus') + ' Armar pedido con los marcados' + (n ? ' (' + n + ')' : ''); }
 async function pdMinimo(sku, v, inp) {
   const { error } = await sb.rpc('pos_minimo_set', { p_local: LOCAL, p_sku: sku, p_minimo: Math.max(0, Math.round(num(v))) });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; } toast('Mínimo guardado', 'success'); cargarPedidosLocal();
 }
 // Armar: los marcados, separados por destino (Oficina / Familia García); cada grupo es un pedido
 function pdArmar() {
+  if (!puedePedir()) { toast('Los pedidos los arman la encargada o la cajera, cada una con su usuario', 'error'); return; }
   const marc = [...document.querySelectorAll('#pd-lista input[type=checkbox]:checked')]; if (!marc.length) return;
   const items = marc.map(c => { const inp = document.querySelector(`#pd-lista input[data-sku="${CSS.escape(c.dataset.sku)}"]:not([type=checkbox])`); const x = PD.falta.find(z => z.sku === c.dataset.sku); return { sku: c.dataset.sku, descripcion: x ? x.descripcion : '', cantidad: Math.max(0, Math.round(num(inp ? inp.value : x.falta))) || Number(x.falta) || 1, k: c.dataset.k, deposito: x ? Number(x.deposito) : 0 }; });
   PD.cola = []; for (const k of ['fg', 'espalma', 'oficina']) { const its = items.filter(i => i.k === k); if (its.length) PD.cola.push({ destino: PD_DEST[k], items: its }); }
@@ -2788,6 +2794,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=54"></script>
+<script src="manual.js?v=55"></script>
 </body>
 </html>
