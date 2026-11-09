@@ -82,6 +82,7 @@ const fecha = s => { if (!s) return ''; const [y, m, d] = s.split('-'); return `
   if (v.estado === 'anulado') { s.className = 'saldo mal'; s.textContent = 'Esta tarjeta fue anulada. Si creés que es un error, escribinos.'; }
   else if (v.estado === 'usado' || Number(v.saldo) <= 0) { s.className = 'saldo mal'; s.textContent = 'Ya se usó entera · emitida el ' + fecha(v.fecha); }
   else s.innerHTML = `Saldo disponible <b>${plata(v.saldo)}</b> · vigente · emitida el ${fecha(v.fecha)}`;
+  if (v.prueba) s.innerHTML = '<b style="color:#B3261E">VALE DE PRUEBA · no tiene valor</b><br>' + s.innerHTML;
   $('scene').style.display = ''; $('pie').style.display = '';   // el saldo recién se ve cuando la tarjeta gira
 })();
 </script>
