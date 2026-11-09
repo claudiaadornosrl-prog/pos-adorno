@@ -487,12 +487,15 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .prod { display: grid; grid-template-columns: 44px 1fr 40px 90px; gap: 8px; align-items: center; text-align: left; border: 1px solid transparent; background: #f8fafc; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; }
 .prod:hover, .prod.act { border-color: var(--primary); background: var(--primary-bg); }
 .v-stat { text-align: right; margin: 4px 4px 0; color: #95867B; }
-.pficha { display: flex; gap: 14px; margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--primary-bg); }
+/* (JP 9-nov) la ficha mide siempre lo mismo: al pasar de un artículo a otro nada salta */
+.pficha { display: flex; gap: 14px; margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--primary-bg); height: 244px; box-sizing: border-box; overflow: hidden; align-items: stretch; }
+.pficha .pf-desc, .pficha .pf-extra { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; } .pficha .pf-desc { -webkit-line-clamp: 2; line-height: 1.25; } .pficha .pf-extra { -webkit-line-clamp: 2; } .pficha .pf-datos > .mini:not(.pf-extra) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pficha .pf-stock { max-height: 42px; overflow: hidden; }
 .pf-img { width: 150px; height: 150px; border-radius: 10px; object-fit: contain; background: white; border: 1px solid #e2e8f0; cursor: zoom-in; flex: none; display: block; }
 .pf-datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .pf-sku { font-weight: 700; font-size: 15px; color: var(--primary-dark); } .pf-desc { font-size: 16px; font-weight: 600; }
 .pf-stock { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-top: 4px; } .pf-stock .aca { color: var(--text); } .pf-stock .sin b { color: var(--red); }
 .pf-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; } .pf-pre { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; } .pf-mas { width: 40px; height: 40px; border: none; border-radius: 50%; background: var(--primary); color: white; font-size: 26px; line-height: 1; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none; } .pf-mas:hover { background: var(--primary-dark); } .pf-mas.chico { width: 26px; height: 26px; font-size: 18px; vertical-align: middle; }
-@media (max-width: 600px) { .pf-img { width: 100px; height: 100px; } }
+@media (max-width: 600px) { .pf-img { width: 100px; height: 100px; } .pficha { height: 232px; } }
 .prod .txt { min-width: 0; display: flex; flex-direction: column; gap: 1px; } .prod .sku { font-weight: 700; font-size: 13px; } .prod .desc { font-size: 12px; line-height: 1.25; } .prod .desc i { color: var(--muted); font-style: normal; }
 .prod .stk { font-size: 12px; color: var(--muted); text-align: right; } .prod .stk.sin { color: var(--red); font-weight: 700; } .prod .pre { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 .foto { width: 44px; height: 44px; border-radius: 6px; object-fit: contain; background: white; border: 1px solid #e2e8f0; cursor: zoom-in; flex: none; display: block; } .foto.sin { cursor: default; background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f1f5f9 4px, #f1f5f9 8px); } .foto.chica { width: 30px; height: 30px; border-radius: 4px; }
@@ -1090,13 +1093,13 @@ function vFicha(sku) {
   document.querySelectorAll('#v-lista .prod').forEach(b => b.classList.toggle('act', b.getAttribute('onclick').includes("'" + FICHA + "'")));
   if (!a) { box.style.display = 'none'; box.innerHTML = ''; return; }
   const u = IMGS[a.sku];
-  box.style.display = ''; box.ondblclick = () => prodFicha(a.sku); box.innerHTML = `
+  box.style.display = ''; box.ondblclick = () => prodFicha(a.sku); box.title = 'Doble clic: ficha completa del producto'; box.innerHTML = `
     ${u ? `<img class="pf-img" src="${esc(u)}" alt="" onclick="verFoto('${esc(u)}')" title="Ver más grande">` : '<span class="pf-img foto sin"></span>'}
     <div class="pf-datos">
       <div class="pf-sku">${esc(a.sku)}</div>
       <div class="pf-desc">${esc(a.descripcion)}</div>
       ${a.descripcion_adicional ? `<div class="mini">${esc(a.descripcion_adicional)}</div>` : ''}
-      <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')} <a href="#" class="pf-link" onclick="prodFicha('${esc(a.sku)}');return false" title="Abrir la ficha completa del módulo Productos (también con doble clic)">Ficha completa ›</a> <a href="#" class="pf-link" onclick="etAgregar('${esc(a.sku)}');switchTab('etiquetas');return false" title="Sumar a la cola de etiquetas">Etiquetas ›</a> <a href="#" class="pf-link" onclick="vHistorialTodo('${esc(a.sku)}');return false" title="Ver los movimientos de stock de este artículo en el local">Movimientos ›</a></div>
+      <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')}</div>
       <div class="pf-stock" id="pf-stock"><span class="${a.stock <= 0 ? 'sin' : ''}">${esc(LOCALES[LOCAL])}: <b>${Number(a.stock)}</b></span></div>
       <div class="pf-pie"><span class="pf-pre">${plata(a.precio)}</span><button class="pf-mas" onclick="vAgregar('${esc(a.sku)}')" title="Agregar al ticket" aria-label="Agregar al ticket">+</button></div>
     </div>`;
@@ -1920,7 +1923,7 @@ function vTotales() {
 function vRender() {
   const box = document.getElementById('v-renglones');
   box.innerHTML = T.items.length ? `<table><thead><tr><th>Artículo</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto</th><th class="num">Importe</th><th></th></tr></thead><tbody>` +
-    T.items.map((it, i) => `<tr${it.cantidad < 0 ? ' class="cambio" title="Cantidad negativa: el cliente lo trae para cambiar"' : it.stock <= 0 && !it.fijo ? ' class="sinstock" title="Sin stock en este local"' : ''}>
+    T.items.map((it, i) => `<tr${it.cantidad < 0 ? ' class="cambio" title="Cantidad negativa: el cliente lo trae para cambiar"' : it.stock <= 0 && !it.fijo ? ' class="sinstock" title="Sin stock en este local"' : ''}${it.fijo ? '' : ` ondblclick="if(!/^(INPUT|BUTTON|svg|path|line|polyline)$/.test(event.target.tagName))prodFicha('${esc(it.sku)}')"`}>
       <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}${it.entregado ? ' <span class="chip amber" title="Ya salió con el remito: no vuelve a descontar stock">entregado</span>' : ''}${it.cantidad < 0 ? ' <span class="chip viol" title="' + (T.tipo === 'NC' ? 'En la nota de crédito, el negativo SALE del stock' : 'Lo trae para cambiar: ENTRA al stock') + '">cambio · ' + (T.tipo === 'NC' ? 'sale' : 'entra') + '</span>' : ''}</div></div></div></td>
       <td class="num cant">${it.fijo ? '' : `<button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button>`}</td>
       <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? (it.placeholder || 'Importe de la seña') : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
@@ -2853,6 +2856,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=62"></script>
+<script src="manual.js?v=63"></script>
 </body>
 </html>
