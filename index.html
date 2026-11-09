@@ -1102,7 +1102,7 @@ function vFicha(sku) {
       <div class="pf-txt"><div class="pf-sku">${esc(a.sku)}</div>
       <div class="pf-desc">${esc(a.descripcion)}</div>
       ${a.descripcion_adicional ? `<div class="pf-adic">${esc(a.descripcion_adicional)}</div>` : ''}</div>
-      <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')}</div>
+      <div class="mini pf-extra" title="Material · proveedor">${[a.material ? esc(tit(a.material)) : '', a.proveedor ? esc(tit(a.proveedor)) : ''].filter(Boolean).join(' · ')}</div>
       <div class="pf-pie"><span class="pf-pre">${plata(a.precio)}</span><button class="pf-mas" onclick="vAgregar('${esc(a.sku)}')" title="Agregar al ticket" aria-label="Agregar al ticket">+</button></div>
     </div>`;
   pfAjustar(); vStockOtros(a.sku);
@@ -2866,6 +2866,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=64"></script>
+<script src="manual.js?v=65"></script>
 </body>
 </html>
