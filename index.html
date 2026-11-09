@@ -1779,6 +1779,7 @@ function pvTab(n) {
 }
 function pvImprimir() {
   if (window._pvTab === 2) { imprimirA4(window._pv); return; }
+  if (window._pv && !window._pv.c.preview && window._pv.c.letra === 'X') { toast('Los comprobantes manuales y presupuestos no se imprimen en la comandera: usá la pestaña Hoja A4', 'error'); return; }
   document.getElementById('print-area').innerHTML = ticketHTML(window._pv); window.print();
 }
 // Imprime la hoja A4 en un iframe oculto (no pasa por el CSS de impresión del ticket)
@@ -2755,12 +2756,14 @@ async function reintentarCAE(id) {
 }
 async function verComprobante(id, recien) {
   const x = await traerComprobante(id); if (!x.c) { toast('No lo encontré', 'error'); return; }
-  modal(`<div class="m-head"><h3>${recien ? '✓ Emitido' : 'Comprobante'}</h3><span class="spacer"></span>
+  // (JP 9-nov) mismas pestañas que la vista previa al emitir: Comandera / Hoja A4 (y el PDF si ya está)
+  modal(`<div class="m-head"><h3>${recien ? '✓ Emitido' : 'Comprobante'}</h3><span class="pils" style="margin-left:10px"><button class="pil on" id="pv-t1" onclick="pvTab(1)">Comandera</button><button class="pil" id="pv-t2" onclick="pvTab(2)">Hoja A4</button></span><span class="spacer"></span>
     ${x.c.pdf_url ? `<a class="btn ico primary-ico" href="${esc(x.c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF (hoja A4, el que va por mail)" aria-label="PDF">${_i('pdf')}</a>` : '<span class="mini" title="El PDF se arma solo apenas el comprobante tiene CAE">PDF en camino…</span>'}
-    ${x.c.letra !== 'X' ? `<button class="btn ico primary-ico" onclick="imprimir(${id})" title="Imprimir en la comandera" aria-label="Imprimir">${_i('print')}</button>` : ''}
+    <button class="btn ico primary-ico" id="pv-print" onclick="pvImprimir()" title="Imprimir lo que se ve" aria-label="Imprimir">${_i('print')}</button>
     <button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="tk-wrap">${ticketHTML(x)}</div>`);
-  window._ultimoTicket = x; pintarQR(document.querySelector('#ov .tk-wrap'));
+    <div id="pv-1" class="tk-wrap">${ticketHTML(x)}</div>
+    <div id="pv-2" class="pv-a4" style="display:none"><iframe id="pv-if" title="Hoja A4"></iframe></div>`, 'preview');
+  window._ultimoTicket = x; window._pv = x; pvTab(1); pintarQR(document.querySelector('#ov .tk-wrap'));
   if (x.c.letra !== 'X' && x.c.cae_estado === 'pendiente') vigilarCAE(id);
 }
 async function imprimir(id) {
@@ -2866,6 +2869,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=65"></script>
+<script src="manual.js?v=66"></script>
 </body>
 </html>
