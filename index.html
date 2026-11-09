@@ -717,6 +717,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
     <section id="content-pedidos" class="tab-content">
       <div class="filters" id="pd-filtros">
         <span class="pils"><button class="pil on" data-v="falta" onclick="pdVista('falta')">Qué falta<span class="badge" id="pd-falta-n" style="display:none"></span></button><button class="pil" data-v="min" onclick="pdVista('min')">Mínimos</button><button class="pil" data-v="hechos" onclick="pdVista('hechos')">Pedidos hechos</button></span>
+        <span class="pils" id="pd-prov" title="A quién se le pide"><button class="pil on" data-p="" onclick="pdProv('')">Todos</button><button class="pil" data-p="fg" onclick="pdProv('fg')">Familia García<span class="badge" id="pd-prov-fg" style="display:none"></span></button><button class="pil" data-p="oficina" onclick="pdProv('oficina')">Oficina<span class="badge" id="pd-prov-of" style="display:none"></span></button></span>
         <label>Buscar <input id="pd-q" placeholder="producto o proveedor" oninput="pdDebounce()"></label>
         <label class="mini cli-chk" id="pd-solo-lb"><input type="checkbox" id="pd-solo" checked onchange="pdRender()"> Solo bajo mínimo</label>
         <span class="stat" id="pd-stat"></span>
@@ -1374,9 +1375,11 @@ async function pedCerrar(id) {
   toast('Pedido cerrado', 'success'); cargarRemitos();
 }
 // ═══ Pedidos del local (JP 6-nov): mínimos por producto, qué falta, pedido a Oficina (traslado) o a Familia García (mail + WhatsApp) ═══
-const PD = { vista: 'falta', falta: [], hechos: [], min: [] }; let _pdT;
+const PD = { vista: 'falta', falta: [], hechos: [], min: [], prov: '' }; let _pdT;
+// (JP 9-nov) filtro por proveedor en Qué falta: primero se arma el pedido de Familia García y después el de Oficina
+function pdProv(p) { PD.prov = p; document.querySelectorAll('#pd-prov .pil').forEach(b => b.classList.toggle('on', b.dataset.p === p)); pdRender(); }
 function pdDebounce() { clearTimeout(_pdT); _pdT = setTimeout(pdRender, 400); }
-function pdVista(v) { PD.vista = v; document.querySelectorAll('#pd-filtros .pil[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.getElementById('pd-solo-lb').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-armar').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-todos').style.display = v === 'falta' ? '' : 'none'; cargarPedidosLocal(); }
+function pdVista(v) { PD.vista = v; document.querySelectorAll('#pd-filtros .pil[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.getElementById('pd-solo-lb').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-prov').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-armar').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-todos').style.display = v === 'falta' ? '' : 'none'; cargarPedidosLocal(); }
 async function cargarPedidosLocal() {
   if (PD.vista === 'falta') { const { data, error } = await sb.rpc('pos_que_falta', { p_local: LOCAL }); if (error) { toast(error.message, 'error'); return; } PD.falta = data || []; const n = PD.falta.filter(x => Number(x.falta) > 0).length; const b = document.getElementById('pd-falta-n'); b.textContent = n || ''; b.style.display = n ? '' : 'none'; }
   else if (PD.vista === 'hechos') { const { data, error } = await sb.rpc('pos_pedidos_listar', { p_local: LOCAL }); if (error) { toast(error.message, 'error'); return; } PD.hechos = data || []; }
@@ -1388,9 +1391,12 @@ function pdRender() {
   const q = document.getElementById('pd-q').value.trim().toUpperCase(); const box = document.getElementById('pd-lista');
   if (PD.vista === 'falta') {
     const solo = document.getElementById('pd-solo').checked;
-    let lista = PD.falta.filter(x => !solo || Number(x.falta) > 0); if (q) lista = lista.filter(x => (x.sku + ' ' + (x.descripcion || '') + ' ' + (x.proveedor || '')).toUpperCase().includes(q));
+    let lista = PD.falta.filter(x => !solo || Number(x.falta) > 0);
+    { const nf = lista.filter(x => x.fg).length, no = lista.length - nf; const bf = document.getElementById('pd-prov-fg'), bo = document.getElementById('pd-prov-of'); bf.textContent = nf || ''; bf.style.display = nf ? '' : 'none'; bo.textContent = no || ''; bo.style.display = no ? '' : 'none'; }
+    if (PD.prov) lista = lista.filter(x => (x.fg ? 'fg' : 'oficina') === PD.prov);
+    if (q) lista = lista.filter(x => (x.sku + ' ' + (x.descripcion || '') + ' ' + (x.proveedor || '')).toUpperCase().includes(q));
     document.getElementById('pd-stat').textContent = lista.length + (lista.length === 1 ? ' artículo' : ' artículos') + (solo ? ' bajo mínimo' : ' con mínimo');
-    if (!lista.length) { box.innerHTML = `<div class="empty">${PD.falta.length ? 'Nada bajo mínimo en ' + esc(LOCALES[LOCAL]) + '.' : 'Todavía no hay mínimos cargados para ' + esc(LOCALES[LOCAL]) + ': cargalos en la pestaña Mínimos.'}</div>`; pdMarcados(); return; }
+    if (!lista.length) { box.innerHTML = `<div class="empty">${PD.falta.length ? 'Nada bajo mínimo en ' + esc(LOCALES[LOCAL]) + (PD.prov ? ' para ' + (PD.prov === 'fg' ? 'Familia García' : 'Oficina') : '') + '.' : 'Todavía no hay mínimos cargados para ' + esc(LOCALES[LOCAL]) + ': cargalos en la pestaña Mínimos.'}</div>`; pdMarcados(); return; }
     const grupos = []; for (const x of lista) { const k = x.fg ? 'fg' : 'oficina'; let g = grupos.find(z => z.k === k); if (!g) { g = { k, items: [] }; grupos.push(g); } g.items.push(x); }
     box.innerHTML = `<table class="pd-t"><thead><tr><th></th><th>Artículo</th><th class="num">Stock</th><th class="num">En tránsito</th><th class="num">Ya pedido</th><th class="num">Mínimo</th><th class="num">Falta</th><th class="num">Pedir</th></tr></thead><tbody>` +
       grupos.map(g => `<tr class="pd-prov"><td colspan="8">${g.k === 'fg' ? 'Familia García Regueira' : 'Oficina (depósito) · lo que Oficina ya compró'} · ${g.items.filter(x => Number(x.falta) > 0).length} bajo mínimo</td></tr>` +
@@ -2764,6 +2770,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=51"></script>
+<script src="manual.js?v=52"></script>
 </body>
 </html>
