@@ -648,9 +648,10 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
             <button class="pil pr" data-t="PR" onclick="vTipo(T.tipo === 'PR' ? 'PR' : 'MA','X')" title="Comprobantes que no van a ARCA">Presupuesto</button>
           </div>
           <div class="ncbox" id="v-nc" style="display:none">
-            <div class="cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="v-nc-q" placeholder="Qué factura devuelve: número (35-2) o cliente" autocomplete="off" oninput="ncDebounce()" onkeydown="if(event.key==='Enter'){event.preventDefault();ncBuscar();}"></div>
+            <div class="cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="v-nc-q" placeholder="Qué factura devuelve (opcional): número (35-2) o cliente" autocomplete="off" oninput="ncDebounce()" onkeydown="if(event.key==='Enter'){event.preventDefault();ncBuscar();}"></div>
             <div id="v-nc-res" class="cl-res"></div>
             <div id="v-nc-sel" class="mini"></div>
+            <div class="mini" id="v-nc-libre" style="margin-top:6px">Sin factura asociada también se puede (descuento bancario, ajuste): <a href="#" class="pf-link" onclick="ncConcepto();return false">＋ Agregar un concepto sin mercadería</a></div>
           </div>
           <div class="rebox" id="v-re" style="display:none">
             <div class="sena-h"><b id="v-re-tit">Remito de venta</b><span class="mini" id="v-re-sub">baja el stock y no cobra · se factura después desde Vender, al cargar el cliente</span></div>
@@ -1946,6 +1947,7 @@ function cliDeFicha(c) {
 function usarCliente(c) {
   T.cliente = cliDeFicha(c); T.sin_cliente = false;
   if (T.tipo === 'FC' && T.letra !== LETRA_COND[T.cliente.cond_iva]) vTipo('FC', LETRA_COND[T.cliente.cond_iva]);
+  if (T.tipo === 'NC' && !T.nc_de && T.letra !== 'X' && T.letra !== LETRA_COND[T.cliente.cond_iva]) vTipo('NC', LETRA_COND[T.cliente.cond_iva]);   // NC sin factura: la letra la da el cliente
   vRender(); document.getElementById('v-q').focus();
   vSenasOfrecer(T.cliente); vRemitosOfrecer(T.cliente);
 }
@@ -2254,7 +2256,7 @@ function pLimpiar() { pMontar(); }
 function emitirTicket() {
   const t = vTotales(); if (!T.items.length) return;
   const nc = T.tipo === 'NC';
-  if (nc && !T.nc_de) { toast('Elegí qué factura devuelve', 'error'); document.getElementById('v-nc-q').focus(); return; }
+  const ncLibre = nc && !T.nc_de;   // NC sin factura asociada: se valida como una factura
   if (T.tipo === 'RE') { if (!T.re_destino && !T.cliente) { toast('El remito necesita el cliente: a quién se le entrega', 'error'); document.getElementById('v-cli-doc').focus(); return; } return emitir(false); }   // remito: sin pagos, baja el stock
   if (T.tipo === 'PR') return emitir(false);   // presupuesto: sin pagos, el cliente es opcional
   if (T.sena) { if (!T.cliente || !T.cliente.doc) { toast('La seña necesita un cliente con DNI o CUIT', 'error'); document.getElementById('v-cli-doc').focus(); return; } if (!T.sena.items.length) { toast('La seña tiene que reservar al menos un artículo', 'error'); return; } if (!(T.items[0].precio_unit > 0)) { toast('Poné el importe de la seña', 'error'); return; } }
@@ -2262,8 +2264,8 @@ function emitirTicket() {
     if (T.letra !== 'X' && t.tot >= TOPE.valor) { toast('Por el importe, ARCA exige identificar al cliente: cargá su DNI o CUIT', 'error'); document.getElementById('v-cli-doc').focus(); return; }
     return preguntarCliente();
   }
-  if (!nc && T.letra === 'A' && !(T.cliente && T.cliente.cond_iva === 'RI' && T.cliente.doc)) { toast('La factura A necesita un cliente Responsable Inscripto con CUIT', 'error'); document.getElementById('v-cli-doc').focus(); return; }
-  if (!nc && T.letra === 'B' && T.cliente && T.cliente.cond_iva === 'RI') { toast('A un Responsable Inscripto se le hace factura A', 'error'); vTipo('FC', 'A'); return; }
+  if ((!nc || ncLibre) && T.letra === 'A' && !(T.cliente && T.cliente.cond_iva === 'RI' && T.cliente.doc)) { toast((nc ? 'La nota de crédito A' : 'La factura A') + ' necesita un cliente Responsable Inscripto con CUIT', 'error'); document.getElementById('v-cli-doc').focus(); return; }
+  if ((!nc || ncLibre) && T.letra === 'B' && T.cliente && T.cliente.cond_iva === 'RI') { toast('A un Responsable Inscripto se le hace ' + (nc ? 'nota de crédito' : 'factura') + ' A', 'error'); vTipo(nc ? 'NC' : 'FC', 'A'); return; }
   emitir(nc);
 }
 function pPagos() { return [...document.querySelectorAll('#v-pagos .medio')].map(r => { const mp = r.dataset.mp ? JSON.parse(r.dataset.mp) : null; const usd = r.dataset.m === 'efectivo_usd' && r.querySelector('.usd-in') ? { usd: r2(num(r.querySelector('.usd-in').value)), tc: r2(num(r.querySelector('.tc-in').value)) } : null; return { medio: r.dataset.m || r.querySelector('.med').value, importe: r2(num(r.querySelector('.imp').value)), referencia: r.querySelector('.ref').value || (mp ? mp.payment_id : null), detalle: mp || usd }; }).filter(p => p.medio && p.importe > 0); }
@@ -2417,6 +2419,7 @@ async function mpCobrar(btn) {
 // Devolución por Mercado Pago cuando la NC devuelve una venta cobrada con Point integrado
 async function mpDevolverNC(ncId, pagosNC) {
   const dev = pagosNC.filter(p => p.medio === 'mp_point' && p.importe > 0); if (!dev.length) return;
+  if (!T.nc_de) { toast('Nota de crédito sin factura asociada: la devolución a la tarjeta hacela desde la terminal', 'error'); return; }
   const { data: orig } = await sb.from('pos_pagos').select('importe,detalle').eq('comprobante_id', T.nc_de).eq('medio', 'mp_point');
   const ordenes = (orig || []).filter(p => p.detalle && p.detalle.order_id);
   if (!ordenes.length) { toast('La venta original no se cobró con Point integrado: hacé la devolución desde la terminal', 'error'); return; }
@@ -2436,7 +2439,7 @@ function pRender() {
   document.getElementById('p-pagado').textContent = plata(pag);
   document.getElementById('p-falta-lb').textContent = falta < 0 ? 'Vuelto' : 'Falta';
   document.getElementById('p-falta').textContent = plata(Math.abs(falta));
-  document.getElementById('v-cobrar').disabled = !T.items.length || pointSinCobrar || valeSinOk || (T.tipo === 'NC' && !T.nc_de) || (!sinPago() && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo' || p.medio === 'efectivo_usd')));
+  document.getElementById('v-cobrar').disabled = !T.items.length || pointSinCobrar || valeSinOk || (!sinPago() && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo' || p.medio === 'efectivo_usd')));
 }
 function pFalta() { const t = vTotales(); const rows = [...document.querySelectorAll('#v-pagos .medio')]; const vacio = rows.find(r => !num(r.querySelector('.imp').value)); if (!vacio) return; const otros = pPagos().reduce((s, p) => s + p.importe, 0); vacio.querySelector('.imp').value = plata(Math.max(0, r2(t.tot - otros))); pRender(); }
 async function emitir(esNC) {
@@ -2649,7 +2652,7 @@ function ticketHTML(x) {
   const valesDet = (x.vales || []).map(v => `<div class="sep"></div><div class="mini" style="text-align:center"><b>${v.tipo === 'gift' ? 'Gift card' : 'Vale de cambio'}</b>${v.para_nombre ? ' para ' + esc(v.para_nombre) : ''}${v.de_parte ? ' de parte de ' + esc(v.de_parte) : ''}<br><span class="code">${esc(v.codigo)}</span><br>${plata(v.importe)} · sin vencimiento${v.estado !== 'vigente' ? ' · ' + v.estado : Number(v.saldo) < Number(v.importe) ? ' · saldo ' + plata(v.saldo) : ''}<br>${esc(GIFT_URL + v.codigo)}</div>`).join('');
   const senaDet = x.sena_items && x.sena_items.length ? `<div class="sep"></div><div class="mini" style="text-align:center"><b>Artículos señados</b></div><table class="tk-det">${x.sena_items.map(d => `<tr><td>${Number(d.cantidad)} × ${esc(d.descripcion)}</td><td class="num">${plata(Number(d.cantidad) * Number(d.precio_unit))}</td></tr>`).join('')}</table><div class="mini" style="text-align:center">Esta seña se descuenta cuando retirás los artículos. No vence.</div>` : '';
   const senaUso = Number(c.sena_monto) > 0 ? `<div class="fila"><span>Seña a cuenta${x.sena_de ? ' · Factura ' + esc(x.sena_de) : ''}</span><span>- ${plata(c.sena_monto)}</span></div>` : '';
-  const devuelve = nc && rel ? `Devuelve la ${rel.tipo === 'MA' ? 'Factura manual' : TIPO_NOM[rel.tipo] + ' ' + rel.letra} ${fmtNum(rel.punto_venta, rel.numero)}` : nc ? 'Devuelve el comprobante #' + c.relacionado_id : '';
+  const devuelve = nc && rel ? `Devuelve la ${rel.tipo === 'MA' ? 'Factura manual' : TIPO_NOM[rel.tipo] + ' ' + rel.letra} ${fmtNum(rel.punto_venta, rel.numero)}` : nc && c.relacionado_id ? 'Devuelve el comprobante #' + c.relacionado_id : '';
   const entrega = trasl ? `<b>${esc(LOCALES[c.local])} → ${esc(LOCALES[c.destino_local])}</b>${c.entrega_nota ? '<div class="mini">' + esc(c.entrega_nota) + '</div>' : ''}${c.transito_estado === 'recibido' || c.transito_estado === 'con_diferencia' ? '<div class="mini">Recibido por ' + esc(c.recibido_por || '') + (c.transito_estado === 'con_diferencia' ? ' · con diferencia' : '') + '</div>' : ''}` : c.tipo === 'RE' && (c.entrega_dir || c.entrega_nota) ? `<div class="mini">Entrega: ${esc(c.entrega_dir || '')}${c.entrega_nota ? ' · ' + esc(c.entrega_nota) : ''}</div>` : x.remito ? `<div class="mini">Sobre el remito ${esc(x.remito)}</div>` : '';
   const cliente = entrega + (trasl ? '' : c.cliente_doc ? `<b>${esc(c.cliente_nombre)}</b><div class="mini">${esc(c.cliente_doc_tipo || '')} ${esc(c.cliente_doc)}${c.cliente_cond_iva && c.cliente_cond_iva !== 'CF' ? ' · ' + esc(COND[c.cliente_cond_iva] || '') : ''}</div>` : esc(c.cliente_nombre || 'Consumidor Final'));
   const pru = !!c.es_prueba || (!!c.preview && MODO === 'prueba');
@@ -2731,6 +2734,12 @@ async function imprimir(id) {
 }
 // Nota de crédito desde Vender: pastilla NC → buscar la factura que devuelve → sus renglones entran al ticket
 let _ncT; function ncDebounce() { clearTimeout(_ncT); _ncT = setTimeout(ncBuscar, 400); }
+// Renglón de concepto (sin mercadería, no mueve stock): descuento bancario, ajuste, diferencia de precio…
+function ncConcepto() {
+  const d = prompt('Concepto de la nota de crédito (sale impreso):', 'Descuento bancario'); if (d === null || !d.trim()) return;
+  T.items.push({ sku: 'CONCEPTO', descripcion: d.trim(), cantidad: 1, precio_unit: 0, descuento_pct: 0, descuento_monto: 0, stock: 1, fijo: true, placeholder: 'Importe' });
+  vRender(); setTimeout(() => { const f = document.querySelector('#v-renglones input.din.falta'); if (f) f.focus(); }, 40);
+}
 async function ncBuscar() {
   const q = document.getElementById('v-nc-q').value.trim(); const box = document.getElementById('v-nc-res'); if (q.length < 2) { box.innerHTML = ''; return; }
   let qry = sb.from('pos_comprobantes').select('*').eq('local', LOCAL).eq('estado', 'emitido').in('tipo', ['FC', 'MA']).order('id', { ascending: false }).limit(10);
@@ -2819,6 +2828,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=56"></script>
+<script src="manual.js?v=57"></script>
 </body>
 </html>
