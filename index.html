@@ -501,6 +501,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .cli-sin, .cli-con { display: flex; align-items: center; gap: 8px; } .cli .ico { color: var(--muted); flex: none; }
 .cli-sin input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 16px; font-family: inherit; padding: 4px 0; color: var(--text); }
 .cli-datos { flex: 1; min-width: 0; } .cli-datos .mini { overflow-wrap: anywhere; } .cli-con { cursor: pointer; } .cli-con:hover { background: var(--gray-light); border-radius: 8px; }
+.btn.ico.cli-x { background: #fee2e2 !important; color: #b91c1c !important; border-radius: 999px !important; width: 30px; height: 30px; flex: none; } .btn.ico.cli-x .ico, .btn.ico.cli-x svg { color: #b91c1c !important; stroke: #b91c1c; } .btn.ico.cli-x:hover { background: #fecaca !important; }
 .cli-chk { display: flex; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer; }
 .cli-mail { display: flex; align-items: center; gap: 8px; margin: -4px 0 10px; padding: 6px 10px; border: 1px solid #7dd3fc; border-radius: 999px; background: #e0f2fe; color: #0369a1; }
 .cli-mail input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 15px; font-family: inherit; color: var(--text); padding: 2px 0; }
@@ -660,7 +661,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
             <div class="cli-sin" id="v-cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-cli-doc" placeholder="Cliente: DNI, CUIT o nombre · o escaneá el DNI" autocomplete="off" oninput="cliSugerir()" onkeydown="if(event.key==='Enter'){event.preventDefault();cliEnter();} if(event.key==='Escape'){cliSugCerrar()}"><button class="btn ico chico" onclick="buscarPorNombre()" title="Buscar por nombre" aria-label="Buscar por nombre"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button></div>
             <div class="cli-con" id="v-cli-con" style="display:none" onclick="editarCliente()" title="Tocá para editar la ficha del cliente"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div class="cli-datos"><b id="v-cli-nombre"></b><div class="mini" id="v-cli-det"></div><div class="mini" id="v-cli-arca"></div></div>
               <label class="mini cli-chk" id="v-cli-anombre-lb" style="display:none" onclick="event.stopPropagation()" title="Solo si el cliente pide la factura con sus datos"><input type="checkbox" id="v-cli-anombre" onchange="T.cliente.facturar_a_nombre=this.checked;vRender()"> a su nombre</label>
-              <button class="btn ico chico" onclick="event.stopPropagation();quitarCliente()" title="Sacar el cliente del ticket" aria-label="Sacar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+              <button class="btn ico chico cli-x" onclick="event.stopPropagation();quitarCliente()" title="Sacar el cliente del ticket" aria-label="Sacar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
             <div id="v-cli-sug" class="cl-res sug" style="display:none"></div>
           </div>
           <div class="cli-mail" id="v-cli-mail" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="v-mail" type="email" placeholder="Mail del cliente · acá se manda la factura" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();mailGuardar()}" onblur="mailGuardar()"><span class="mini" id="v-mail-st"></span></div>
@@ -1060,12 +1061,11 @@ function vFicha(sku) {
       <div class="pf-sku">${esc(a.sku)}</div>
       <div class="pf-desc">${esc(a.descripcion)}</div>
       ${a.descripcion_adicional ? `<div class="mini">${esc(a.descripcion_adicional)}</div>` : ''}
-      <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')} <a href="#" class="pf-link" onclick="prodFicha('${esc(a.sku)}');return false" title="Abrir la ficha completa del módulo Productos (también con doble clic)">Ficha completa ›</a> <a href="#" class="pf-link" onclick="etAgregar('${esc(a.sku)}');switchTab('etiquetas');return false" title="Sumar a la cola de etiquetas">Etiquetas ›</a></div>
+      <div class="mini pf-extra">${[a.material ? 'Material: ' + esc(a.material) : '', a.proveedor ? 'Proveedor: ' + esc(a.proveedor) : ''].filter(Boolean).join(' · ')} <a href="#" class="pf-link" onclick="prodFicha('${esc(a.sku)}');return false" title="Abrir la ficha completa del módulo Productos (también con doble clic)">Ficha completa ›</a> <a href="#" class="pf-link" onclick="etAgregar('${esc(a.sku)}');switchTab('etiquetas');return false" title="Sumar a la cola de etiquetas">Etiquetas ›</a> <a href="#" class="pf-link" onclick="vHistorialTodo('${esc(a.sku)}');return false" title="Ver los movimientos de stock de este artículo en el local">Movimientos ›</a></div>
       <div class="pf-stock" id="pf-stock"><span class="${a.stock <= 0 ? 'sin' : ''}">${esc(LOCALES[LOCAL])}: <b>${Number(a.stock)}</b></span></div>
       <div class="pf-pie"><span class="pf-pre">${plata(a.precio)}</span><button class="pf-mas" onclick="vAgregar('${esc(a.sku)}')" title="Agregar al ticket" aria-label="Agregar al ticket">+</button></div>
-      <div class="pf-hist" id="pf-hist"></div>
     </div>`;
-  vStockOtros(a.sku); vHistorial(a.sku);
+  vStockOtros(a.sku);
 }
 // Doble clic sobre un producto (JP 6-nov): la ficha completa del módulo Productos en una subventana (misma sesión).
 // El doble clic sobre la lista también dispara dos clics simples (dos unidades al ticket): se deshacen.
@@ -1894,6 +1894,8 @@ function usarCliente(c) {
 }
 function quitarCliente() { T.cliente = null; if (T.tipo === 'FC' && T.letra === 'A') vTipo('FC', 'B'); vRender(); document.getElementById('v-cli-doc').focus(); }
 // Desplegable con las 5 coincidencias mientras escribe (JP 6-nov): nombre, DNI o CUIT; Enter toma la primera
+const cuitGuion = d => d.length === 11 ? d.slice(0, 2) + '-' + d.slice(2, 10) + '-' + d.slice(10) : d;
+const cuitFiltro = d => `cuit.ilike.%${d}%` + (d.length === 11 ? `,cuit.ilike.%${cuitGuion(d)}%` : '');
 let _cliSugT, _cliSug = [];
 function cliSugCerrar() { const b = document.getElementById('v-cli-sug'); if (b) { b.style.display = 'none'; b.innerHTML = ''; } _cliSug = []; }
 function cliSugerir() {
@@ -1901,7 +1903,7 @@ function cliSugerir() {
   _cliSugT = setTimeout(async () => {
     const dig = q.replace(/\D/g, ''); const soloNum = dig.length === q.replace(/[\s.-]/g, '').length;
     let qq = sb.from('clientes').select('*').order('ultima_compra_fecha', { ascending: false, nullsFirst: false }).limit(5);
-    qq = soloNum ? qq.or(`dni.ilike.${dig}%,cuit.ilike.%${dig}%`) : qq.ilike('nombre_completo', `%${q}%`);
+    qq = soloNum ? qq.or(`dni.ilike.${dig}%,${cuitFiltro(dig)}`) : qq.ilike('nombre_completo', `%${q}%`);
     const { data } = await qq; if (document.getElementById('v-cli-doc').value.trim() !== q) return;
     _cliSug = data || []; const b = document.getElementById('v-cli-sug'); if (!b) return;
     if (!_cliSug.length) { b.style.display = ''; b.innerHTML = `<div class="mini" style="padding:6px 10px">Ningún cliente con «${esc(q)}»${soloNum && dig.length >= 7 ? ' · Enter para darlo de alta' : ''}</div>`; return; }
@@ -1910,11 +1912,12 @@ function cliSugerir() {
 }
 function cliSugElegir(i) { const c = _cliSug[i]; if (!c) return; document.getElementById('v-cli-doc').value = ''; cliSugCerrar(); usarCliente(c); }
 function cliEnter() { const q = document.getElementById('v-cli-doc').value.trim(); const dig = q.replace(/\D/g, ''); if (_cliSug.length && (dig.length < 7 || !/^[\d.\s-]+$/.test(q))) { cliSugElegir(0); return; } cliSugCerrar(); cliBuscar(); }
+function cfDocLimpio(el) { const d = el.value.replace(/\D/g, ''); el.value = d; const t = document.getElementById('cf-tipo'); if (t && d.length === 11 && [...t.options].some(o => o.value === 'CUIT') && t.value === 'DNI') { t.value = 'CUIT'; t.dispatchEvent(new Event('change')); } }
 async function cliBuscar(txt) {
   const inp = document.getElementById('v-cli-doc'); const s = String(txt ?? inp.value).trim(); if (!s) return; inp.value = '';
   const dni = parseDNI(s); const dig = (dni ? dni.doc : s).replace(/\D/g, '');
   if (dig.length < 7) { toast('Escribí el DNI (7 u 8 dígitos) o el CUIT (11)', 'error'); inp.focus(); return; }
-  const { data, error } = await sb.from('clientes').select('*').or(`dni.eq.${dig},cuit.ilike.%${dig}%`).order('fecha_alta', { ascending: false }).limit(1);
+  const { data, error } = await sb.from('clientes').select('*').or(`dni.eq.${dig},${cuitFiltro(dig)}`).order('fecha_alta', { ascending: false }).limit(1);
   if (error) { toast(error.message, 'error'); return; }
   if (data && data.length) {
     usarCliente(data[0]);
@@ -1951,7 +1954,7 @@ function abrirFichaCliente(c, editar) {
       <div class="fb-sec">Datos</div>
       <div class="fb-g">
         ${f('cf-tipo', 'Documento', `<select id="cf-tipo" onchange="cfCond()"><option${sel('doc_tipo', 'DNI')}>DNI</option><option${sel('doc_tipo', 'CUIT')}>CUIT</option><option${sel('doc_tipo', 'CUIL')}>CUIL</option><option${sel('doc_tipo', 'PAS')}>PAS</option></select>`)}
-        ${f('cf-doc', 'Número <span class="req">*</span>', `<input id="cf-doc" value="${esc(c.doc || c.dni || c.cuit || '')}" inputmode="numeric" onchange="cfPadron();fbResumen()">`)}
+        ${f('cf-doc', 'Número <span class="req">*</span>', `<input id="cf-doc" value="${esc(c.doc || c.dni || c.cuit || '')}" onchange="cfDocLimpio(this);cfPadron();fbResumen()" onpaste="setTimeout(() => { cfDocLimpio(this); cfPadron(); fbResumen(); }, 0)">`)}
         ${f('cf-ap', 'Apellido o razón social <span class="req">*</span>', `<input id="cf-ap" value="${esc(c.apellido || '')}" oninput="fbResumen()">`)}
         ${f('cf-nom', 'Nombre', `<input id="cf-nom" value="${esc(c.nombre || '')}" oninput="fbResumen()">`)}
         ${f('cf-cond', 'Condición IVA', `<select id="cf-cond" onchange="cfCond()">${Object.entries(COND).map(([k, v]) => `<option value="${k}"${(c.cond_iva || 'CF') === k ? ' selected' : ''}>${v}</option>`).join('')}</select>`)}
@@ -2040,7 +2043,7 @@ async function cfPadron() {
 }
 async function guardarFicha(globalid) {
   const g = id => document.getElementById(id).value; const btn = document.getElementById('cf-ok'); btn.disabled = true;
-  const p = { globalid: globalid || null, local: LOCAL, doc_tipo: g('cf-tipo'), doc: g('cf-doc'), cond_iva: g('cf-cond'), apellido: g('cf-ap'), nombre: g('cf-nom'), email: g('cf-email'), celular: g('cf-cel'),
+  const p = { globalid: globalid || null, local: LOCAL, doc_tipo: g('cf-tipo'), doc: g('cf-doc').replace(/\D/g, ''), cond_iva: g('cf-cond'), apellido: g('cf-ap'), nombre: g('cf-nom'), email: g('cf-email'), celular: g('cf-cel'),
     fecha_nacimiento: g('cf-fnac') || null, sexo: g('cf-sexo'), direccion: g('cf-dir'), localidad: g('cf-loc'), provincia: g('cf-prov'), codigo_postal: g('cf-cp') };
   const { data, error } = await sb.rpc('pos_cliente_guardar', { p });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); btn.disabled = false; return; }
@@ -2714,6 +2717,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=48"></script>
+<script src="manual.js?v=49"></script>
 </body>
 </html>
