@@ -1926,7 +1926,7 @@ function vRender() {
       <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? (it.placeholder || 'Importe de la seña') : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
       <td class="num">${it.fijo ? '' : `<input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right">`}</td>
       <td class="num"><b class="${it.descuento_monto > 0 ? 'dto-imp' : it.descuento_pct > 0 ? 'dto-pct' : ''}" title="${it.descuento_monto > 0 ? 'Con descuento en pesos' : it.descuento_pct > 0 ? 'Con descuento en %' : ''}">${plata(lineaBruta(it))}</b></td>
-      <td>${it.fijo ? '' : `<button class="btn ico chico" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
+      <td>${it.fijo && it.sku !== 'CONCEPTO' ? '' : `<button class="btn ico chico cli-x" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
   box.innerHTML += senaHTML() + giftHTML();
   document.getElementById('v-descs').style.display = (T.sena || T.gift) ? 'none' : '';
@@ -2853,6 +2853,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=61"></script>
+<script src="manual.js?v=62"></script>
 </body>
 </html>
