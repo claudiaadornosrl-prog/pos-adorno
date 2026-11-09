@@ -1426,6 +1426,16 @@ async function cargarPedidosLocal() {
 // (JP 9-nov) pedidos y mínimos: solo encargada, cajera o admin, cada una con su usuario (el genérico del local solo mira)
 const puedeMinimos = () => (PERFIL.rol === 'gerente' || PERFIL.rol === 'cajero' || PERFIL.es_admin) && !!PERFIL.empleado_id;
 const puedePedir = puedeMinimos;
+// Autorización para pedidos y mínimos: vale 15 minutos y sirve para varias operaciones seguidas (se guarda 12 min acá).
+// Devuelve 0 si quien está logueada ya tiene rango, el id de la autorización, o null si se canceló / la rechazaron.
+const PD_AUT = {};
+async function pdAut(accion, resumen) {
+  if (puedePedir()) return 0;
+  const c = PD_AUT[accion + ':' + LOCAL]; if (c && Date.now() - c.t < 12 * 60000) return c.id;
+  const aid = await autorizar(accion, resumen); if (!aid) return null;
+  PD_AUT[accion + ':' + LOCAL] = { id: aid, t: Date.now() }; return aid;
+}
+function pdAutFallo(accion, error) { if (/autorizaci/i.test(error.message || '')) delete PD_AUT[accion + ':' + LOCAL]; toast(error.message.replace(/^.*?: /, ''), 'error'); }
 function pdRender() {
   const q = document.getElementById('pd-q').value.trim().toUpperCase(); const box = document.getElementById('pd-lista');
   if (PD.vista === 'falta') {
@@ -1446,7 +1456,7 @@ function pdRender() {
           <td><div class="art">${foto(x.sku, 'chica')}<div><b>${esc(x.sku)}</b><div class="mini">${esc(x.descripcion || '')}${junto.length ? ' · <b>va con ' + esc(junto.join(', ')) + '</b>' + (Number(x.falta) > 0 ? '' : Number(x.minimo) ? ' · este tiene stock' : ' · sin mínimo cargado') : ''}</div></div></div></td>
           <td class="num ${Number(x.stock) < Number(x.minimo) ? 'rojo' : ''}">${Number(x.stock)}</td><td class="pd-otros">${pdOtros(x)}</td><td class="num">${Number(x.transito) || ''}</td><td class="num">${Number(x.pedido) || ''}</td><td class="num">${Number(x.minimo)}</td><td class="num ${Number(x.falta) > 0 ? 'rojo' : ''}">${Number(x.falta)}</td>
           <td class="num"><input value="${Number(x.falta)}" inputmode="numeric" data-sku="${esc(x.sku)}" oninput="this.classList.add('ed')"></td></tr>`; }).join('')).join('') + '</tbody></table>' +
-      '<div class="mini" style="margin-top:6px">Falta = mínimo − stock − en tránsito − ya pedido (nunca menos de 0). «Otras sucursales» muestra cuánto hay del mismo artículo en los otros locales y en el depósito. Lo de Familia García y lo de Espalma se le pide directo al proveedor; lo demás, al depósito de Oficina (ordenado por proveedor). "Pedir" viene con lo que falta y se puede cambiar.' + (puedePedir() ? '' : ' <b>Con este usuario solo se mira: el pedido lo arma la encargada o la cajera con su usuario.</b>') + ' Los artículos que vienen juntos del proveedor (desglose) se muestran juntos aunque a uno solo le falte: al marcar uno se marca el otro con la misma cantidad.</div>';
+      '<div class="mini" style="margin-top:6px">Falta = mínimo − stock − en tránsito − ya pedido (nunca menos de 0). «Otras sucursales» muestra cuánto hay del mismo artículo en los otros locales y en el depósito. Lo de Familia García y lo de Espalma se le pide directo al proveedor; lo demás, al depósito de Oficina (ordenado por proveedor). "Pedir" viene con lo que falta y se puede cambiar.' + (puedePedir() ? '' : ' <b>Con este usuario, al enviar el pedido se le pide autorización al celu de la encargada o la cajera que esté en el local.</b>') + ' Los artículos que vienen juntos del proveedor (desglose) se muestran juntos aunque a uno solo le falte: al marcar uno se marca el otro con la misma cantidad.</div>';
     pdMarcados();
   } else if (PD.vista === 'hechos') {
     let lista = PD.hechos; if (q) lista = lista.filter(p => (p.numero + ' ' + (p.items || []).map(i => i.sku).join(' ') + ' ' + (p.por || '')).toUpperCase().includes(q));
@@ -1470,10 +1480,10 @@ function pdRender() {
     let arts = ARTS.filter(a => !a.discontinuado && q && (a.sku + ' ' + a.descripcion).toUpperCase().includes(q)); const mins = Object.fromEntries(PD.min.map(m => [m.sku, m]));
     if (!q) arts = ARTS.filter(a => mins[a.sku] && !a.discontinuado);   // los discontinuados (tilde importado del Dragon) no se piden
     arts = arts.slice(0, 150);
-    document.getElementById('pd-stat').textContent = (q ? arts.length + ' encontrados' : PD.min.length + ' con mínimo') + (puede ? '' : ' · solo lectura');
-    box.innerHTML = `<div class="mini" style="margin-bottom:8px">${puede ? 'Escribí el mínimo que tiene que haber en ' + esc(LOCALES[LOCAL]) + ' y salí de la casilla: queda guardado con tu nombre. Cero lo saca. Buscá arriba para cargar uno nuevo.' : 'Los mínimos los cargan la encargada o la cajera, cada una con su usuario. Hasta el cierre del año los que no se tocaron vienen del Dragonfish.'}</div>` +
+    document.getElementById('pd-stat').textContent = (q ? arts.length + ' encontrados' : PD.min.length + ' con mínimo') + (puede ? '' : ' · con autorización');
+    box.innerHTML = `<div class="mini" style="margin-bottom:8px">${puede ? 'Escribí el mínimo que tiene que haber en ' + esc(LOCALES[LOCAL]) + ' y salí de la casilla: queda guardado con tu nombre. Cero lo saca. Buscá arriba para cargar uno nuevo.' : 'Escribí el mínimo y salí de la casilla: se le pide autorización al celu de la encargada o la cajera que esté en el local (vale 15 minutos para cargar varios). Hasta el cierre del año los que no se tocaron vienen del Dragonfish.'}</div>` +
       (arts.length ? `<table class="pd-t"><thead><tr><th>Artículo</th><th class="num">Stock</th><th class="num">Mínimo ${esc(LOCALES[LOCAL])}</th><th>Quién · cuándo</th></tr></thead><tbody>` + arts.map(a => { const m = mins[a.sku]; return `<tr><td><div class="art">${foto(a.sku, 'chica')}<div><b>${esc(a.sku)}</b><div class="mini">${esc(a.descripcion)}</div></div></div></td><td class="num ${m && Number(a.stock) < Number(m.minimo) ? 'rojo' : ''}">${Number(a.stock)}</td>
-        <td class="num"><input value="${m ? Number(m.minimo) : ''}" inputmode="numeric" ${puede ? '' : 'disabled'} onchange="pdMinimo('${esc(a.sku)}',this.value,this)"></td><td class="mini">${m ? (m.fuente === 'pos' ? esc(pila(m.actualizado_por)) + ' · ' + fechaAR(String(m.actualizado_at).slice(0, 10)) : 'Dragonfish') : ''}</td></tr>`; }).join('') + '</tbody></table>' : '<div class="empty chico">Buscá un producto para cargarle el mínimo.</div>');
+        <td class="num"><input value="${m ? Number(m.minimo) : ''}" inputmode="numeric" onchange="pdMinimo('${esc(a.sku)}',this.value,this)"></td><td class="mini">${m ? (m.fuente === 'pos' ? esc(pila(m.actualizado_por)) + ' · ' + fechaAR(String(m.actualizado_at).slice(0, 10)) : 'Dragonfish') : ''}</td></tr>`; }).join('') + '</tbody></table>' : '<div class="empty chico">Buscá un producto para cargarle el mínimo.</div>');
   }
 }
 // Desglose: al marcar uno del grupo se marcan los hermanos, y el que venía con 0 toma la cantidad más alta del grupo (vienen juntos)
@@ -1485,14 +1495,14 @@ function pdJunto(cb) {
   for (const c of cbs) { c.checked = true; const i = inp(c); if (!(Math.round(num(i.value)) > 0)) { i.value = max; i.classList.add('ed'); } }
 }
 function pdMarcarTodos() { const cbs = [...document.querySelectorAll('#pd-lista input[type=checkbox]')]; const todos = cbs.length && cbs.every(c => c.checked); cbs.forEach(c => { c.checked = !todos; }); if (!todos) cbs.forEach(pdJunto); pdMarcados(); }
-function pdMarcados() { const n = document.querySelectorAll('#pd-lista input[type=checkbox]:checked').length; const b = document.getElementById('pd-armar'); b.disabled = !n || !puedePedir(); b.title = puedePedir() ? '' : 'Los pedidos los arman la encargada o la cajera, cada una con su usuario'; b.innerHTML = _i('plus') + ' Armar pedido con los marcados' + (n ? ' (' + n + ')' : ''); }
+function pdMarcados() { const n = document.querySelectorAll('#pd-lista input[type=checkbox]:checked').length; const b = document.getElementById('pd-armar'); b.disabled = !n; b.title = puedePedir() ? '' : 'Al enviar el pedido se le pide autorización a la encargada o la cajera'; b.innerHTML = _i('plus') + ' Armar pedido con los marcados' + (n ? ' (' + n + ')' : ''); }
 async function pdMinimo(sku, v, inp) {
-  const { error } = await sb.rpc('pos_minimo_set', { p_local: LOCAL, p_sku: sku, p_minimo: Math.max(0, Math.round(num(v))) });
-  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; } toast('Mínimo guardado', 'success'); cargarPedidosLocal();
+  const aid = await pdAut('minimo', 'Cambiar mínimos de stock en ' + LOCALES[LOCAL] + ' · ' + sku + ' a ' + Math.max(0, Math.round(num(v)))); if (aid === null) { cargarPedidosLocal(); return; }
+  const { error } = await sb.rpc('pos_minimo_set', { p_local: LOCAL, p_sku: sku, p_minimo: Math.max(0, Math.round(num(v))), p_autorizacion_id: aid || null });
+  if (error) { pdAutFallo('minimo', error); cargarPedidosLocal(); return; } toast('Mínimo guardado', 'success'); cargarPedidosLocal();
 }
 // Armar: los marcados, separados por destino (Oficina / Familia García); cada grupo es un pedido
 function pdArmar() {
-  if (!puedePedir()) { toast('Los pedidos los arman la encargada o la cajera, cada una con su usuario', 'error'); return; }
   const marc = [...document.querySelectorAll('#pd-lista input[type=checkbox]:checked')]; if (!marc.length) return;
   const items = marc.map(c => { const inp = document.querySelector(`#pd-lista input[data-sku="${CSS.escape(c.dataset.sku)}"]:not([type=checkbox])`); const x = PD.falta.find(z => z.sku === c.dataset.sku); return { sku: c.dataset.sku, descripcion: x ? x.descripcion : '', cantidad: Math.max(0, Math.round(num(inp ? inp.value : x.falta))) || Number(x.falta) || 1, k: c.dataset.k, deposito: x ? Number(x.deposito) : 0 }; });
   PD.cola = []; for (const k of ['fg', 'espalma', 'oficina']) { const its = items.filter(i => i.k === k); if (its.length) PD.cola.push({ destino: PD_DEST[k], items: its }); }
@@ -1517,9 +1527,11 @@ async function guardarParam(clave, valor) { const { error } = await sb.from('pos
 function pdTextoWA(numero, items, nota) { return `Pedido ${numero} · Claudia Adorno ${LOCALES[LOCAL]}\n` + items.map(i => `• ${i.cantidad} × ${i.sku}${i.descripcion ? ' · ' + tit(i.descripcion) : ''}`).join('\n') + (nota ? `\nNota: ${nota}` : '') + `\nGracias.`; }
 async function pdEnviar() {
   const g = PD.cola[0]; const items = g.items.filter(i => i.cantidad > 0); if (!items.length) { toast('El pedido no tiene cantidades', 'error'); return; }
-  const nota = document.getElementById('pd-nota').value.trim(); document.getElementById('pd-ok').disabled = true;
-  const { data, error } = await sb.rpc('pos_pedido_crear', { p_local: LOCAL, p_destino: g.destino, p_items: items.map(i => ({ sku: i.sku, cantidad: i.cantidad })), p_nota: nota || null });
-  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); document.getElementById('pd-ok').disabled = false; return; }
+  const nota = document.getElementById('pd-nota').value.trim(); g.nota = nota; document.getElementById('pd-ok').disabled = true;
+  // el cartel de autorización reemplaza esta ventana: si se cancela o falla, se vuelve a abrir el pedido como estaba
+  const aid = await pdAut('pedido', 'Pedido a ' + PD_NOM[g.destino] + ' · ' + LOCALES[LOCAL] + ' · ' + items.reduce((s, i) => s + i.cantidad, 0) + ' unidades en ' + items.length + ' artículos'); if (aid === null) { pdModal(); return; }
+  const { data, error } = await sb.rpc('pos_pedido_crear', { p_local: LOCAL, p_destino: g.destino, p_items: items.map(i => ({ sku: i.sku, cantidad: i.cantidad })), p_nota: nota || null, p_autorizacion_id: aid || null });
+  if (error) { pdAutFallo('pedido', error); pdModal(); return; }
   PD.cola.shift(); cerrarModal();
   if (g.destino !== 'oficina') {
     const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoWA(data.numero_fmt, items, nota); window._pdTxt = txt;
@@ -1530,8 +1542,8 @@ async function pdEnviar() {
   } else { toast('Pedido ' + data.numero_fmt + ' a Oficina: ' + data.unidades + ' unidades', 'success'); pdModal(); }
 }
 async function pdWA(id) { const p = PD.hechos.find(x => x.id === id); if (!p) return; const wa = (p.wa_para || '').replace(/\D/g, ''); const txt = pdTextoWA(p.numero, (p.items || []).map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad) })), p.nota); window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(txt), '_blank'); await sb.rpc('pos_pedido_wa', { p_id: id }); cargarPedidosLocal(); }
-async function pdRecibir(id) { if (!confirm('¿Llegó el pedido completo? Queda cerrado como recibido. (El stock entra con la compra o con un movimiento manual.)')) return; const { error } = await sb.rpc('pos_pedido_recibir', { p_id: id }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; } toast('Pedido recibido', 'success'); cargarPedidosLocal(); }
-async function pdCancelar(id) { const m = prompt('Motivo para cancelar el pedido:'); if (m === null) return; const { error } = await sb.rpc('pos_pedido_cancelar', { p_id: id, p_motivo: m }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; } toast('Pedido cancelado', 'success'); cargarPedidosLocal(); }
+async function pdRecibir(id) { if (!confirm('¿Llegó el pedido completo? Queda cerrado como recibido. (El stock entra con la compra o con un movimiento manual.)')) return; const aid = await pdAut('pedido', 'Recibir un pedido en ' + LOCALES[LOCAL]); if (aid === null) return; const { error } = await sb.rpc('pos_pedido_recibir', { p_id: id, p_autorizacion_id: aid || null }); if (error) { pdAutFallo('pedido', error); return; } toast('Pedido recibido', 'success'); cargarPedidosLocal(); }
+async function pdCancelar(id) { const m = prompt('Motivo para cancelar el pedido:'); if (m === null) return; const aid = await pdAut('pedido', 'Cancelar un pedido de ' + LOCALES[LOCAL]); if (aid === null) return; const { error } = await sb.rpc('pos_pedido_cancelar', { p_id: id, p_motivo: m, p_autorizacion_id: aid || null }); if (error) { pdAutFallo('pedido', error); return; } toast('Pedido cancelado', 'success'); cargarPedidosLocal(); }
 // ═══ Etiquetas (JP 6-nov): logo + SKU + QR con el SKU; cola de productos × cantidad; se imprime por el driver de la Zebra ═══
 // Diseño C1 (JP, 30-oct-2026, medido en la ZD220): etiqueta 31,7 × 12,7 mm, 3 bandas, 3,2 mm entre bandas, la 1ª arranca 1,5 mm antes del
 // cabezal → margen 2,5 mm. QR de 7,9 mm (21 módulos a 3 puntos) a la izquierda; SKU grande en negrita y "Claudia Adorno" debajo (Avant Garde).
@@ -2828,6 +2840,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=57"></script>
+<script src="manual.js?v=58"></script>
 </body>
 </html>
