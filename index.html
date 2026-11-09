@@ -499,11 +499,12 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .art { display: flex; align-items: center; gap: 8px; }
 .cli { margin: 10px 0; padding: 8px 10px; border: 2px solid var(--primary); border-radius: 10px; background: var(--primary-bg); color: var(--text); } .cli.con { border: 1px solid var(--border); background: white; }
 .pd-t td.pd-otros { white-space: nowrap; } .pd-t td.pd-otros .chip { margin-right: 3px; }
+.pd-t td.pd-gq { vertical-align: middle; background: #fff7ed; } .pd-t td.pd-gq .mini { margin-top: 2px; }
 .pd-t tr.pd-sub > td { background: var(--gray-light); font-size: 12px; font-weight: 600; color: var(--muted); padding: 5px 10px; text-transform: none; } .pd-t tr.pd-junto > td { background: #fff7ed; } .pd-t tr.pd-junto > td:first-child { box-shadow: inset 4px 0 0 #f59e0b; } .pd-t tr.pd-junto-h > td { background: #ffedd5; color: #9a3412; font-size: 12px; font-weight: 600; padding: 4px 10px; } .pd-t tr.pd-junto-h > td:first-child { box-shadow: inset 4px 0 0 #f59e0b; }
 .cli-sin, .cli-con { display: flex; align-items: center; gap: 8px; } .cli .ico { color: var(--muted); flex: none; }
 .cli-sin input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 16px; font-family: inherit; padding: 4px 0; color: var(--text); }
 .cli-datos { flex: 1; min-width: 0; } .cli-datos .mini { overflow-wrap: anywhere; } .cli-con { cursor: pointer; } .cli-con:hover { background: var(--gray-light); border-radius: 8px; }
-.btn.ico.cli-x { background: #fee2e2 !important; color: #b91c1c !important; border-radius: 999px !important; width: 30px; height: 30px; flex: none; } .btn.ico.cli-x .ico, .btn.ico.cli-x svg { color: #b91c1c !important; stroke: #b91c1c; } .btn.ico.cli-x:hover { background: #fecaca !important; }
+.btn.ico.cli-x { background: none !important; border: none !important; box-shadow: none !important; color: #dc2626 !important; flex: none; padding: 4px; } .btn.ico.cli-x .ico, .btn.ico.cli-x svg { color: #dc2626 !important; stroke: #dc2626 !important; stroke-width: 3.2 !important; width: 20px; height: 20px; } .btn.ico.cli-x:hover svg { stroke: #991b1b !important; }
 .cli-chk { display: flex; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer; }
 .cli-mail { display: flex; align-items: center; gap: 8px; margin: -4px 0 10px; padding: 6px 10px; border: 1px solid #7dd3fc; border-radius: 999px; background: #e0f2fe; color: #0369a1; }
 .cli-mail input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 15px; font-family: inherit; color: var(--text); padding: 2px 0; }
@@ -1456,8 +1457,8 @@ function pdRender() {
           return `${sub ? `<tr class="pd-sub"><td></td><td colspan="8">${esc(tit(pv))} · ${g.items.filter(z => (z.proveedor || 'Sin proveedor cargado').toUpperCase() === pv.toUpperCase()).length} artículos</td></tr>` : ''}${prim ? `<tr class="pd-junto-h"><td></td><td colspan="8">Vienen juntos del proveedor · ${esc(tit(x.grupo))} · miralos como un solo artículo</td></tr>` : ''}<tr class="${junto.length ? 'pd-junto' : ''}"><td><input type="checkbox" data-sku="${esc(x.sku)}" data-k="${g.k}" data-g="${esc(junto.length ? x.grupo : '')}" onchange="pdJunto(this);pdMarcados()"></td>
           <td><div class="art">${foto(x.sku, 'chica')}<div><b>${esc(x.sku)}</b><div class="mini">${esc(x.descripcion || '')}${junto.length ? ' · <b>va con ' + esc(junto.join(', ')) + '</b>' + (Number(x.falta) > 0 ? '' : Number(x.minimo) ? ' · este tiene stock' : ' · sin mínimo cargado') : ''}</div></div></div></td>
           <td class="num ${Number(x.stock) < Number(x.minimo) ? 'rojo' : ''}">${Number(x.stock)}</td><td class="pd-otros">${pdOtros(x)}</td><td class="num">${Number(x.transito) || ''}</td><td class="num">${Number(x.pedido) || ''}</td><td class="num">${Number(x.minimo)}</td><td class="num ${Number(x.falta) > 0 ? 'rojo' : ''}">${Number(x.falta)}</td>
-          <td class="num"><input value="${Number(x.falta)}" inputmode="numeric" data-sku="${esc(x.sku)}" oninput="this.classList.add('ed')"></td></tr>`; }).join('')).join('') + '</tbody></table>' +
-      '<div class="mini" style="margin-top:6px">Falta = mínimo − stock − en tránsito − ya pedido (nunca menos de 0). «Otras sucursales» muestra cuánto hay del mismo artículo en los otros locales y en el depósito. Lo de Familia García y lo de Espalma se le pide directo al proveedor; lo demás, al depósito de Oficina (ordenado por proveedor). "Pedir" viene con lo que falta y se puede cambiar.' + (puedePedir() ? '' : ' <b>Con este usuario, al enviar el pedido se le pide autorización al celu de la encargada o la cajera que esté en el local.</b>') + ' Los artículos que vienen juntos del proveedor (desglose) se muestran juntos aunque a uno solo le falte: al marcar uno se marca el otro con la misma cantidad.</div>';
+          ${junto.length ? (prim ? `<td class="num pd-gq" rowspan="${junto.length + 1}"><input value="${Math.max(...g.items.filter(z => z.grupo === x.grupo).map(z => Number(z.falta)))}" inputmode="numeric" data-gq="${esc(x.grupo)}" title="Cantidad del juego: se pide esta cantidad de cada uno" oninput="this.classList.add('ed')"><div class="mini">de cada uno</div></td>` : '') : `<td class="num"><input value="${Number(x.falta)}" inputmode="numeric" data-sku="${esc(x.sku)}" oninput="this.classList.add('ed')"></td>`}</tr>`; }).join('')).join('') + '</tbody></table>' +
+      '<div class="mini" style="margin-top:6px">Falta = mínimo − stock − en tránsito − ya pedido (nunca menos de 0). «Otras sucursales» muestra cuánto hay del mismo artículo en los otros locales y en el depósito. Lo de Familia García y lo de Espalma se le pide directo al proveedor; lo demás, al depósito de Oficina (ordenado por proveedor). "Pedir" viene con lo que falta y se puede cambiar.' + (puedePedir() ? '' : ' <b>Con este usuario, al enviar el pedido se le pide autorización al celu de la encargada o la cajera que esté en el local.</b>') + ' Los artículos que vienen juntos del proveedor (desglose) se muestran juntos aunque a uno solo le falte: tienen una sola casilla de cantidad para todo el juego, y al marcar uno se marcan todos.</div>';
     pdMarcados();
   } else if (PD.vista === 'hechos') {
     let lista = PD.hechos; if (q) lista = lista.filter(p => (p.numero + ' ' + (p.items || []).map(i => i.sku).join(' ') + ' ' + (p.por || '')).toUpperCase().includes(q));
@@ -1488,12 +1489,10 @@ function pdRender() {
   }
 }
 // Desglose: al marcar uno del grupo se marcan los hermanos, y el que venía con 0 toma la cantidad más alta del grupo (vienen juntos)
-function pdJunto(cb) {
+function pdJunto(cb) {   // el juego se marca y se desmarca entero; la cantidad es una sola para todos (pastilla del grupo)
   const g = cb.dataset.g; if (!g) return;
-  const cbs = [...document.querySelectorAll('#pd-lista input[type=checkbox]')].filter(c => c.dataset.g === g); const inp = c => document.querySelector(`#pd-lista input[data-sku="${CSS.escape(c.dataset.sku)}"]:not([type=checkbox])`);
-  if (!cb.checked) return;
-  const max = Math.max(1, ...cbs.map(c => Math.round(num(inp(c).value)) || 0));
-  for (const c of cbs) { c.checked = true; const i = inp(c); if (!(Math.round(num(i.value)) > 0)) { i.value = max; i.classList.add('ed'); } }
+  for (const c of document.querySelectorAll('#pd-lista input[type=checkbox]')) if (c.dataset.g === g) c.checked = cb.checked;
+  if (cb.checked) { const i = [...document.querySelectorAll('#pd-lista input[data-gq]')].find(z => z.dataset.gq === g); if (i && !(Math.round(num(i.value)) > 0)) { i.value = 1; i.classList.add('ed'); } }
 }
 function pdMarcarTodos() { const cbs = [...document.querySelectorAll('#pd-lista input[type=checkbox]')]; const todos = cbs.length && cbs.every(c => c.checked); cbs.forEach(c => { c.checked = !todos; }); if (!todos) cbs.forEach(pdJunto); pdMarcados(); }
 function pdMarcados() { const n = document.querySelectorAll('#pd-lista input[type=checkbox]:checked').length; const b = document.getElementById('pd-armar'); b.disabled = !n; b.title = puedePedir() ? '' : 'Al enviar el pedido se le pide autorización a la encargada o la cajera'; b.innerHTML = _i('plus') + ' Armar pedido con los marcados' + (n ? ' (' + n + ')' : ''); }
@@ -1505,7 +1504,7 @@ async function pdMinimo(sku, v, inp) {
 // Armar: los marcados, separados por destino (Oficina / Familia García); cada grupo es un pedido
 function pdArmar() {
   const marc = [...document.querySelectorAll('#pd-lista input[type=checkbox]:checked')]; if (!marc.length) return;
-  const items = marc.map(c => { const inp = document.querySelector(`#pd-lista input[data-sku="${CSS.escape(c.dataset.sku)}"]:not([type=checkbox])`); const x = PD.falta.find(z => z.sku === c.dataset.sku); return { sku: c.dataset.sku, descripcion: x ? x.descripcion : '', cantidad: Math.max(0, Math.round(num(inp ? inp.value : x.falta))) || Number(x.falta) || 1, k: c.dataset.k, deposito: x ? Number(x.deposito) : 0 }; });
+  const items = marc.map(c => { const inp = document.querySelector(`#pd-lista input[data-sku="${CSS.escape(c.dataset.sku)}"]:not([type=checkbox])`) || (c.dataset.g ? [...document.querySelectorAll('#pd-lista input[data-gq]')].find(i => i.dataset.gq === c.dataset.g) : null); const x = PD.falta.find(z => z.sku === c.dataset.sku); return { sku: c.dataset.sku, descripcion: x ? x.descripcion : '', cantidad: Math.max(0, Math.round(num(inp ? inp.value : x.falta))) || Number(x.falta) || 1, k: c.dataset.k, deposito: x ? Number(x.deposito) : 0 }; });
   PD.cola = []; for (const k of ['fg', 'espalma', 'oficina']) { const its = items.filter(i => i.k === k); if (its.length) PD.cola.push({ destino: PD_DEST[k], items: its }); }
   pdModal();
 }
@@ -2854,6 +2853,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=60"></script>
+<script src="manual.js?v=61"></script>
 </body>
 </html>
