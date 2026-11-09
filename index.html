@@ -664,7 +664,8 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
               <button class="btn ico chico cli-x" onclick="event.stopPropagation();quitarCliente()" title="Sacar el cliente del ticket" aria-label="Sacar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
             <div id="v-cli-sug" class="cl-res sug" style="display:none"></div>
           </div>
-          <div class="cli-mail" id="v-cli-mail" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="v-mail" type="email" placeholder="Mail del cliente · acá se manda la factura" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();mailGuardar()}" onblur="mailGuardar()"><span class="mini" id="v-mail-st"></span></div>
+          <div class="cli-mail" id="v-cli-nom" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-nom" placeholder="Nombre y apellido del cliente" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();nomGuardar(true)}" onblur="nomGuardar()"><span class="mini" id="v-nom-st"></span></div>
+          <div class="cli-mail" id="v-cli-mail" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="v-mail" type="email" placeholder="Mail del cliente (opcional) · acá se manda la factura" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();mailGuardar()}" onblur="mailGuardar()"><span class="mini" id="v-mail-st"></span></div>
           <div class="renglones" id="v-renglones"><div class="empty chico">Todavía no agregaste nada.</div></div>
           <div class="totales">
             <div class="fila"><span>Subtotal</span><b id="v-subtotal">$ 0</b></div>
@@ -1924,7 +1925,48 @@ async function cliBuscar(txt) {
     if (dni && data[0].email && (!data[0].fecha_nacimiento || !data[0].sexo)) completarFicha(data[0], dni);  // el DNI escaneado completa lo que falte
     return;
   }
-  abrirFichaCliente(Object.assign({ doc: dig, doc_tipo: dig.length === 11 ? 'CUIT' : 'DNI' }, dni || {}), false);
+  if (dig.length === 11) { abrirFichaCliente({ doc: dig, doc_tipo: 'CUIT' }, false); return; }
+  // (JP 9-nov) alta rápida: queda el DNI en el ticket y abajo las casillas de nombre y mail; la ficha completa se abre tocando el cliente
+  T.cliente = { globalid: null, nombre: '', doc_tipo: 'DNI', doc: dig, cond_iva: 'CF', email: null, celular: null, facturar_a_nombre: false, nuevo: true, scan: dni || null }; T.sin_cliente = false;
+  if (T.tipo === 'FC' && T.letra !== 'B') vTipo('FC', 'B');
+  vRender();
+  if (dni && dni.apellido) { document.getElementById('v-nom').value = [dni.nombre, dni.apellido].filter(Boolean).join(' '); T.cliente.partes = { apellido: dni.apellido, nombre: dni.nombre || '' }; await nomGuardar(); document.getElementById('v-q').focus(); }
+  else document.getElementById('v-nom').focus();
+}
+// "Juan Pablo Simonelli" → apellido Simonelli, nombre Juan Pablo. Con coma manda la coma ("Simonelli, Juan Pablo").
+// Partículas pegadas al apellido: de, del, la, las, los, da, di, van, von, mc, san, santa ("María de la Cruz" → apellido "de la Cruz").
+function partirNombre(txt) {
+  const t = String(txt || '').replace(/\s+/g, ' ').trim(); if (!t) return { apellido: '', nombre: '' };
+  if (t.includes(',')) { const [a, ...n] = t.split(','); return { apellido: tit(a.trim()), nombre: tit(n.join(' ').trim()) }; }
+  const p = t.split(' '); if (p.length === 1) return { apellido: tit(p[0]), nombre: '' };
+  let i = p.length - 1; const part = ['de', 'del', 'la', 'las', 'los', 'da', 'di', 'van', 'von', 'mc', 'san', 'santa'];
+  while (i > 1 && part.includes(p[i - 1].toLowerCase())) i--;
+  return { apellido: tit(p.slice(i).join(' ')), nombre: tit(p.slice(0, i).join(' ')) };
+}
+function nomRender() {
+  const c = T.cliente, box = document.getElementById('v-cli-nom'), inp = document.getElementById('v-nom'), st = document.getElementById('v-nom-st'); if (!box) return;
+  const falta = !!c && (!!c.nuevo || !c.nombre);
+  box.style.display = falta ? '' : 'none'; if (!falta) { inp.value = ''; return; }
+  box.classList.add('falta'); st.textContent = 'Cliente nuevo: escribí nombre y apellido';
+  const b = document.getElementById('v-cli-nombre'); if (b && !c.nombre) b.textContent = 'Cliente nuevo';
+}
+let _nomGuardando = false;
+async function nomGuardar(seguir) {
+  const c = T.cliente; if (!c || _nomGuardando) return; const inp = document.getElementById('v-nom'); const v = inp.value.trim(); if (!v) return;
+  const pn = c.partes || partirNombre(v); if (!pn.apellido) return;
+  const mailV = (document.getElementById('v-mail').value || c.email || '').trim().toLowerCase(); const f = c.ficha || {}, sc = c.scan || {};
+  const p = { globalid: c.globalid || null, local: LOCAL, doc_tipo: c.doc_tipo, doc: c.doc, cond_iva: c.cond_iva || 'CF', apellido: pn.apellido, nombre: pn.nombre, email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailV) ? mailV : '', celular: f.celular || c.celular,
+    fecha_nacimiento: f.fecha_nacimiento || sc.fecha_nacimiento || null, sexo: f.sexo || sc.sexo, direccion: f.direccion, localidad: f.localidad, provincia: f.provincia, codigo_postal: f.codigo_postal };
+  _nomGuardando = true; const { data, error } = await sb.rpc('pos_cliente_guardar', { p }); _nomGuardando = false;
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  if (T.cliente !== c) return;
+  const anombre = c.facturar_a_nombre; T.cliente = cliDeFicha(data); T.cliente.facturar_a_nombre = anombre;
+  toast((data.nueva ? 'Cliente dado de alta: ' : 'Guardado: ') + tit(pn.nombre + ' ' + pn.apellido).trim(), 'success'); vRender();
+  if (seguir) document.getElementById(T.cliente.email ? 'v-q' : 'v-mail').focus();
+}
+function clienteListo() {   // antes de emitir: un cliente nuevo necesita al menos el nombre
+  const c = T.cliente; if (!c || !c.nuevo) return true;
+  toast('Falta el nombre del cliente nuevo (o sacalo del ticket con la X)', 'error'); document.getElementById('v-nom').focus(); return false;
 }
 async function completarFicha(c, dni) {
   const { data } = await sb.rpc('pos_cliente_guardar', { p: { globalid: c.globalid, local: LOCAL, doc_tipo: 'DNI', doc: dni.doc, apellido: c.apellido || dni.apellido, nombre: c.nombre || dni.nombre, email: c.email, celular: c.celular, fecha_nacimiento: c.fecha_nacimiento || dni.fecha_nacimiento, sexo: c.sexo || dni.sexo, cond_iva: c.cond_iva || 'CF' } });
@@ -1962,7 +2004,7 @@ function abrirFichaCliente(c, editar) {
       </div>
       <div class="fb-sec">Contacto</div>
       <div class="fb-g">
-        ${f('cf-email', 'Mail <span class="req">*</span>', `<input id="cf-email" type="email" value="${esc(c.email || '')}" autocomplete="off" placeholder="por acá se le manda la factura">`)}
+        ${f('cf-email', 'Mail', `<input id="cf-email" type="email" value="${esc(c.email || '')}" autocomplete="off" placeholder="por acá se le manda la factura">`)}
         ${f('cf-cel', 'Celular (WhatsApp)', `<input id="cf-cel" value="${esc(c.celular || '')}" inputmode="tel" placeholder="11 1234 5678">`)}
         ${f('cf-sexo', 'Sexo', `<select id="cf-sexo"><option value=""></option><option value="Femenino"${sel('sexo', 'Femenino')}>Femenino</option><option value="Masculino"${sel('sexo', 'Masculino')}>Masculino</option><option value="X"${sel('sexo', 'X')}>X</option></select>`)}
       </div>
@@ -2069,15 +2111,17 @@ function elegirDeLista(i) { const c = _clLista[i]; cerrarModal(); if (!(c.dni ||
 function cliPayload() { const c = T.cliente; return c ? { globalid: c.globalid, nombre: c.nombre, doc_tipo: c.doc_tipo, doc: c.doc, cond_iva: c.cond_iva, facturar_a_nombre: !!c.facturar_a_nombre, celular: c.celular || null } : null; }
 // Casilla de mail del cliente (JP: es el dato más importante, por ahí va la factura). Si falta, se carga ahí mismo y se guarda en la ficha.
 function mailRender() {
+  nomRender();
   const c = T.cliente, box = document.getElementById('v-cli-mail'), inp = document.getElementById('v-mail'), st = document.getElementById('v-mail-st');
   box.style.display = c ? '' : 'none'; if (!c) return;
   if (document.activeElement !== inp) inp.value = c.email || '';
-  box.classList.toggle('falta', !c.email); st.textContent = c.email ? '' : 'Falta el mail';
+  box.classList.remove('falta'); st.textContent = c.email ? '' : 'opcional';
 }
 async function mailGuardar() {
   const c = T.cliente; if (!c) return; const inp = document.getElementById('v-mail'); const v = inp.value.trim().toLowerCase();
-  if (v === (c.email || '').toLowerCase()) { mailRender(); return; }
+  if (v === (c.email || '').toLowerCase() || !v) { mailRender(); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { toast('Ese mail no parece válido', 'error'); inp.focus(); return; }
+  if (c.nuevo) { c.email = v; mailRender(); return; }   // cliente nuevo: el mail se guarda junto con el nombre
   // cliente que vino de una factura anterior (NC / presupuesto): no trae la ficha → se busca por su código para guardar igual
   if (!c.ficha && c.globalid) { const { data: fc } = await sb.from('clientes').select('*').eq('globalid', c.globalid).maybeSingle(); if (fc) c.ficha = fc; }
   const f = c.ficha; if (!f) { c.email = v; mailRender(); toast('El cliente no tiene ficha: el mail queda solo para este ticket', 'error'); return; }
@@ -2095,7 +2139,7 @@ function cliRender(t) {
   document.getElementById('v-cli-sin').style.display = c ? 'none' : '';
   document.getElementById('v-cli-con').style.display = c ? '' : 'none';
   if (!c) return;
-  document.getElementById('v-cli-nombre').textContent = c.nombre;
+  document.getElementById('v-cli-nombre').textContent = c.nombre || 'Cliente nuevo';
   document.getElementById('v-cli-det').textContent = [c.doc ? c.doc_tipo + ' ' + c.doc : 'sin documento', COND[c.cond_iva], c.email || '', c.celular ? '📱 ' + c.celular : ''].filter(Boolean).join(' · ');
   // Consumidor final: abajo del tope de ARCA la factura sale sin datos (el cliente queda en nuestra base), salvo que pida "a su nombre"; arriba del tope, identificada sí o sí
   const lb = document.getElementById('v-cli-anombre-lb'), chk = document.getElementById('v-cli-anombre'), arca = document.getElementById('v-cli-arca');
@@ -2340,6 +2384,8 @@ function pRender() {
 }
 function pFalta() { const t = vTotales(); const rows = [...document.querySelectorAll('#v-pagos .medio')]; const vacio = rows.find(r => !num(r.querySelector('.imp').value)); if (!vacio) return; const otros = pPagos().reduce((s, p) => s + p.importe, 0); vacio.querySelector('.imp').value = plata(Math.max(0, r2(t.tot - otros))); pRender(); }
 async function emitir(esNC) {
+  if (T.cliente && T.cliente.nuevo && document.getElementById('v-nom').value.trim()) await nomGuardar();
+  if (!clienteListo()) return;
   const btn = document.getElementById('v-cobrar'); btn.disabled = true;
   const t = vTotales(); let pagos = pPagos();
   { const accion = esNC ? 'nc' : T.tipo === 'RE' ? 're' : (T.tipo === 'MA' && !T.gift) ? 'ma' : null; T.autorizacion_id = undefined;
@@ -2717,6 +2763,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=49"></script>
+<script src="manual.js?v=50"></script>
 </body>
 </html>
