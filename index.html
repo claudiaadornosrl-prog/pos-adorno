@@ -2849,7 +2849,7 @@ async function cargarComprobantes() {
       <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
         ${c.tipo === 'RE' && c.estado === 'emitido' && !c.facturado_en && !c.destino_local ? `<button class="btn ico" onclick="rmFacturar(${c.id})" title="Facturar este remito" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo === 'PR' && c.estado === 'emitido' ? `<button class="btn ico" onclick="prFacturar(${c.id})" title="Facturar este presupuesto" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo !== 'NC' && c.tipo !== 'RE' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && c.cae_estado === 'error' ? `<button class="btn ico" onclick="reintentarCAE(${c.id})" title="Pedir el CAE de nuevo a ARCA" aria-label="Reintentar CAE">${_i('nc')}</button>` : ''}
-        ${puedeAnular && c.estado === 'emitido' ? `<button class="btn ico peligro" onclick="anular(${c.id})" title="Anular" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
+        ${puedeAnular && c.estado === 'emitido' && c.cae_estado !== 'ok' && c.cae_estado !== 'pendiente' ? `<button class="btn ico peligro" onclick="anular(${c.id})" title="Anular" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty">No hay comprobantes en ese rango.</div>';
 }
 async function traerComprobante(id) {
@@ -3054,6 +3054,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=80"></script>
+<script src="manual.js?v=81"></script>
 </body>
 </html>
