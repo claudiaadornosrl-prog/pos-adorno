@@ -492,7 +492,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .pf-izq { flex: none; width: 150px; display: flex; flex-direction: column; gap: 6px; } .pficha .pf-stock { flex-direction: column; gap: 1px 0; margin-top: 0; font-size: 12.5px; line-height: 1.3; overflow: hidden; } .pficha .pf-stock span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pf-txt { height: 118px; overflow: hidden; font-size: 1em; } .pf-txt .pf-sku { font-size: 0.95em; } .pf-txt .pf-desc { font-size: 1.05em; line-height: 1.2; } .pf-txt .pf-adic { font-size: 0.82em; color: var(--muted); margin-top: 2px; }
 .pficha .pf-extra { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-.pficha .pf-pie { flex-wrap: nowrap; } .pficha .pf-pre { white-space: nowrap; overflow: hidden; min-width: 0; }
+.pficha .pf-pie { flex-wrap: nowrap; gap: 12px; } .pficha .pf-pre { white-space: nowrap; overflow: hidden; min-width: 0; flex: 1 1 auto; padding: 0 6px 0 1px; box-sizing: border-box; } .pficha .pf-mas { flex: none; width: 36px; height: 36px; }
 .pf-img { width: 150px; height: 150px; border-radius: 10px; object-fit: contain; background: white; border: 1px solid #e2e8f0; cursor: zoom-in; flex: none; display: block; }
 .pf-datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .pf-sku { font-weight: 700; font-size: 15px; color: var(--primary-dark); } .pf-desc { font-size: 16px; font-weight: 600; }
 .pf-stock { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-top: 4px; } .pf-stock .aca { color: var(--text); } .pf-stock .sin b { color: var(--red); }
@@ -1123,7 +1123,7 @@ function pfAjustar() {
   let f = 1; t.style.fontSize = '';
   while (t.scrollHeight > t.clientHeight + 1 && f > 0.6) { f -= 0.05; t.style.fontSize = f.toFixed(2) + 'em'; }
   const p = document.querySelector('#v-ficha .pf-pre'); if (!p) return; let g = 1; p.style.fontSize = '';
-  while (p.scrollWidth > p.clientWidth + 1 && g > 0.6) { g -= 0.05; p.style.fontSize = (22 * g).toFixed(1) + 'px'; }
+  while (p.scrollWidth > p.clientWidth && g > 0.55) { g -= 0.05; p.style.fontSize = (22 * g).toFixed(1) + 'px'; }
 }
 // Doble clic sobre un producto (JP 6-nov): la ficha completa del módulo Productos en una subventana (misma sesión).
 // El doble clic sobre la lista también dispara dos clics simples (dos unidades al ticket): se deshacen.
