@@ -2959,8 +2959,10 @@ async function caiGuardar(id) {
 }
 // Ajustes: quién tiene la cara registrada en este local
 async function caraAjustes() {
-  const box = document.getElementById('a-caras'); if (!box) return; const eq = (await caraEquipo(true)).filter(e => e.local === LOCAL || e.admin);
-  box.innerHTML = `<div style="margin-bottom:10px"><button class="btn" onclick="caraProbar()">Probar la cámara</button> <span class="mini">Abre la misma ventana que aparece al emitir y dice a quién reconoció, sin emitir nada.</span></div>` + (eq.length ? '<table><tbody>' + eq.map(e => `<tr><td><b>${esc(tit(e.nombre))}</b>${e.local !== LOCAL ? ' <span class="chip gray">admin</span>' : ''}</td><td>${e.cara ? '<span class="chip green">' + (e.caras || []).length + (((e.caras || []).length === 1) ? ' toma' : ' tomas') + '</span> <span class="mini">' + fechaAR(String(e.cara_at).slice(0, 10)) + '</span>' : '<span class="chip gray">Sin registrar</span>'}</td>
+  const box = document.getElementById('a-caras'); if (!box) return; let eq = (await caraEquipo(true)).filter(e => e.local === LOCAL || e.admin);
+  if (PERFIL.es_admin) { const vistos = new Set(eq.map(e => e.empleado_id)); for (const l of Object.keys(LOCALES)) { if (l === LOCAL) continue; const { data } = await sb.rpc('pos_equipo', { p_local: l }); (data || []).filter(e => e.local === l && !vistos.has(e.empleado_id)).forEach(e => { vistos.add(e.empleado_id); eq.push(e); }); } }
+  CARA.aj = eq;
+  box.innerHTML = `<div style="margin-bottom:10px"><button class="btn" onclick="caraProbar()">Probar la cámara</button> <span class="mini">Abre la misma ventana que aparece al emitir y dice a quién reconoció, sin emitir nada.</span></div>` + (eq.length ? '<table><tbody>' + eq.map(e => `<tr><td><b>${esc(tit(e.nombre))}</b>${e.local !== LOCAL ? ' <span class="chip gray">' + (e.admin ? 'admin' : esc(LOCALES[e.local] || e.local)) + '</span>' : ''}</td><td>${e.cara ? '<span class="chip green">' + (e.caras || []).length + (((e.caras || []).length === 1) ? ' toma' : ' tomas') + '</span> <span class="mini">' + fechaAR(String(e.cara_at).slice(0, 10)) + '</span>' : '<span class="chip gray">Sin registrar</span>'}</td>
     <td class="acc"><button class="btn chico${e.cara ? '' : ' primary'}" onclick="caraRegistrar(${e.empleado_id}, false)" title="Tres tomas seguidas: de frente y los dos costados">${(e.caras || []).includes('frente') ? 'Volver a registrar' : 'Registrar cara'}</button><button class="btn chico" onclick="caraRegistrar(${e.empleado_id}, true)" title="Para quien usa lentes: las mismas tres tomas con los lentes puestos">${(e.caras || []).includes('lentes') ? '✔ Uso lentes' : '+ Uso lentes'}</button>${e.cara ? `<button class="btn ico peligro" onclick="caraBorrar(${e.empleado_id})" title="Borrar la cara registrada" aria-label="Borrar">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">No hay empleadas cargadas en este local.</div>');
 }
 async function caraProbar() { const r = await quienEmite(true); if (!r) return; const e = (CARA.equipo || []).find(x => x.empleado_id === r.id); toast(r.modo === 'cara' ? 'La cámara reconoció a ' + pila(e ? e.nombre : '') : 'Elegido a mano: ' + pila(e ? e.nombre : ''), 'success'); }
@@ -2969,7 +2971,7 @@ async function caraProbar() { const r = await quienEmite(true); if (!r) return; 
 const CARA_PASOS = { sin: [['frente', 'Mirá de frente a la cámara'], ['izq', 'Girá un poco la cabeza hacia tu IZQUIERDA'], ['der', 'Ahora girá un poco hacia tu DERECHA']],
                      lentes: [['lentes', 'Con los lentes puestos, mirá de frente'], ['lentes_izq', 'Con lentes: girá un poco hacia tu IZQUIERDA'], ['lentes_der', 'Con lentes: girá un poco hacia tu DERECHA']] };
 async function caraRegistrar(id, conLentes) {
-  const e = (CARA.equipo || []).find(x => x.empleado_id === id); if (!e) return;
+  const e = (CARA.aj || CARA.equipo || []).find(x => x.empleado_id === id); if (!e) return;
   const pasos = CARA_PASOS[conLentes ? 'lentes' : 'sin']; const tomas = []; let k = 0;
   modal(`<div class="m-head"><h3>Cara de ${esc(pila(e.nombre))}${conLentes ? ' · con lentes' : ''}</h3><span class="spacer"></span><button class="btn ico" onclick="caraCamOff();cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="qe-pasos" id="qe-pasos">${pasos.map((p, n) => `<span class="chip gray" data-n="${n}">${n + 1}</span>`).join('')}</div>
@@ -3002,7 +3004,7 @@ async function caraRegistrar(id, conLentes) {
   };
 }
 async function caraBorrar(id) {
-  const e = (CARA.equipo || []).find(x => x.empleado_id === id); if (!e || !await confirmar('¿Borrar la cara registrada de ' + pila(e.nombre) + '? Va a tener que elegir su nombre a mano hasta registrarla de nuevo.')) return;
+  const e = (CARA.aj || CARA.equipo || []).find(x => x.empleado_id === id); if (!e || !await confirmar('¿Borrar la cara registrada de ' + pila(e.nombre) + '? Va a tener que elegir su nombre a mano hasta registrarla de nuevo.')) return;
   const aid = await autorizar('cara', 'Borrar la cara registrada de ' + tit(e.nombre), !PERFIL.empleado_id); if (aid === null) return;
   const { error } = await sb.rpc('pos_cara_borrar', { p_local: LOCAL, p_empleado_id: id, p_autorizacion_id: aid || null });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; } toast('Cara borrada', 'success'); caraAjustes();
@@ -3455,6 +3457,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=109"></script>
+<script src="manual.js?v=110"></script>
 </body>
 </html>
