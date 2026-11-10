@@ -2559,7 +2559,8 @@ function caraDist(a, b) { let t = 0; for (let i = 0; i < 128; i++) { const x = a
 function caraMejor(d, lista) { let m = null; for (const e of lista) { const x = caraDist(d, e.descriptor); if (!m || x < m.dist) m = { e, dist: x }; } return m; }
 // Devuelve { id, modo } ('cara' | 'manual'), { id: null } si quien está logueada ya es una persona, o null si se canceló
 function quienEmite(probar) {
-  if (PERFIL.empleado_id && !probar) return Promise.resolve({ id: null });
+  // usuario personal de una empleada: ya se sabe quién es (se avisa). El genérico del local y los admin pasan por la cámara.
+  if (PERFIL.empleado_id && !PERFIL.es_admin && !probar) { toast('Emite ' + pila(PERFIL.nombre), 'success'); return Promise.resolve({ id: null }); }
   return new Promise(async resolve => {
     let fin = false;
     const cerrar = v => { if (fin) return; fin = true; caraCamOff(); if (document.getElementById('qe-box')) cerrarModal(); resolve(v); };
@@ -3019,6 +3020,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=78"></script>
+<script src="manual.js?v=79"></script>
 </body>
 </html>
