@@ -1876,13 +1876,13 @@ function vPils() {
   const interno = T.tipo === 'MA' || T.tipo === 'PR';
   document.querySelectorAll('#v-tipos .pil, #v-tipos .pil-sep').forEach(b => { b.style.display = T.tipo === 'RE' ? 'none' : ''; b.classList.toggle('on', b.dataset.t === T.tipo || (b.dataset.t === 'PR' && interno)); });
   const chk = document.getElementById('v-chk-pr'); chk.style.display = interno && !T.gift ? '' : 'none'; document.getElementById('v-chk-pr-in').checked = T.tipo === 'PR';
-  document.querySelector('#v-tipos .pil[data-t="PR"]').textContent = T.gift ? 'Gift card' : 'Presupuesto';
+  document.querySelector('#v-tipos .pil[data-t="PR"]').textContent = 'Presupuesto';
   document.querySelector('#v-tipos .pil[data-t="FC"]').textContent = 'Factura' + (T.tipo === 'FC' && T.letra === 'A' ? ' A' : '');
   document.querySelector('#v-tipos .pil[data-t="NC"]').textContent = 'Nota de crédito' + (T.tipo === 'NC' ? (T.letra === 'A' ? ' A' : T.letra === 'X' ? ' manual' : '') : '');
 }
 function vTipo(tipo, letra) {
   const eraNC = T.tipo === 'NC';
-  if (T.gift && tipo !== 'FC' && tipo !== 'MA') { T.gift = null; T.items = T.items.filter(i => i.sku !== 'GIFT'); }
+  if (T.gift && tipo !== 'FC') { toast('La gift card sale siempre con factura: saqué la gift card del ticket', 'error'); T.gift = null; T.items = T.items.filter(i => i.sku !== 'GIFT'); }
   T.tipo = tipo; T.letra = letra;
   vPils();
   const nc = tipo === 'NC';
@@ -2880,6 +2880,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=68"></script>
+<script src="manual.js?v=69"></script>
 </body>
 </html>
