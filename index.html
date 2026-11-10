@@ -2700,13 +2700,13 @@ function quienEmite(probar) {
     modal(`<div class="m-head"><h3>¿Quién emite?</h3><span class="spacer"></span><button class="btn ico" onclick="_qeCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
       <div id="qe-box"><video id="qe-video" autoplay muted playsinline></video><div id="qe-msg">Abriendo la cámara…</div></div>
       <div class="mini" style="margin:10px 0 6px">¿No te reconoce? Elegí tu nombre:</div>
-      <div class="pils qe-pils">${eq.filter(e => e.local === LOCAL).map(e => `<button class="pil" onclick="_qeElegir(${e.empleado_id})">${esc(pila(e.nombre))}</button>`).join('') || '<span class="mini">No hay empleadas cargadas en este local.</span>'}</div>
+      <div class="pils qe-pils">${eq.filter(e => e.local === LOCAL || e.admin).map(e => `<button class="pil" onclick="_qeElegir(${e.empleado_id})">${esc(pila(e.nombre))}${e.admin && e.local !== LOCAL ? ' <span class="mini">admin</span>' : ''}</button>`).join('') || '<span class="mini">No hay empleadas cargadas en este local.</span>'}</div>
       <div class="m-foot"><span class="spacer"></span><button class="btn" onclick="_qeCancelar()">Cancelar</button></div>`);
     const w = setInterval(() => { if (fin) clearInterval(w); else if (!document.getElementById('qe-box')) { clearInterval(w); cerrar(null); } }, 300);   // cerrada con Escape
     const msg = (t, ok) => { const m = document.getElementById('qe-msg'); if (m) { m.textContent = t; m.classList.toggle('ok', !!ok); } };
     const video = document.getElementById('qe-video');
     if (!conCara.length) { video.style.display = 'none'; msg('Todavía nadie registró su cara (Ajustes → Quién emite). Elegí tu nombre.'); return; }
-    try { await Promise.all([caraLib(), caraCam(video)]); } catch (e) { if (!fin) { video.style.display = 'none'; caraCamOff(); msg('No pude usar la cámara de esta computadora. Elegí tu nombre.'); } return; }
+    try { await Promise.all([caraLib(), caraCam(video)]); } catch (e) { if (!fin) { video.style.display = 'none'; caraCamOff(); msg('No pude usar la cámara de esta computadora' + (e && e.name === 'NotAllowedError' ? ' (el navegador no le dio permiso)' : e && e.name === 'NotFoundError' ? ' (no encuentro ninguna cámara)' : e && e.name === 'NotReadableError' ? ' (la está usando otro programa)' : '') + '. Elegí tu nombre.'); } return; }
     if (fin) { caraCamOff(); return; }
     let ult = null, seguidas = 0; msg('Mirá a la cámara…');
     while (!fin && document.getElementById('qe-video')) {
@@ -3273,6 +3273,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=89"></script>
+<script src="manual.js?v=90"></script>
 </body>
 </html>
