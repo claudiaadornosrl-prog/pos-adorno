@@ -472,7 +472,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .pd-prov td { background: #f8fafc; font-weight: 700; } .pd-t td.num input { width: 64px; text-align: right; } .pd-t td.num input.ed { border-color: #7dd3fc; background: var(--primary-bg); } .pd-t .rojo { color: var(--red); font-weight: 700; } .pd-items { margin-top: 6px; } .pd-items td input { width: 64px; text-align: right; }
 .et-wrap { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; align-items: start; } @media (max-width: 900px) { .et-wrap { grid-template-columns: 1fr; } }
 .et-f { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; } .et-f label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 3px; } .et-f input, .et-f select { width: 96px; }
-.et-cola table td.num input { width: 64px; text-align: center; } .mov-f { display: flex; flex-direction: column; gap: 8px; } .mov-f .cli-sin input { width: 100%; } .mov-res { max-height: 180px; overflow: auto; } .mov-res .prod { padding: 4px 6px; } .rec-t td input { width: 70px; text-align: right; } .rec-t td input.dif { border-color: var(--red); background: #fee2e2; }
+.et-cola table td.num input { width: 64px; text-align: center; } .mov-f { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; } .mov-f .cli-sin input { width: 100%; } .mov-f .cli-sin { padding: 8px 14px; border: 1px solid #7dd3fc; border-radius: 999px; background: #e0f2fe; color: #0369a1; } .mov-f .cli-sin input::placeholder { color: #0369a1; opacity: .7; } .mov-lb { font-size: 12px; font-weight: 600; color: #475569; margin: 6px 0 -4px; text-transform: uppercase; letter-spacing: .04em; } .mov-mot { display: flex; flex-wrap: wrap; gap: 6px; } #mov-sel:not(:empty) { padding: 8px 14px; border-radius: 12px; background: #f1f5f9; color: var(--text); font-size: 13px; } .mov-res { max-height: 180px; overflow: auto; } .mov-res .prod { padding: 4px 6px; } .rec-t td input { width: 70px; text-align: right; } .rec-t td input.dif { border-color: var(--red); background: #fee2e2; }
 .pf-hist { margin-top: 6px; border-top: 1px dashed #93c5fd; padding-top: 6px; font-size: 12px; } .pf-hist .t { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 3px; }
 .pf-hist table { width: 100%; border-collapse: collapse; } .pf-hist td { padding: 2px 2px; border-bottom: 1px solid #e3eef5; vertical-align: top; } .pf-hist td.f { white-space: nowrap; color: var(--muted); width: 64px; } .pf-hist td.c { text-align: right; font-weight: 700; width: 36px; white-space: nowrap; }
 .pf-hist .menos { color: var(--red); } .pf-hist .mas { color: #15803d; } .pf-hist a { color: var(--primary-dark); } .pf-hist .ver { display: inline-block; margin-top: 3px; cursor: pointer; color: var(--primary-dark); }
@@ -714,8 +714,8 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
     </section>
     <section id="content-remitos" class="tab-content">
       <div class="filters" id="rm-filtros">
-        <button class="btn primary" id="rm-nuevo" onclick="rmNuevo()" title="Nuevo remito"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Remito</button><button class="btn primary" id="rm-mov-nuevo" onclick="movNuevo()" title="Movimiento manual de stock: entrada, baja o ajuste. Desde el usuario del local pide la autorización de la encargada."><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Movimiento</button>
-        <span class="pils"><button class="pil on" data-f="pend" onclick="rmFiltro('pend')">Sin facturar</button><button class="pil" data-f="tr" onclick="rmFiltro('tr')">En tránsito<span class="badge" id="rm-tr-n" style="display:none"></span></button><button class="pil" data-f="ac" onclick="rmFiltro('ac')" title="Traslados que el destino ya aceptó (entraron al stock)">Aceptados</button><button class="pil" data-f="todos" onclick="rmFiltro('todos')">Todos</button><span class="pil-sep"></span><button class="pil" data-f="mov" onclick="rmFiltro('mov')" title="Entradas, bajas y ajustes de stock hechos a mano (solo encargada)">Movimientos</button></span>
+        <button class="btn primary" id="rm-nuevo" onclick="rmNuevo()" title="Nuevo remito"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Remito</button>
+        <span class="pils"><button class="pil on" data-f="pend" onclick="rmFiltro('pend')">Sin facturar</button><button class="pil" data-f="tr" onclick="rmFiltro('tr')">En tránsito<span class="badge" id="rm-tr-n" style="display:none"></span></button><button class="pil" data-f="ac" onclick="rmFiltro('ac')" title="Traslados que el destino ya aceptó (entraron al stock)">Aceptados</button><button class="pil" data-f="todos" onclick="rmFiltro('todos')">Todos</button><span class="pil-sep"></span><button class="btn primary" id="rm-mov-nuevo" onclick="movNuevo()" title="Movimiento manual de stock: entrada, baja o ajuste. Desde el usuario del local pide la autorización de la encargada."><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Movimiento</button><button class="pil" data-f="mov" onclick="rmFiltro('mov')" title="Entradas, bajas y ajustes de stock hechos a mano (solo encargada)">Movimientos</button></span>
         <label>Buscar <input id="rm-q" placeholder="cliente, número, dirección" oninput="rmDebounce()"></label>
         <span class="stat" id="rm-stat"></span>
       </div>
@@ -1752,29 +1752,39 @@ const MOV_NOM = { alta: 'Entrada', baja: 'Baja', ajuste: 'Ajuste', traslado_entr
 function etDesdeMov(sku, n) { etAgregar(sku, n); switchTab('etiquetas'); }
 async function cargarMovimientos() {
   const q = document.getElementById('rm-q').value.trim().toUpperCase();
-  const { data, error } = await sb.from('stock_movimientos').select('*').eq('local', LOCAL).in('tipo', ['alta', 'baja', 'ajuste', 'inicial', 'compra', 'traslado_entrada']).order('id', { ascending: false }).limit(200);
+  let qm = sb.from('stock_movimientos').select('*').eq('local', LOCAL).in('tipo', ['alta', 'baja', 'ajuste', 'inicial', 'compra', 'traslado_entrada']).order('id', { ascending: false });
+  // con un motivo fijo elegido se trae toda la tirada de ese motivo (hasta 2.000), no solo los últimos 200
+  qm = MOV_FILTRO && MOV_FILTRO !== 'Otro' && MOV_FILTRO !== 'Traslado' ? qm.like('ref', MOV_FILTRO + '%').limit(2000) : qm.limit(MOV_FILTRO ? 1000 : 200);
+  const { data, error } = await qm;
   if (error) { toast(error.message, 'error'); return; }
-  const lista = (data || []).filter(m => !q || (m.sku + ' ' + (m.ref || '') + ' ' + (m.usuario_email || '')).toUpperCase().includes(q));
-  document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' movimiento' : ' movimientos');
-  document.getElementById('rm-lista').innerHTML = (STOCK_FUENTE === 'libro' ? '' : '<div class="mini" style="margin-bottom:8px">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</div>') +
+  const motDe = m => m.tipo === 'traslado_entrada' ? 'Traslado' : (MOV_MOTIVOS.find(t => (m.ref || '') === t || (m.ref || '').startsWith(t + ' · ')) || 'Otro');
+  const lista = (data || []).filter(m => (!q || (m.sku + ' ' + (m.ref || '') + ' ' + (m.usuario_email || '')).toUpperCase().includes(q)) && (!MOV_FILTRO || motDe(m) === MOV_FILTRO));
+  document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' movimiento' : ' movimientos') + (MOV_FILTRO ? ' · ' + lista.reduce((t, m) => t + Number(m.cantidad), 0) + ' unidades netas' : '');
+  document.getElementById('rm-lista').innerHTML = `<div class="pils mov-mot" style="margin-bottom:10px"><span class="mini" style="align-self:center;margin-right:4px">Motivo:</span>${['', ...MOV_MOTIVOS, 'Traslado'].map(t => `<button type="button" class="pil ${MOV_FILTRO === t ? 'on' : ''}" onclick="movFiltrar('${t}')">${t || 'Todos'}</button>`).join('')}</div>` + (STOCK_FUENTE === 'libro' ? '' : '<div class="mini" style="margin-bottom:8px">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</div>') +
     (lista.length ? `<table><thead><tr><th>Cuándo</th><th>Qué</th><th>Artículo</th><th class="num">Cantidad</th><th>Motivo</th><th>Quién</th><th></th></tr></thead><tbody>` +
     lista.map(m => `<tr><td class="mini">${movFecha(m.creado_at)}</td><td>${esc(MOV_NOM[m.tipo] || m.tipo)}</td><td><b>${esc(m.sku)}</b><div class="mini">${esc((ARTS.find(a => a.sku === m.sku) || {}).descripcion || '')}</div></td><td class="num ${Number(m.cantidad) < 0 ? 'rojo' : ''}"><b>${Number(m.cantidad) > 0 ? '+' : ''}${Number(m.cantidad)}</b>${m.detalle ? '<div class="mini">' + esc(m.detalle) + '</div>' : ''}</td><td>${m.tipo === 'traslado_entrada' && m.comprobante_id ? `<a href="#" onclick="verComprobante(${m.comprobante_id});return false">Ver el remito</a>` : esc(m.ref || '')}</td><td class="mini">${esc((m.usuario_email || '').split('@')[0])}</td><td class="acc">${Number(m.cantidad) > 0 ? `<button class="btn ico" onclick="etDesdeMov('${esc(m.sku)}', ${Number(m.cantidad)})" title="Imprimir las etiquetas de este movimiento (${Number(m.cantidad)})" aria-label="Etiquetas">${_i('print')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : `<div class="empty">Todavía no hay movimientos en ${esc(LOCALES[LOCAL])}.</div>`);
 }
-let MOV = { tipo: 'alta', sku: null };
+let MOV = { tipo: 'alta', sku: null }, MOV_FILTRO = '';
+// Motivos fijos (JP 10-nov): así se puede filtrar, por ejemplo, toda la tirada de un inventario
+const MOV_MOTIVOS = ['Inventario', 'Rotura', 'Ingreso de mercadería', 'Muestra', 'Uso interno', 'Regalo o cortesía', 'Devolución a proveedor', 'Faltante', 'Error de carga', 'Otro'];
+function movFiltrar(v) { MOV_FILTRO = v; cargarMovimientos(); }
 function movNuevo(prev) {
   MOV = prev || { tipo: 'alta', sku: null };
   modal(`<div class="m-head"><h3>Movimiento de stock manual · ${esc(LOCALES[LOCAL])}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="mov-f">
-      <div class="pils"><button class="pil on" data-t="alta" onclick="movTipo('alta')">Entrada</button><button class="pil" data-t="baja" onclick="movTipo('baja')">Baja</button><button class="pil" data-t="ajuste" onclick="movTipo('ajuste')">Ajuste a</button></div>
+      <div class="mov-lb">Qué movimiento es</div>
+      <div class="pils" id="mov-tipos"><button class="pil on" data-t="alta" onclick="movTipo('alta')">Entrada</button><button class="pil" data-t="baja" onclick="movTipo('baja')">Baja</button><button class="pil" data-t="ajuste" onclick="movTipo('ajuste')">Ajuste a</button></div>
       <div class="cli-sin">${_i('buscar')}<input id="mov-q" placeholder="Buscá el producto por SKU o descripción, o escaneá" autocomplete="off" oninput="movBuscar()" onkeydown="if(event.key==='Enter'){event.preventDefault();movEnter()}"></div>
       <div class="mov-res prod-lista" id="mov-res"></div>
       <div id="mov-sel" class="mini"></div>
       <div class="cli-sin">${_i('plus')}<input id="mov-cant" placeholder="Cantidad" inputmode="decimal" style="max-width:160px"><span class="mini" id="mov-cant-lb">unidades que entran</span></div>
-      <div class="cli-sin">${_i('ver')}<input id="mov-motivo" placeholder="Motivo (obligatorio): compra, rotura, recuento, muestra…"></div>
+      <div class="mov-lb">Motivo</div>
+      <div class="pils mov-mot" id="mov-mot">${MOV_MOTIVOS.map(t => `<button type="button" class="pil" data-m="${esc(t)}" onclick="movMotivo(this)">${esc(t)}</button>`).join('')}</div>
+      <div class="cli-sin">${_i('edit')}<input id="mov-motivo" placeholder="Detalle (opcional)" autocomplete="off"></div>
     </div>
     <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="mov-ok" onclick="movGuardar()">Guardar</button></div>`);
-  if (prev) { movTipo(prev.tipo); if (prev.sku) movElegir(prev.sku); document.getElementById('mov-cant').value = prev.cant; document.getElementById('mov-motivo').value = prev.motivo; return; }   // vuelve del cartel de autorización como estaba
+  if (prev) { movTipo(prev.tipo); if (prev.sku) movElegir(prev.sku); document.getElementById('mov-cant').value = prev.cant; document.getElementById('mov-motivo').value = prev.det || ''; const bm = [...document.querySelectorAll('#mov-mot .pil')].find(x => x.dataset.m === prev.mot); if (bm) { movMotivo(bm); } return; }   // vuelve del cartel de autorización como estaba
   setTimeout(() => { const q = document.getElementById('mov-q'); if (q) q.focus(); }, 50);
 }
 // Autorización de la encargada para movimientos: una por cada movimiento (JP 10-nov). 0 = ya tiene rango; null = cancelada
@@ -1782,7 +1792,8 @@ async function movAut(resumen) {
   if (puedeRecibir()) return 0;
   return (await autorizar('mov', resumen, true)) || null;
 }
-function movTipo(t) { MOV.tipo = t; document.querySelectorAll('#ov .pils .pil').forEach(b => b.classList.toggle('on', b.dataset.t === t)); document.getElementById('mov-cant-lb').textContent = t === 'alta' ? 'unidades que entran' : t === 'baja' ? 'unidades que salen' : 'stock que tiene que quedar'; }
+function movMotivo(b) { MOV.motivo = b.dataset.m; document.querySelectorAll('#mov-mot .pil').forEach(x => x.classList.toggle('on', x === b)); const d = document.getElementById('mov-motivo'); d.placeholder = MOV.motivo === 'Otro' ? 'Contá cuál es el motivo (obligatorio)' : 'Detalle (opcional)'; d.focus(); }
+function movTipo(t) { MOV.tipo = t; document.querySelectorAll('#mov-tipos .pil').forEach(b => b.classList.toggle('on', b.dataset.t === t)); document.getElementById('mov-cant-lb').textContent = t === 'alta' ? 'unidades que entran' : t === 'baja' ? 'unidades que salen' : 'stock que tiene que quedar'; }
 function movBuscar() {
   const q = document.getElementById('mov-q').value.trim().toUpperCase(); const box = document.getElementById('mov-res');
   if (!q) { box.innerHTML = ''; return; }
@@ -1792,11 +1803,11 @@ function movBuscar() {
 function movEnter() { const q = document.getElementById('mov-q').value.trim().toUpperCase(); const a = ARTS.find(x => x.sku.toUpperCase() === q) || (document.querySelector('#mov-res .prod') ? null : null); if (a) movElegir(a.sku); else { const b = document.querySelector('#mov-res .prod'); if (b) b.click(); } }
 function movElegir(sku) { const a = ARTS.find(x => x.sku === sku); if (!a) return; MOV.sku = sku; document.getElementById('mov-res').innerHTML = ''; document.getElementById('mov-q').value = sku; document.getElementById('mov-sel').innerHTML = `<b>${esc(a.sku)}</b> · ${esc(a.descripcion)} · stock en ${esc(LOCALES[LOCAL])}: <b>${Number(a.stock_fisico != null ? a.stock_fisico : a.stock)}</b>`; document.getElementById('mov-cant').focus(); }
 async function movGuardar() {
-  const cant = num(document.getElementById('mov-cant').value), motivo = document.getElementById('mov-motivo').value.trim();
-  if (!MOV.sku) { toast('Elegí el producto', 'error'); return; } if (!(cant >= 0) || (MOV.tipo !== 'ajuste' && !(cant > 0))) { toast('Poné la cantidad', 'error'); return; } if (!motivo) { toast('Falta el motivo', 'error'); document.getElementById('mov-motivo').focus(); return; }
+  const cant = num(document.getElementById('mov-cant').value), det = document.getElementById('mov-motivo').value.replace(/\s+/g, ' ').trim(), mot = MOV.motivo || '', motivo = mot ? mot + (det ? ' · ' + det : '') : '';
+  if (!MOV.sku) { toast('Elegí el producto', 'error'); return; } if (!(cant >= 0) || (MOV.tipo !== 'ajuste' && !(cant > 0))) { toast('Poné la cantidad', 'error'); return; } if (!mot) { toast('Elegí el motivo', 'error'); return; } if (mot === 'Otro' && !det) { toast('Con «Otro», contá cuál es el motivo', 'error'); document.getElementById('mov-motivo').focus(); return; }
   document.getElementById('mov-ok').disabled = true;
   // el cartel de autorización reemplaza esta ventana: si se cancela o falla, se vuelve a abrir como estaba
-  const prev = { tipo: MOV.tipo, sku: MOV.sku, cant: document.getElementById('mov-cant').value, motivo };
+  const prev = { tipo: MOV.tipo, sku: MOV.sku, cant: document.getElementById('mov-cant').value, motivo, mot, det };
   const aid = await movAut('Movimiento de stock en ' + LOCALES[LOCAL] + ' · ' + MOV_NOM[MOV.tipo] + ' ' + (MOV.tipo === 'ajuste' ? 'a ' : 'de ') + cant + ' × ' + MOV.sku + ' · ' + motivo);
   if (aid === null) { movNuevo(prev); return; }
   const { data, error } = await sb.rpc('stock_movimiento_manual', { p_local: LOCAL, p_sku: prev.sku, p_tipo: prev.tipo, p_cantidad: cant, p_motivo: motivo, p_autorizacion_id: aid || null });
@@ -3326,6 +3337,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=95"></script>
+<script src="manual.js?v=96"></script>
 </body>
 </html>
