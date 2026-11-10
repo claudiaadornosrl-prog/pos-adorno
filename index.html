@@ -665,8 +665,9 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
           </div>
           <div class="rebox" id="v-re" style="display:none">
             <div class="sena-h"><b id="v-re-tit">Remito de venta</b><span class="mini" id="v-re-sub">baja el stock y no cobra · se factura después desde Vender, al cargar el cliente</span></div>
-            <div class="pils re-seg"><button type="button" class="pil on" data-d="cli" onclick="reDestino(null)">A un cliente</button><span class="pil-sep"></span><button type="button" class="pil" data-d="loc" onclick="reDestino('loc')" title="Traslado: baja de este local y queda en tránsito hasta que la encargada del destino la reciba">A otro local</button></div>
+            <div class="pils re-seg"><button type="button" class="pil on" data-d="loc" onclick="reDestino('loc')" title="Traslado: baja de este local y queda en tránsito hasta que la encargada del destino la reciba">A otro local</button><span class="pil-sep"></span><button type="button" class="pil" data-d="prov" onclick="reDestino('prov')" title="Devolver mercadería al proveedor (devolución o mercadería defectuosa): baja el stock">A un proveedor</button><span class="pil-sep"></span><button type="button" class="pil" data-d="cli" onclick="reDestino(null)" title="Entrega a un cliente: baja el stock y se factura después">A un cliente</button></div>
             <div class="cli-sin" id="v-re-loc" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><select id="v-re-dest" onchange="T.re_destino=this.value;vRender()"></select></div>
+            <div class="cli-sin" id="v-re-prov-box" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-re-prov" list="v-re-provs" placeholder="Proveedor: Familia García, Espalma u otro (escribí el nombre)" autocomplete="off" oninput="vRender()"><datalist id="v-re-provs"><option value="Familia García Regueira"><option value="Espalma"></datalist></div>
             <div class="cli-sin" id="v-re-dir-box"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><input id="v-re-dir" placeholder="Dirección de entrega (opcional)" autocomplete="off"></div>
             <div class="cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><input id="v-re-nota" placeholder="Nota para la entrega: horario, portería, quién recibe… (opcional)" autocomplete="off"></div>
           </div>
@@ -1309,13 +1310,14 @@ function reDestino(m) {
   const sel = document.getElementById('v-re-dest');
   if (m === 'loc') { const otros = Object.keys(LOCALES).filter(l => l !== LOCAL); sel.innerHTML = otros.map(l => `<option value="${l}">${esc(LOCALES[l])}</option>`).join(''); T.re_destino = sel.value = (T.re_destino && otros.includes(T.re_destino)) ? T.re_destino : otros[0]; }
   else T.re_destino = null;
-  const tr = !!T.re_destino;
-  document.querySelectorAll('#v-re .re-seg .pil').forEach(b => b.classList.toggle('on', (b.dataset.d === 'loc') === tr));
-  document.getElementById('v-re-loc').style.display = tr ? '' : 'none'; document.getElementById('v-re-dir-box').style.display = tr ? 'none' : '';
-  document.getElementById('v-cli').style.display = tr ? 'none' : ''; if (tr) document.getElementById('v-cli-mail').style.display = 'none';
-  document.getElementById('v-re-tit').textContent = tr ? 'Remito de traslado' : 'Remito de venta';
-  document.getElementById('v-re-sub').textContent = tr ? 'baja del stock de ' + LOCALES[LOCAL] + ' y queda en tránsito: entra al destino cuando la encargada lo recibe · le avisamos al celu' : 'baja el stock y no cobra · se factura después desde Vender, al cargar el cliente';
-  document.getElementById('v-re-nota').placeholder = tr ? 'Nota para el transporte: bultos, camión, quién lleva… (opcional)' : 'Nota para la entrega: horario, portería, quién recibe… (opcional)';
+  T.re_modo = m === 'loc' ? 'loc' : m === 'prov' ? 'prov' : 'cli';
+  const tr = !!T.re_destino, pv = T.re_modo === 'prov';
+  document.querySelectorAll('#v-re .re-seg .pil').forEach(b => b.classList.toggle('on', b.dataset.d === T.re_modo));
+  document.getElementById('v-re-loc').style.display = tr ? '' : 'none'; document.getElementById('v-re-prov-box').style.display = pv ? '' : 'none'; document.getElementById('v-re-dir-box').style.display = tr || pv ? 'none' : '';
+  document.getElementById('v-cli').style.display = tr || pv ? 'none' : ''; if (tr || pv) document.getElementById('v-cli-mail').style.display = 'none';
+  document.getElementById('v-re-tit').textContent = tr ? 'Remito de traslado' : pv ? 'Remito a proveedor' : 'Remito de venta';
+  document.getElementById('v-re-sub').textContent = pv ? 'devolución o mercadería defectuosa · baja del stock de ' + LOCALES[LOCAL] + ' y no cobra' : tr ? 'baja del stock de ' + LOCALES[LOCAL] + ' y queda en tránsito: entra al destino cuando la encargada lo recibe · le avisamos al celu' : 'baja el stock y no cobra · se factura después desde Vender, al cargar el cliente';
+  document.getElementById('v-re-nota').placeholder = pv ? 'Motivo: devolución, mercadería defectuosa, quién la retira…' : tr ? 'Nota para el transporte: bultos, camión, quién lleva… (opcional)' : 'Nota para la entrega: horario, portería, quién recibe… (opcional)';
   document.querySelector('.pos-ticket').classList.toggle('es-tr', tr);
   vRender();
 }
@@ -1880,7 +1882,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main">${(c.es_prueba || (c.preview && MODO === 'prueba')) ? `<div style="${FRANJA_PRUEBA}font-size:9.5pt;padding:2mm 4mm;margin-bottom:4mm">PRUEBA · SIN VALOR FISCAL</div>` : ''}<div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.items = []; T.pend = 0; vPend(); T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.items = []; T.pend = 0; vPend(); T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -1901,7 +1903,7 @@ function vTipo(tipo, letra) {
   document.querySelector('.pagos-tk').style.display = tipo === 'PR' || tipo === 'RE' ? 'none' : '';
   { const eraMA = document.querySelector('.pos-ticket').classList.contains('es-ma'); if ((tipo === 'MA') !== eraMA) { document.getElementById('v-pagos').innerHTML = ''; pAgregar(tipo === 'MA' && !T.gift ? 'efectivo' : undefined); } }
   document.getElementById('v-re').style.display = tipo === 'RE' ? '' : 'none';
-  if (tipo === 'RE') reDestino(T.re_destino ? 'loc' : null); else { T.re_destino = null; document.getElementById('v-cli').style.display = ''; document.querySelector('.pos-ticket').classList.remove('es-tr'); }
+  if (tipo === 'RE') reDestino(T.re_modo === 'prov' ? 'prov' : T.re_modo === 'cli' || (!T.re_modo && T.cliente) ? null : 'loc'); else { T.re_destino = null; T.re_modo = null; document.getElementById('v-cli').style.display = ''; document.querySelector('.pos-ticket').classList.remove('es-tr'); }
   if (tipo !== 'FC' && tipo !== 'MA') { T.remito = null; T.items.forEach(i => delete i.entregado); }
   const tk = document.querySelector('.pos-ticket'); tk.classList.toggle('es-nc', nc); tk.classList.toggle('es-pr', tipo === 'PR'); tk.classList.toggle('es-ma', tipo === 'MA'); tk.classList.toggle('es-re', tipo === 'RE');
   // Cambiar de pastilla NO borra los artículos (JP): solo se limpia lo propio de la nota de crédito
@@ -2318,7 +2320,8 @@ function emitirTicket() {
   const t = vTotales(); if (!T.items.length) return;
   const nc = T.tipo === 'NC';
   const ncLibre = nc && !T.nc_de;   // NC sin factura asociada: se valida como una factura
-  if (T.tipo === 'RE') { if (!T.re_destino && !T.cliente) { toast('El remito necesita el cliente: a quién se le entrega', 'error'); document.getElementById('v-cli-doc').focus(); return; } return emitir(false); }   // remito: sin pagos, baja el stock
+  if (T.tipo === 'RE') { if (T.re_modo === 'prov') { const pi = document.getElementById('v-re-prov'); if (!pi.value.trim()) { toast('Escribí a qué proveedor va el remito', 'error'); pi.focus(); return; } return emitir(false); }
+    if (!T.re_destino && !T.cliente) { toast('El remito necesita el cliente: a quién se le entrega', 'error'); document.getElementById('v-cli-doc').focus(); return; } return emitir(false); }   // remito: sin pagos, baja el stock
   if (T.tipo === 'PR') return emitir(false);   // presupuesto: sin pagos, el cliente es opcional
   if (T.sena) { if (!T.cliente || !T.cliente.doc) { toast('La seña necesita un cliente con DNI o CUIT', 'error'); document.getElementById('v-cli-doc').focus(); return; } if (!T.sena.items.length) { toast('La seña tiene que reservar al menos un artículo', 'error'); return; } if (!(T.items[0].precio_unit > 0)) { toast('Poné el importe de la seña', 'error'); return; } }
   if (!nc && !T.cliente && !T.sin_cliente) {
@@ -2518,7 +2521,7 @@ async function emitir(esNC) {
   const btn = document.getElementById('v-cobrar'); btn.disabled = true;
   const t = vTotales(); let pagos = pPagos();
   { const accion = esNC ? 'nc' : T.tipo === 'RE' ? 're' : (T.tipo === 'MA' && !T.gift) ? 'ma' : null; T.autorizacion_id = undefined;
-    if (accion) { const aid = await autorizar(accion, (esNC ? 'Nota de crédito ' + (T.letra === 'X' ? 'manual' : T.letra) : T.tipo === 'RE' ? (T.re_destino ? 'Remito de traslado a ' + LOCALES[T.re_destino] : 'Remito') : 'Comprobante X') + ' · ' + (T.re_destino ? T.items.reduce((s, i) => s + i.cantidad, 0) + ' unidades' : plata(t.tot)) + (T.cliente && !T.re_destino ? ' · ' + tit(T.cliente.nombre) : ''));
+    if (accion) { const aid = await autorizar(accion, (esNC ? 'Nota de crédito ' + (T.letra === 'X' ? 'manual' : T.letra) : T.tipo === 'RE' ? (T.re_destino ? 'Remito de traslado a ' + LOCALES[T.re_destino] : T.re_modo === 'prov' ? 'Remito a proveedor ' + document.getElementById('v-re-prov').value.trim() : 'Remito') : 'Comprobante X') + ' · ' + (T.re_destino ? T.items.reduce((s, i) => s + i.cantidad, 0) + ' unidades' : plata(t.tot)) + (T.cliente && !T.re_destino && T.re_modo !== 'prov' ? ' · ' + tit(T.cliente.nombre) : ''));
       if (aid === null) { btn.disabled = false; return; } if (aid) T.autorizacion_id = aid; } }
   // Vuelto: si pagó de más en efectivo, el efectivo que queda es total - resto
   const pag = pagos.reduce((s, p) => s + p.importe, 0);
@@ -2527,7 +2530,7 @@ async function emitir(esNC) {
   const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && !(t.tot > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
   const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: document.getElementById('v-obs').value.trim() || null,
-    relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
+    relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? document.getElementById('v-re-nota').value.trim() || null : undefined,
     items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_monto > 0 ? 0 : i.descuento_pct, descuento_monto: i.descuento_monto || 0, iva_pct: 21 })),
     pagos: sinPago() ? [] : pagos };
@@ -2901,6 +2904,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=71"></script>
+<script src="manual.js?v=72"></script>
 </body>
 </html>
