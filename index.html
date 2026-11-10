@@ -1347,7 +1347,7 @@ async function cargarRemitos() {
       <td class="mini">${esc(c.vendedora_nombre || '')}${c.autorizado_por && c.autorizado_modo !== 'propia' ? '<div>autorizó ' + esc(pila(c.autorizado_por)) + ' <span class="chip green">' + c.autorizado_modo + '</span></div>' : ''}</td>
       <td class="num"><b>${plata(c.total)}</b></td>
       <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.destino_local ? trChip(c) : c.fact ? `<span class="chip green">Facturado</span> <a href="#" class="mini" onclick="verComprobante(${c.facturado_en});return false">${TIPO_NOM[c.fact.tipo]} ${c.fact.letra} ${fmtNum(c.fact.punto_venta, c.fact.numero)}</a>` : '<span class="chip amber">Sin facturar</span>'}</td>
-      <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
+      <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button><button class="btn ico" onclick="etDesdeRemito(${c.id})" title="Imprimir las etiquetas de la mercadería de este remito" aria-label="Etiquetas">${_i('print')}</button>${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
         ${c.estado === 'emitido' && !c.facturado_en && !c.destino_local ? `<button class="btn ico" onclick="rmFacturar(${c.id})" title="Facturar este remito" aria-label="Facturar">${_i('cobrar')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && !c.facturado_en && c.transito_estado !== 'recibido' && c.transito_estado !== 'con_diferencia' ? `<button class="btn ico peligro" onclick="anular(${c.id}).then(cargarRemitos)" title="Anular (la mercadería vuelve al stock)" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : `<div class="empty">No hay remitos${RM.filtro === 'pend' ? ' sin facturar' : ''} en ${esc(LOCALES[LOCAL])}.</div>`;
@@ -1379,7 +1379,7 @@ async function cargarTransito() {
       <td>${c.local === LOCAL ? '<b>' + esc(LOCALES[c.local]) + '</b>' : esc(LOCALES[c.local])} → ${c.destino_local === LOCAL ? '<b>' + esc(LOCALES[c.destino_local]) + '</b>' : esc(LOCALES[c.destino_local])}</td>
       <td class="mini">${(dets[c.id] || []).map(d => Number(d.cantidad) + ' × ' + esc(d.sku) + (d.cantidad_recibida != null && Number(d.cantidad_recibida) < Number(d.cantidad) ? ' <span class="chip red">llegaron ' + Number(d.cantidad_recibida) + '</span>' : '')).join(' · ')}${c.entrega_nota ? '<div>«' + esc(c.entrega_nota) + '»</div>' : ''}</td>
       <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : trChip(c)}</td>
-      <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>${c.destino_local === LOCAL && (c.transito_estado === 'recibido' || c.transito_estado === 'con_diferencia') ? `<button class="btn ico" onclick="etDesdeRemito(${c.id})" title="Etiquetar lo recibido" aria-label="Etiquetas">${_i('print')}</button>` : ''}${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
+      <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button><button class="btn ico" onclick="etDesdeRemito(${c.id})" title="Imprimir las etiquetas de la mercadería de este remito" aria-label="Etiquetas">${_i('print')}</button>${c.pdf_url ? `<a class="btn ico" href="${esc(c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}
         ${c.destino_local === LOCAL && c.estado === 'emitido' && c.transito_estado === 'en_transito' ? (puedeRecibir() ? `<button class="btn primary chico" onclick="rmRecibir(${c.id})">Recibir</button>` : '<span class="mini">recibe la encargada</span>') : ''}
         ${puedeAnular && c.local === LOCAL && c.estado === 'emitido' && c.transito_estado === 'en_transito' ? `<button class="btn ico peligro" onclick="anular(${c.id}).then(cargarRemitos)" title="Anular (la mercadería vuelve al stock de ${esc(LOCALES[LOCAL])})" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : `<div class="empty">No hay mercadería en tránsito desde ni hacia ${esc(LOCALES[LOCAL])}.</div>`;
@@ -1687,17 +1687,18 @@ function etImprimir() {
   setTimeout(() => { try { w.focus(); w.print(); } catch (e) { toast('No pude abrir el diálogo de impresión', 'error'); } }, 400);
 }
 // Movimientos manuales (JP 6-nov): entrada, baja o ajuste con motivo; solo encargada/admin con legajo; quedan en el libro con quién y por qué
-const MOV_NOM = { alta: 'Entrada', baja: 'Baja', ajuste: 'Ajuste' };
+const MOV_NOM = { alta: 'Entrada', baja: 'Baja', ajuste: 'Ajuste', traslado_entrada: 'Recibido de un traslado' };
+function etDesdeMov(sku, n) { etAgregar(sku, n); switchTab('etiquetas'); }
 async function cargarMovimientos() {
   const q = document.getElementById('rm-q').value.trim().toUpperCase();
-  const { data, error } = await sb.from('stock_movimientos').select('*').eq('local', LOCAL).in('tipo', ['alta', 'baja', 'ajuste', 'inicial', 'compra']).order('id', { ascending: false }).limit(200);
+  const { data, error } = await sb.from('stock_movimientos').select('*').eq('local', LOCAL).in('tipo', ['alta', 'baja', 'ajuste', 'inicial', 'compra', 'traslado_entrada']).order('id', { ascending: false }).limit(200);
   if (error) { toast(error.message, 'error'); return; }
   const lista = (data || []).filter(m => !q || (m.sku + ' ' + (m.ref || '') + ' ' + (m.usuario_email || '')).toUpperCase().includes(q));
   document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' movimiento' : ' movimientos');
   document.getElementById('rm-lista').innerHTML = `<div style="margin-bottom:10px"><button class="btn primary" onclick="movNuevo()">${_i('plus')} Movimiento manual</button>${puedeRecibir() ? '' : ' <span class="mini">Al guardar se le pide autorización al celu de la encargada.</span>'}${STOCK_FUENTE === 'libro' ? '' : ' <span class="mini">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</span>'}</div>` +
-    (lista.length ? `<table><thead><tr><th>Cuándo</th><th>Qué</th><th>Artículo</th><th class="num">Cantidad</th><th>Motivo</th><th>Quién</th></tr></thead><tbody>` +
-    lista.map(m => `<tr><td class="mini">${movFecha(m.creado_at)}</td><td>${esc(MOV_NOM[m.tipo] || m.tipo)}</td><td><b>${esc(m.sku)}</b><div class="mini">${esc((ARTS.find(a => a.sku === m.sku) || {}).descripcion || '')}</div></td><td class="num ${Number(m.cantidad) < 0 ? 'rojo' : ''}"><b>${Number(m.cantidad) > 0 ? '+' : ''}${Number(m.cantidad)}</b>${m.detalle ? '<div class="mini">' + esc(m.detalle) + '</div>' : ''}</td><td>${esc(m.ref || '')}</td><td class="mini">${esc((m.usuario_email || '').split('@')[0])}</td></tr>`).join('') + '</tbody></table>'
-    : `<div class="empty">Todavía no hay movimientos manuales en ${esc(LOCALES[LOCAL])}.</div>`);
+    (lista.length ? `<table><thead><tr><th>Cuándo</th><th>Qué</th><th>Artículo</th><th class="num">Cantidad</th><th>Motivo</th><th>Quién</th><th></th></tr></thead><tbody>` +
+    lista.map(m => `<tr><td class="mini">${movFecha(m.creado_at)}</td><td>${esc(MOV_NOM[m.tipo] || m.tipo)}</td><td><b>${esc(m.sku)}</b><div class="mini">${esc((ARTS.find(a => a.sku === m.sku) || {}).descripcion || '')}</div></td><td class="num ${Number(m.cantidad) < 0 ? 'rojo' : ''}"><b>${Number(m.cantidad) > 0 ? '+' : ''}${Number(m.cantidad)}</b>${m.detalle ? '<div class="mini">' + esc(m.detalle) + '</div>' : ''}</td><td>${m.tipo === 'traslado_entrada' && m.comprobante_id ? `<a href="#" onclick="verComprobante(${m.comprobante_id});return false">Ver el remito</a>` : esc(m.ref || '')}</td><td class="mini">${esc((m.usuario_email || '').split('@')[0])}</td><td class="acc">${Number(m.cantidad) > 0 ? `<button class="btn ico" onclick="etDesdeMov('${esc(m.sku)}', ${Number(m.cantidad)})" title="Imprimir las etiquetas de este movimiento (${Number(m.cantidad)})" aria-label="Etiquetas">${_i('print')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
+    : `<div class="empty">Todavía no hay movimientos en ${esc(LOCALES[LOCAL])}.</div>`);
 }
 let MOV = { tipo: 'alta', sku: null };
 function movNuevo(prev) {
@@ -3017,6 +3018,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=77"></script>
+<script src="manual.js?v=78"></script>
 </body>
 </html>
