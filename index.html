@@ -1945,7 +1945,7 @@ function a4HTML(x) {
   let side = `<div class="side"><img class="logo${li.logo === 'atelier-logo-der.png' ? ' atelier' : ''}" src="${location.origin + location.pathname.replace(/[^/]*$/, '')}${li.logo || 'logo-ca.png'}" alt="Claudia Adorno"><div class="et">Local</div><b>${esc(LOCALES[c.local] || c.local)}</b><br>${esc(li.domicilio || '')}`;
   if (fiscal) side += `<div class="et">Emisor</div><b>${esc(EMPRESA.razon)}</b><br>CUIT ${EMPRESA.cuit}<br>${esc(EMPRESA.cond)}<br>IIBB ${esc(EMPRESA.iibb)}<br>Inicio de actividades ${esc(EMPRESA.inicio)}`;
   side += `<div class="et">${re ? 'Destino' : 'Cliente'}</div>${cli}`;
-  if (re && (c.entrega_dir || c.entrega_nota)) side += `<div class="et">Entrega</div>${[c.entrega_dir, c.entrega_nota].filter(Boolean).map(esc).join('<br>')}`;
+  if (re) { const nota = String(c.entrega_nota || '').replace(/^Bultos: \d+(?: · )?/, ''); if (c.entrega_dir || nota) side += `<div class="et">${c.entrega_dir ? 'Entrega' : 'Observación'}</div>${[c.entrega_dir, nota].filter(Boolean).map(esc).join('<br>')}`; }
   if (re) side += '<div class="aviso">Remito · no válido como factura</div>';
   if (pagosH) side += `<div class="et">${nc ? 'Devolución' : 'Pagos'}</div>${pagosH}`;
   if (pr) { const v = new Date(d); v.setDate(v.getDate() + 7); side += `<div class="et">Validez</div>7 días · hasta el ${fechaAR(v.toISOString().slice(0, 10))}<br>Precios sujetos a cambio<div class="aviso">Presupuesto · no válido como factura</div>`; }
@@ -1965,6 +1965,7 @@ function a4HTML(x) {
   if (Number(c.sena_monto) > 0) tot = `<div class="fila"><span>Seña a cuenta${x.sena_de ? ' · Factura ' + esc(x.sena_de) : ''}</span><span>- ${plata2(c.sena_monto)}</span></div>` + tot;
   if (Number(c.gift_desc) > 0) tot = `<div class="fila"><span>Gift card ya facturada${c.gift_codigos ? ' · ' + esc(c.gift_codigos) : ''}</span><span>- ${plata2(c.gift_desc)}</span></div>` + tot;
   if (x.sena_items && x.sena_items.length) tot += `<div class="et2" style="margin-top:5mm">Artículos señados</div>${x.sena_items.map(d => `<div class="fila"><span>${Number(d.cantidad)} × ${esc(d.descripcion)}</span><span>${plata2(Number(d.cantidad) * Number(d.precio_unit))}</span></div>`).join('')}<div class="mini">Esta seña se descuenta cuando retirás los artículos. No vence.</div>`;
+  if (re) { const mb = /^Bultos: (\d+)/.exec(c.entrega_nota || ''); const un = det.reduce((t, d) => t + Number(d.cantidad), 0); tot = (mb ? `<div class="fila total"><span>Cantidad de bultos</span><span>${mb[1]}</span></div>` : '') + `<div class="fila"><span>Unidades</span><span>${un}</span></div>` + tot; }
   if (c.obs) tot += `<div class="mini" style="margin-top:3mm">${esc(c.obs)}</div>`;
   const frase = nc ? 'Gracias por tu confianza.' : EMPRESA.frase + (pr ? ' Te esperamos para concretarlo.' : '');
   const wa = (li.wa || '').replace(/[+\s]/g, '');
