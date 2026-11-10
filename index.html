@@ -908,7 +908,17 @@ const sinPago = () => T.tipo === 'PR' || T.tipo === 'RE';
 const fmtNum = (pv, n) => String(pv).padStart(4, '0') + '-' + String(n).padStart(8, '0');
 const num = v => { const n = parseFloat(String(v ?? '').replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')); return isNaN(n) ? 0 : n; };
 // Casillas de plata: muestran "$ 46.000"; al entrar queda el número pelado para editar y al salir se vuelve a formatear
-function dinFoco(el) { el.value = num(el.value) || ''; el.select(); }
+// (JP 9-nov) separador de miles MIENTRAS se escribe en las casillas de plata (.din): 23000 → 23.000; la coma es el decimal
+function dinMiles(v) { let t = String(v || '').replace(/[^\d,]/g, ''); const i = t.indexOf(','); let ent = i < 0 ? t : t.slice(0, i), dec = i < 0 ? null : t.slice(i + 1).replace(/,/g, '').slice(0, 2); ent = ent.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); return dec === null ? ent : (ent || '0') + ',' + dec; }
+document.addEventListener('input', e => {
+  const el = e.target; if (!el || !el.classList || !el.classList.contains('din')) return;
+  const antes = el.value, pos = el.selectionStart == null ? antes.length : el.selectionStart;
+  const utiles = antes.slice(0, pos).replace(/[^\d,]/g, '').length;   // cuántos dígitos/coma había a la izquierda del cursor
+  const nuevo = dinMiles(antes); if (nuevo === antes) return; el.value = nuevo;
+  let p = 0, c = 0; while (p < nuevo.length && c < utiles) { if (/[\d,]/.test(nuevo[p])) c++; p++; }
+  try { el.setSelectionRange(p, p); } catch (_) {}
+}, true);
+function dinFoco(el) { const n = num(el.value); el.value = n ? dinMiles(String(n).replace('.', ',')) : ''; el.select(); }
 function dinBlur(el) { el.value = num(el.value) ? plata(num(el.value)) : ''; }
 const r2 = n => Math.round(n * 100) / 100;
 const fechaAR = s => s ? s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4) : '';
@@ -2870,6 +2880,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=67"></script>
+<script src="manual.js?v=68"></script>
 </body>
 </html>
