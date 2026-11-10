@@ -500,7 +500,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 @media (max-width: 600px) { .pf-img { width: 100px; height: 100px; } .pf-izq { width: 100px; } .pficha { height: 232px; } .pf-txt { height: 104px; } }
 .prod .txt { min-width: 0; display: flex; flex-direction: column; gap: 1px; } .prod .sku { font-weight: 700; font-size: 13px; } .prod .desc { font-size: 12px; line-height: 1.25; } .prod .desc i { color: var(--muted); font-style: normal; }
 .prod .stk { font-size: 12px; color: var(--muted); text-align: right; } .prod .stk.sin { color: var(--red); font-weight: 700; } .prod .pre { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
-.foto { width: 44px; height: 44px; border-radius: 6px; object-fit: contain; background: white; border: 1px solid #e2e8f0; cursor: zoom-in; flex: none; display: block; } .foto.sin { cursor: default; background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f1f5f9 4px, #f1f5f9 8px); } .foto.chica { width: 30px; height: 30px; border-radius: 4px; }
+.foto { width: 44px; height: 44px; border-radius: 6px; object-fit: contain; background: white; border: 1px solid #e2e8f0; cursor: zoom-in; flex: none; display: block; } .foto.sin { cursor: default; background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #f1f5f9 4px, #f1f5f9 8px); } .foto.chica { width: 30px; height: 30px; border-radius: 4px; } .foto.gfm { width: 66px; height: 42px; border: 0; border-radius: 6px; cursor: default; display: flex; align-items: center; justify-content: center; background: linear-gradient(rgba(28,22,18,.9), rgba(28,22,18,.9)), #4A3F35 url('https://cdn.shopify.com/s/files/1/0827/7635/9129/files/mails-fondo-teca.jpg?v=1789414736&width=400') center / cover; box-shadow: 0 1px 4px rgba(0,0,0,.3); } .foto.gfm.chica { width: 48px; height: 30px; border-radius: 5px; } .foto.gfm img { width: 68%; filter: brightness(0) invert(1); display: block; }
 .art { display: flex; align-items: center; gap: 8px; }
 .cli { margin: 10px 0; padding: 8px 10px; border: 2px solid var(--primary); border-radius: 10px; background: var(--primary-bg); color: var(--text); } .cli.con { border: 1px solid var(--border); background: white; }
 .pd-t td.pd-otros { white-space: nowrap; } .pd-t td.pd-otros .chip { margin-right: 3px; }
@@ -544,7 +544,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
 .prod.gf { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; cursor: default; padding: 12px; } .gf-card { flex: none; width: 168px; height: 106px; border-radius: 12px; box-sizing: border-box; padding: 12px 14px; color: #FAF7F2; position: relative; display: flex; flex-direction: column; background: linear-gradient(rgba(28,22,18,.9), rgba(28,22,18,.9)), #4A3F35 url('https://cdn.shopify.com/s/files/1/0827/7635/9129/files/mails-fondo-teca.jpg?v=1789414736&width=400') center / cover; box-shadow: 0 4px 12px rgba(0,0,0,.25); }
 .gf-card img { width: 84px; filter: brightness(0) invert(1); display: block; } .gf-card .gf-t { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: #b8b0a4; margin-top: 4px; } .gf-card .gf-m { margin-top: auto; align-self: flex-end; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; font-weight: 600; line-height: 1; min-height: 22px; }
 .gf-der { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .gf-f { flex: 1 1 100%; display: flex; gap: 8px; align-items: center; } .gf-f input { flex: 1; min-width: 0; font-size: 17px; text-align: right; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: #fff; } .gf-f .btn { flex: none; }
-.prod.sena { border: 2px dashed #1d4ed8; background: #eff6ff; } .prod.gift, .gift-box { border: 2px dashed #0e7490; background: #ecfeff; } .gift-box { margin: 8px 0 4px; padding: 10px 12px; border-radius: 12px; } .gift-box .sena-h b { color: #0e7490; } .gift-f { display: flex; gap: 8px; margin: 6px 0; align-items: center; } .gift-f input:not([type=checkbox]) { flex: 1; min-width: 0; text-align: left; } .code { font-family: ui-monospace, Consolas, monospace; font-weight: 700; letter-spacing: 1px; } .vale-cod { text-align: center; padding: 10px; } .vale-cod .code { font-size: 22px; } .vale-cod img.qr { width: 120px; height: 120px; margin-top: 8px; } .vale-cont { flex: 1; min-width: 180px; } .sena-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; } .chip.blue { background: #dbeafe; color: #1d4ed8; } .stk .res { color: #1d4ed8; font-weight: 700; margin-left: 2px; }
+.prod.sena { border: 2px dashed #1d4ed8; background: #eff6ff; } .prod.gift, .gift-box { border: 2px dashed #0e7490; background: #ecfeff; } .gift-box { margin: 8px 0 4px; padding: 10px 12px; border-radius: 12px; } .gift-box .sena-h b { color: #0e7490; } .gift-f { display: flex; gap: 8px; margin: 6px 0; align-items: center; } .gift-f input:not([type=checkbox]) { flex: 1; min-width: 0; text-align: left; } .code { font-family: ui-monospace, Consolas, monospace; font-weight: 700; letter-spacing: 1px; } .vale-cod { text-align: center; padding: 10px; } .vale-cod .code { font-size: 22px; } .vale-cod img.qr { width: 120px; height: 120px; margin-top: 8px; } .vale-cont { flex: 1; min-width: 180px; } .vale-wa-fila { display: flex; gap: 8px; align-items: center; margin: 0 0 10px; } .vale-wa-fila input { flex: 1; min-width: 0; border-radius: 999px; padding: 9px 16px; border: 1px solid #cbd5e1; font: inherit; box-sizing: border-box; } .sena-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; } .chip.blue { background: #dbeafe; color: #1d4ed8; } .stk .res { color: #1d4ed8; font-weight: 700; margin-left: 2px; }
 .mp-zona { display: flex; align-items: center; gap: 6px; flex-basis: 100%; grid-column: 1 / -1; flex-wrap: wrap; min-width: 0; } .mp-zona .mini { white-space: normal; } .mp-zona .chip { white-space: nowrap; } .mp-zona:empty { display: none; } .mp-btn { white-space: nowrap; } #v-pagos .medio { flex-wrap: wrap; } .pils { display: flex; gap: 8px; flex-wrap: wrap; } .pil { border: 1.5px solid var(--border); background: #fff; border-radius: 999px; padding: 7px 14px; font-weight: 600; cursor: pointer; font-family: inherit; } .pil.on { background: var(--teal, #0e7490); color: #fff; border-color: transparent; }
 .mp-wait { text-align: center; padding: 10px 6px; } .mp-imp { font-size: 30px; font-weight: 700; color: var(--teal, #0e7490); margin: 4px 0; } .spin { width: 46px; height: 46px; border: 5px solid #bae6fd; border-top-color: #0e7490; border-radius: 50%; margin: 6px auto 10px; animation: mpspin 1s linear infinite; } @keyframes mpspin { to { transform: rotate(360deg); } }
 .dto-imp, .dto-pct { border-radius: 999px; padding: 3px 9px; } .dto-imp { background: #e0f2fe; color: #0369a1; }   /* descuento en pesos: celeste */ .dto-pct { background: #1d4ed8; color: white; }   /* descuento en %: azul */ tr.sinstock td:first-child { border-left: 3px solid var(--amber); }
@@ -1051,7 +1051,8 @@ async function cargarArticulos() {
   if (!Object.keys(IMGS).length) { let d2 = 0; for (;;) { const { data } = await sb.from('stock_imagenes').select('sku,url').order('sku').range(d2, d2 + 999); (data || []).forEach(r => { IMGS[r.sku] = r.url; }); if (!data || data.length < 1000) break; d2 += 1000; } }
   document.getElementById('v-stat').textContent = ARTS.length ? ARTS.length.toLocaleString('es-AR') + ' artículos' : '';
 }
-function foto(sku, cls) { const u = IMGS[sku]; return u ? `<img class="foto ${cls || ''}" src="${esc(u)}" alt="" loading="lazy" onclick="event.stopPropagation(); verFoto('${esc(u)}')" title="Ver más grande">` : `<span class="foto sin ${cls || ''}" aria-hidden="true"></span>`; }
+function foto(sku, cls) { if (sku === 'GIFT') return `<span class="foto gfm ${cls || ''}" title="Gift card"><img src="logo-ca.png" alt=""></span>`;   // (JP 10-nov) la tarjetita negra en chiquito
+  const u = IMGS[sku]; return u ? `<img class="foto ${cls || ''}" src="${esc(u)}" alt="" loading="lazy" onclick="event.stopPropagation(); verFoto('${esc(u)}')" title="Ver más grande">` : `<span class="foto sin ${cls || ''}" aria-hidden="true"></span>`; }
 function verFoto(u) { modal(`<div class="m-head"><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div><img src="${esc(u)}" style="max-width:100%;max-height:75vh;display:block;margin:0 auto;border-radius:8px">`); }
 // ═══ Letra A−/A+ del banner (zoom de todas las pestañas) y reparto del ancho en Vender arrastrando la barrita, guardado por dispositivo ═══
 const PANT = Object.assign({ esc: 1, izq: 30 }, JSON.parse(localStorage.getItem('pos_pantalla') || '{}'));
@@ -2415,7 +2416,7 @@ function valeZonas() {
   for (const r of document.querySelectorAll('#v-pagos .medio')) {
     const z = r.querySelector('.mp-zona'); if (!z || r.dataset.m !== 'vale' || T.tipo === 'PR') continue;
     if (T.tipo === 'NC') {   // devolver con vale: nace un vale de cambio por este importe, al emitir
-      if (!z.querySelector('.vale-cont')) { const c = T.cliente || {}; z.innerHTML = `<span class="mini">Al emitir nace un <b>vale de cambio</b> por este importe, sin vencimiento. Se manda a:</span><input class="vale-cont" placeholder="Mail o WhatsApp del cliente" value="${esc(c.email || (c.ficha && (c.ficha.email || c.ficha.celular)) || '')}">`; }
+      if (!z.querySelector('.vale-cont')) { const c = T.cliente || {}; z.innerHTML = `<span class="mini">Al emitir nace un <b>vale de cambio</b> por este importe, sin vencimiento. Se manda por mail y por WhatsApp:</span><input class="vale-cont" type="email" placeholder="Mail del cliente" value="${esc(c.email || (c.ficha && c.ficha.email) || '')}"><input class="vale-cont vale-wa" inputmode="tel" placeholder="WhatsApp: 11 1234 5678" value="${esc(c.celular || (c.ficha && c.ficha.celular) || '')}">`; }
       continue;
     }
     const imp = r.querySelector('.imp');
@@ -2437,16 +2438,25 @@ function valeDesdeEscaneo(cod) {
   row.querySelector('.ref').value = valeNorm(cod); valeConsultar(row);
 }
 // Lo que se muestra apenas nace una gift card o un vale de cambio: el código, el link y por dónde se mandó
-function valeModal(codigo, contacto, data, esNC) {
-  const link = GIFT_URL + codigo; const canal = !contacto ? 'ninguno' : contacto.includes('@') ? 'mail' : contacto.replace(/\D/g, '').length >= 8 ? 'wa' : 'ninguno';
-  let tel = contacto ? contacto.replace(/\D/g, '') : ''; if (tel && !tel.startsWith('54')) tel = '549' + tel.replace(/^0/, '').replace(/^15/, '');
+let _valeTxt = '';
+function valeModal(codigo, contacto, data, esNC, wa) {
+  const link = GIFT_URL + codigo; const mail = contacto && contacto.includes('@') ? contacto : '';
+  const telIni = wa || (contacto && !mail && contacto.replace(/\D/g, '').length >= 8 ? contacto : '');
   const txt = esNC ? `Hola${data.para ? ' ' + data.para : ''}! Te dejamos tu vale de cambio de Claudia Adorno por ${plata(data.importe)}. Código ${codigo}. Lo usás en cualquiera de nuestros locales, sin vencimiento: ${link}`
                    : `Hola${data.para ? ' ' + data.para : ''}! Te llegó un regalo${data.de_parte ? ' de ' + data.de_parte : ''}: una gift card de Claudia Adorno 🎁 Abrila acá: ${link}`;
   modal(`<div class="m-head"><h3>${esNC ? '🎟 Vale de cambio' : '🎁 Gift card'} emitid${esNC ? 'o' : 'a'}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="vale-cod"><div class="code">${esc(codigo)}</div><div class="mini">${plata(data.importe)} · sin vencimiento · se puede usar en varias compras</div><img class="qr" data-qr="${esc(codigo)}" alt="QR"></div>
-    <div class="mini" style="margin:8px 0">${canal === 'mail' ? 'Se manda por mail a <b>' + esc(contacto) + '</b> en un ratito (lo manda el servicio, como las facturas).' : canal === 'wa' ? 'Tocá el botón y se abre WhatsApp con el mensaje listo para <b>' + esc(contacto) + '</b>.' : 'No cargaste mail ni WhatsApp: copiá el link y pasáselo vos, o reenvialo después desde la pestaña Vales.'}</div>
-    <div class="m-foot">${canal === 'wa' ? `<a class="btn primary" href="https://wa.me/${tel}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">Abrir WhatsApp</a>` : ''}<button class="btn" onclick="navigator.clipboard.writeText('${link}').then(() => toast('Link copiado', 'success'))">Copiar el link</button><a class="btn" href="${link}" target="_blank" rel="noopener">Ver la tarjeta</a><button class="btn" onclick="cerrarModal(); verComprobante(${data.id}, true)">Ver el comprobante</button></div>`);
-  pintarQR(document.querySelector('#ov .vale-cod'));
+    <div class="mini" style="margin:8px 0">${mail ? '✉ Sale por mail a <b>' + esc(mail) + '</b> en un ratito (lo manda el servicio, como las facturas).' : 'Sin mail cargado: no sale por mail (se puede reenviar después desde la pestaña Vales).'} Y por WhatsApp: poné el número y tocá «Enviar por WhatsApp»; se abre el chat con el mensaje y el link listos.</div>
+    <div class="vale-wa-fila"><input id="vm-wa" inputmode="tel" autocomplete="off" placeholder="WhatsApp del cliente: 11 1234 5678" value="${esc(telIni)}" onkeydown="if(event.key==='Enter'){event.preventDefault();valeWa()}"><button class="btn primary" onclick="valeWa()">Enviar por WhatsApp</button></div>
+    <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText('${link}').then(() => toast('Link copiado', 'success'))">Copiar el link</button><a class="btn" href="${link}" target="_blank" rel="noopener">Ver la tarjeta</a><button class="btn" onclick="cerrarModal(); verComprobante(${data.id}, true)">Ver el comprobante</button></div>`);
+  _valeTxt = txt; pintarQR(document.querySelector('#ov .vale-cod'));
+  if (!telIni) setTimeout(() => { const i = document.getElementById('vm-wa'); if (i) i.focus(); }, 80);
+}
+function valeWa() {
+  const i = document.getElementById('vm-wa'); let tel = (i.value || '').replace(/\D/g, '');
+  if (tel.length < 8) { toast('Escribí el WhatsApp del cliente', 'error'); i.focus(); return; }
+  if (!tel.startsWith('54')) tel = '549' + tel.replace(/^0/, '').replace(/^15/, '');
+  waAbrir('https://wa.me/' + tel + '?text=' + encodeURIComponent(_valeTxt));
 }
 let _mpPoll = null;
 async function mpCobrar(btn) {
@@ -2513,7 +2523,8 @@ async function emitir(esNC) {
   // Vuelto: si pagó de más en efectivo, el efectivo que queda es total - resto
   const pag = pagos.reduce((s, p) => s + p.importe, 0);
   if (pag > t.tot + 1) { const ef = pagos.find(p => p.medio === 'efectivo') || pagos.find(p => p.medio === 'efectivo_usd'); if (ef) ef.importe = r2(ef.importe - (pag - t.tot)); }
-  const valeCont = esNC ? (document.querySelector('#v-pagos .vale-cont') || {}).value || null : (T.gift ? T.gift.contacto : null);
+  const valeWaN = esNC ? ((document.querySelector('#v-pagos .vale-wa') || {}).value || '').trim() : '';   // el WhatsApp va aparte: el mail lo manda el servicio y el chat se abre acá
+  const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && !(t.tot > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
   const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
@@ -2528,7 +2539,7 @@ async function emitir(esNC) {
   const eraRE = T.tipo === 'RE'; stockAplicarTicket(esNC);
   const giftInfo = T.gift ? { ...T.gift } : null; const ncPara = esNC && T.cliente ? T.cliente.nombre : null; const valeImp = esNC ? (pagos.find(x => x.medio === 'vale') || {}).importe : t.tot;
   vVaciar(); if (eraRE) cargarRemitos();
-  if (data.vale_codigo) valeModal(data.vale_codigo, valeCont, { id: data.id, importe: valeImp, para: giftInfo ? giftInfo.para : ncPara, de_parte: giftInfo ? giftInfo.de_parte : null }, esNC); else verComprobante(data.id, true);
+  if (data.vale_codigo) valeModal(data.vale_codigo, valeCont, { id: data.id, importe: valeImp, para: giftInfo ? giftInfo.para : ncPara, de_parte: giftInfo ? giftInfo.de_parte : null }, esNC, valeWaN); else verComprobante(data.id, true);
 }
 
 // ═══ Vales y gift cards (pestaña) ═══
@@ -2890,6 +2901,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=70"></script>
+<script src="manual.js?v=71"></script>
 </body>
 </html>
