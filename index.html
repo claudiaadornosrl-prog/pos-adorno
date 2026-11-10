@@ -1813,7 +1813,7 @@ function vPreview(modo) {
     <div class="mini" style="text-align:center;margin-bottom:8px">Así va a salir. Todavía no está emitido: no tiene número ni CAE.</div>
     <div id="pv-1" class="tk-wrap">${ticketHTML(x)}</div>
     <div id="pv-2" class="pv-a4" style="display:none"><iframe id="pv-if" title="Hoja A4"></iframe></div>`, 'preview');
-  window._pv = x; pvTab(1);
+  window._pv = x; pvTab(1); pvSoloA4(x);
 }
 // La hoja A4 (595 × 842 px) se escala para que entre entera en la ventana, sin recortes
 function pvEscala() {
@@ -1832,6 +1832,8 @@ function pvTab(n) {
   window._pvTab = n;
   if (n === 2) { const f = document.getElementById('pv-if'); if (!f.dataset.ok) { f.srcdoc = a4HTML(window._pv); f.dataset.ok = 1; } pvEscala(); }
 }
+// El remito no va a la comandera: solo hoja A4 (se esconden las pestañas y abre directo en A4)
+function pvSoloA4(x) { if (!x || !x.c || x.c.tipo !== 'RE') return; const t = document.getElementById('pv-t1'); if (t) t.parentElement.style.display = 'none'; pvTab(2); }
 function pvImprimir() {
   if (window._pvTab === 2) { imprimirA4(window._pv); return; }
   if (window._pv && !window._pv.c.preview && window._pv.c.letra === 'X') { toast('Los comprobantes manuales y presupuestos no se imprimen en la comandera: usá la pestaña Hoja A4', 'error'); return; }
@@ -1868,22 +1870,24 @@ const A4_CSS = `body{margin:0;background:#fff;font-family:'Jost',sans-serif;colo
 const A4_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 function a4HTML(x) {
   const { c, det, pagos, rel } = x; const mp = Object.fromEntries(MEDIOS.map(m => [m.clave, m.nombre]));
-  const fiscal = c.letra !== 'X', A = c.letra === 'A', nc = c.tipo === 'NC', ma = c.tipo === 'MA', pr = c.tipo === 'PR';
+  const fiscal = c.letra !== 'X', A = c.letra === 'A', nc = c.tipo === 'NC', ma = c.tipo === 'MA', pr = c.tipo === 'PR', re = c.tipo === 'RE';
   const li = LOCAL_INFO[c.local] || {}; const f = A ? 1 / 1.21 : 1;
   const d = new Date(c.fecha + 'T00:00:00'); const fechaL = `${d.getDate()} de ${A4_MESES[d.getMonth()]} de ${d.getFullYear()}`;
-  const titulo = ma ? 'Comprobante' : pr ? 'Presupuesto' : (nc ? 'Nota de crédito ' : 'Factura ') + c.letra;
+  const titulo = re ? 'Remito X' : ma ? 'Comprobante' : pr ? 'Presupuesto' : (nc ? 'Nota de crédito ' : 'Factura ') + c.letra;
   const cod = fiscal && c.arca_cbte_tipo ? ` · Cód. ${String(c.arca_cbte_tipo).padStart(3, '0')}` : '';
-  const quien = (pr ? 'Te lo preparó ' : 'Te atendió ') + esc(tit((String(c.vendedora_nombre || '').split(',')[1] || c.vendedora_nombre || '').trim()));
+  const quien = (re ? 'Lo emitió ' : pr ? 'Te lo preparó ' : 'Te atendió ') + esc(tit((String(c.vendedora_nombre || '').split(',')[1] || c.vendedora_nombre || '').trim()));
   const nroTxt = c.preview ? 'Vista previa · sin emitir' : 'N° ' + fmtNum(c.punto_venta, c.numero) + cod;
   const devuelve = nc && rel ? `<br>Devuelve la ${rel.tipo === 'MA' ? 'Comprobante' : 'Factura ' + rel.letra} ${fmtNum(rel.punto_venta, rel.numero)}` : '';
   let cli = `<b>${esc(c.cliente_interno || c.cliente_nombre || 'Consumidor Final')}</b>`;
   if (c.cliente_doc && !ma) { cli += `<br>${esc(c.cliente_doc_tipo || '')} ${esc(c.cliente_doc)}`; if ((c.cliente_cond_iva || 'CF') !== 'CF') cli += `<br>${esc(COND[c.cliente_cond_iva] || '')}`; }
   if (x.email && pr) cli += `<br>${esc(x.email)}`;
-  if (!pr) cli += '<br>Condición de venta: contado';
+  if (!pr && !re) cli += '<br>Condición de venta: contado';
   const pagosH = pagos.map(p => `${esc(mp[p.medio] || p.medio)}${p.detalle && p.detalle.usd ? ' · US$ ' + Number(p.detalle.usd) + ' × ' + plata2(p.detalle.tc) : ''}${p.referencia ? ' · ' + esc(p.referencia) : ''}<br><b>${plata2(p.importe)}</b>`).join('<br>');
   let side = `<div class="side"><img class="logo${li.logo === 'atelier-logo-der.png' ? ' atelier' : ''}" src="${location.origin + location.pathname.replace(/[^/]*$/, '')}${li.logo || 'logo-ca.png'}" alt="Claudia Adorno"><div class="et">Local</div><b>${esc(LOCALES[c.local] || c.local)}</b><br>${esc(li.domicilio || '')}`;
   if (fiscal) side += `<div class="et">Emisor</div><b>${esc(EMPRESA.razon)}</b><br>CUIT ${EMPRESA.cuit}<br>${esc(EMPRESA.cond)}<br>IIBB ${esc(EMPRESA.iibb)}<br>Inicio de actividades ${esc(EMPRESA.inicio)}`;
-  side += `<div class="et">Cliente</div>${cli}`;
+  side += `<div class="et">${re ? 'Destino' : 'Cliente'}</div>${cli}`;
+  if (re && (c.entrega_dir || c.entrega_nota)) side += `<div class="et">Entrega</div>${[c.entrega_dir, c.entrega_nota].filter(Boolean).map(esc).join('<br>')}`;
+  if (re) side += '<div class="aviso">Remito · no válido como factura</div>';
   if (pagosH) side += `<div class="et">${nc ? 'Devolución' : 'Pagos'}</div>${pagosH}`;
   if (pr) { const v = new Date(d); v.setDate(v.getDate() + 7); side += `<div class="et">Validez</div>7 días · hasta el ${fechaAR(v.toISOString().slice(0, 10))}<br>Precios sujetos a cambio<div class="aviso">Presupuesto · no válido como factura</div>`; }
   if (ma) side += '<div class="aviso">Documento no válido como factura</div>';
@@ -1906,7 +1910,7 @@ function a4HTML(x) {
   const frase = nc ? 'Gracias por tu confianza.' : EMPRESA.frase + (pr ? ' Te esperamos para concretarlo.' : '');
   const wa = (li.wa || '').replace(/[+\s]/g, '');
   const contacto = `<div class="frase">${esc(frase)}</div><div class="contacto"><b><a href="https://www.instagram.com/claudiaadornooficial/">@claudiaadornooficial</a> · <a href="https://www.instagram.com/atelier.claudiaadorno/">@atelier.claudiaadorno</a></b><br><a href="https://claudiaadorno.com">claudiaadorno.com</a> · <a href="https://atelierclaudiaadorno.com">atelierclaudiaadorno.com</a><br>${li.mail && li.mail !== 'PENDIENTE' ? `<a href="mailto:${li.mail}">${li.mail}</a> · ` : ''}<a href="mailto:${EMPRESA.mail_admin}">${EMPRESA.mail_admin}</a>${wa ? `<br><a href="https://wa.me/${wa}">WhatsApp ${esc(li.wa)}</a>` : ''}</div>`;
-  let enc = pr ? 'Lo que elegiste' : nc ? 'Lo que devolviste' : 'Lo que te llevaste'; if (A) enc += ' · precios sin IVA';
+  let enc = re ? 'Mercadería del remito' : pr ? 'Lo que elegiste' : nc ? 'Lo que devolviste' : 'Lo que te llevaste'; if (A) enc += ' · precios sin IVA';
   const pags = []; let resto = det.slice(); while (resto.length) { if (resto.length <= 5) { pags.push(resto); resto = []; } else { pags.push(resto.slice(0, 8)); resto = resto.slice(8); } } if (!pags.length) pags.push([]);
   const n = pags.length;
   const hojas = pags.map((pg, i) => { const k = i + 1, ult = k === n;
@@ -3167,7 +3171,7 @@ async function verComprobante(id, recien) {
     <button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div id="pv-1" class="tk-wrap">${ticketHTML(x)}</div>
     <div id="pv-2" class="pv-a4" style="display:none"><iframe id="pv-if" title="Hoja A4"></iframe></div>`, 'preview');
-  window._ultimoTicket = x; window._pv = x; pvTab(1); pintarQR(document.querySelector('#ov .tk-wrap'));
+  window._ultimoTicket = x; window._pv = x; pvTab(1); pintarQR(document.querySelector('#ov .tk-wrap')); pvSoloA4(x);
   if (x.c.letra !== 'X' && x.c.cae_estado === 'pendiente') vigilarCAE(id);
 }
 async function imprimir(id) {
@@ -3273,6 +3277,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=90"></script>
+<script src="manual.js?v=91"></script>
 </body>
 </html>
