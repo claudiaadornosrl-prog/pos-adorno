@@ -477,7 +477,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .pf-hist table { width: 100%; border-collapse: collapse; } .pf-hist td { padding: 2px 2px; border-bottom: 1px solid #e3eef5; vertical-align: top; } .pf-hist td.f { white-space: nowrap; color: var(--muted); width: 64px; } .pf-hist td.c { text-align: right; font-weight: 700; width: 36px; white-space: nowrap; }
 .pf-hist .menos { color: var(--red); } .pf-hist .mas { color: #15803d; } .pf-hist a { color: var(--primary-dark); } .pf-hist .ver { display: inline-block; margin-top: 3px; cursor: pointer; color: var(--primary-dark); }
 .stk .flash { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 700; animation: ap .5s; } @keyframes ap { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
-#rm-filtros .pils { display: inline-flex; gap: 4px; } .btn:not(.ico) > svg.ico { vertical-align: middle; position: relative; top: -1px; } #rm-pos .pos { margin-top: 4px; }
+#rm-filtros .pils { display: inline-flex; gap: 4px; } .btn:not(.ico) > svg.ico { vertical-align: middle; position: relative; top: -1px; } #rm-pos .pos { margin-top: 10px; } .rm-ov { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 400; display: flex; align-items: flex-start; justify-content: center; padding: 3vh 2vw; overflow: auto; } .rm-box { background: var(--bg, #f8fafc); border-radius: 18px; padding: 16px 18px 18px; width: min(1180px, 96vw); box-shadow: 0 20px 60px rgba(0,0,0,.3); } .rm-box .m-head { display: flex; align-items: center; } .rm-box .m-head h3 { margin: 0; }
 .pos-ticket.es-nc .renglones table, .pos-ticket.es-pr .renglones table, .pos-ticket.es-ma .renglones table { background: white; }
 .buscador { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; color: var(--muted); }
 .pos-prod > .buscador { background: #e0f2fe; border-color: #7dd3fc; border-radius: 999px; color: #0369a1; }   /* buscador de productos: celeste, bien diferenciado */
@@ -720,7 +720,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
         <span class="stat" id="rm-stat"></span>
       </div>
       <div id="rm-lista"></div>
-      <div id="rm-pos"></div>
+      <div id="rm-ov" class="rm-ov" style="display:none" onclick="if(event.target===this)cargarRemitos()"><div class="rm-box"><div class="m-head"><h3>Nuevo remito · <span id="rm-ov-loc"></span></h3><span class="spacer"></span><button class="btn ico" onclick="cargarRemitos()" title="Cerrar sin emitir" aria-label="Cerrar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div id="rm-pos"></div></div></div>
     </section>
     <section id="content-caja" class="tab-content">
       <div class="filters">
@@ -1317,9 +1317,9 @@ function rmFiltro(f) { RM.filtro = f; cargarRemitos(); }
 // Las dos ventanas de Vender se mudan a la pestaña Remitos para armar uno (mismo buscador, mismo ticket) y vuelven al salir
 function rmModo(m) {
   const pos = document.getElementById('pos'), rp = document.getElementById('rm-pos'), lista = document.getElementById('rm-lista'), btn = document.getElementById('rm-nuevo'); if (!pos || !rp) return;
-  { const bm = document.getElementById('rm-mov-nuevo'); if (bm) bm.style.display = m === 'nuevo' ? 'none' : ''; }
-  if (m === 'nuevo') { if (pos.parentElement !== rp) rp.appendChild(pos); lista.style.display = 'none'; btn.innerHTML = _i('x') + ' Cancelar'; btn.title = 'Cancelar el remito'; btn.onclick = cargarRemitos; }
-  else { if (pos.parentElement === rp) { document.getElementById('content-vender').appendChild(pos); if (T.tipo === 'RE') vVaciar(); } lista.style.display = ''; btn.innerHTML = _i('plus') + ' Remito'; btn.title = 'Nuevo remito'; btn.onclick = rmNuevo; }
+  const ov = document.getElementById('rm-ov');
+  if (m === 'nuevo') { if (pos.parentElement !== rp) rp.appendChild(pos); document.getElementById('rm-ov-loc').textContent = LOCALES[LOCAL] || ''; ov.style.display = 'flex'; }
+  else { if (pos.parentElement === rp) { document.getElementById('content-vender').appendChild(pos); if (T.tipo === 'RE') vVaciar(); } ov.style.display = 'none'; }
   RM.modo = m;
 }
 function rmNuevo() { rmModo('nuevo'); vVaciar(); vTipo('RE', 'X'); setTimeout(() => document.getElementById('v-cli-doc').focus(), 50); }
@@ -3334,9 +3334,9 @@ async function guardarMP(clave, campo, v) { const { error } = await sb.from('pos
 // ═══ Modal (nunca se cierra clickeando afuera: solo ✕, Cancelar o Escape) ═
 function modal(html, cls) { const ov = document.getElementById('ov'); ov.innerHTML = `<div class="box ${cls || ''}">${html}</div>`; ov.style.display = 'flex'; }
 function cerrarModal() { const ov = document.getElementById('ov'); ov.style.display = 'none'; ov.innerHTML = ''; }
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
+document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=96"></script>
+<script src="manual.js?v=97"></script>
 </body>
 </html>
