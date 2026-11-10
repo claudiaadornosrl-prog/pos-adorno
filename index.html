@@ -1711,12 +1711,10 @@ function movNuevo(prev) {
   if (prev) { movTipo(prev.tipo); if (prev.sku) movElegir(prev.sku); document.getElementById('mov-cant').value = prev.cant; document.getElementById('mov-motivo').value = prev.motivo; return; }   // vuelve del cartel de autorización como estaba
   setTimeout(() => { const q = document.getElementById('mov-q'); if (q) q.focus(); }, 50);
 }
-// Autorización de la encargada para movimientos: vale 15 minutos para varios seguidos (se guarda 12 min acá). 0 = ya tiene rango; null = cancelada
+// Autorización de la encargada para movimientos: una por cada movimiento (JP 10-nov). 0 = ya tiene rango; null = cancelada
 async function movAut(resumen) {
   if (puedeRecibir()) return 0;
-  const k = 'mov:' + LOCAL, c = PD_AUT[k]; if (c && Date.now() - c.t < 12 * 60000) return c.id;
-  const aid = await autorizar('mov', resumen, true); if (!aid) return null;
-  PD_AUT[k] = { id: aid, t: Date.now() }; return aid;
+  return (await autorizar('mov', resumen, true)) || null;
 }
 function movTipo(t) { MOV.tipo = t; document.querySelectorAll('#ov .pils .pil').forEach(b => b.classList.toggle('on', b.dataset.t === t)); document.getElementById('mov-cant-lb').textContent = t === 'alta' ? 'unidades que entran' : t === 'baja' ? 'unidades que salen' : 'stock que tiene que quedar'; }
 function movBuscar() {
@@ -1736,7 +1734,7 @@ async function movGuardar() {
   const aid = await movAut('Movimiento de stock en ' + LOCALES[LOCAL] + ' · ' + MOV_NOM[MOV.tipo] + ' ' + (MOV.tipo === 'ajuste' ? 'a ' : 'de ') + cant + ' × ' + MOV.sku + ' · ' + motivo);
   if (aid === null) { movNuevo(prev); return; }
   const { data, error } = await sb.rpc('stock_movimiento_manual', { p_local: LOCAL, p_sku: prev.sku, p_tipo: prev.tipo, p_cantidad: cant, p_motivo: motivo, p_autorizacion_id: aid || null });
-  if (error) { if (/autorizaci/i.test(error.message || '')) delete PD_AUT['mov:' + LOCAL]; toast(error.message.replace(/^.*?: /, ''), 'error'); if (!document.getElementById('mov-ok')) movNuevo(prev); else document.getElementById('mov-ok').disabled = false; return; }
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); if (!document.getElementById('mov-ok')) movNuevo(prev); else document.getElementById('mov-ok').disabled = false; return; }
   MOV = prev; cerrarModal(); toast(MOV_NOM[MOV.tipo] + ' anotada: ' + (data.delta > 0 ? '+' : '') + data.delta + ' × ' + data.sku, 'success');
   if (STOCK_FUENTE === 'libro') { const a = ARTS.find(z => z.sku === data.sku); if (a) { a.stock_fisico = Number(a.stock_fisico) + Number(data.delta); a.stock = a.stock_fisico - (a.reservado || 0); a.flash = Number(data.delta); delete _fStock[data.sku]; setTimeout(() => { delete a.flash; }, 6000); } }
   cargarMovimientos();
@@ -2921,6 +2919,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=74"></script>
+<script src="manual.js?v=75"></script>
 </body>
 </html>
