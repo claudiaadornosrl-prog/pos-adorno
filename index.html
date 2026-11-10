@@ -2660,7 +2660,7 @@ function quienEmite(probar) {
     let fin = false;
     const cerrar = v => { if (fin) return; fin = true; caraCamOff(); if (document.getElementById('qe-box')) cerrarModal(); resolve(v); };
     window._qeElegir = id => cerrar({ id, modo: 'manual' }); window._qeCancelar = () => cerrar(null);
-    const eq = await caraEquipo(); const conCara = eq.filter(e => e.descriptor);
+    const eq = await caraEquipo(); const conCara = eq.filter(e => e.cara);
     modal(`<div class="m-head"><h3>¿Quién emite?</h3><span class="spacer"></span><button class="btn ico" onclick="_qeCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
       <div id="qe-box"><video id="qe-video" autoplay muted playsinline></video><div id="qe-msg">Abriendo la cámara…</div></div>
       <div class="mini" style="margin:10px 0 6px">¿No te reconoce? Elegí tu nombre:</div>
@@ -2676,9 +2676,10 @@ function quienEmite(probar) {
     while (!fin && document.getElementById('qe-video')) {
       let d = null; try { d = await caraLeer(video); } catch (e) {}
       if (fin) break;
-      if (d) { const m = caraMejor(d, conCara);
-        if (m && m.dist < CARA_UMBRAL) { seguidas = ult === m.e.empleado_id ? seguidas + 1 : 1; ult = m.e.empleado_id;
-          if (seguidas >= 2) { msg('✔ ' + pila(m.e.nombre), true); await _esp(650); cerrar({ id: m.e.empleado_id, modo: 'cara' }); break; } }
+      if (d) { let m = null; try { m = (await sb.rpc('pos_cara_identificar', { p_local: LOCAL, p_descriptor: Array.from(d) })).data; } catch (e) {}
+        if (fin) break;
+        if (m) { seguidas = ult === m.empleado_id ? seguidas + 1 : 1; ult = m.empleado_id;
+          if (seguidas >= 2) { msg('✔ ' + pila(m.nombre), true); await _esp(650); cerrar({ id: m.empleado_id, modo: 'cara' }); break; } }
         else { seguidas = 0; msg('No te reconozco: acercate a la cámara o elegí tu nombre'); } }
       else msg('Mirá a la cámara…');
       await _esp(200);
@@ -2719,8 +2720,8 @@ async function caiGuardar(id) {
 // Ajustes: quién tiene la cara registrada en este local
 async function caraAjustes() {
   const box = document.getElementById('a-caras'); if (!box) return; const eq = (await caraEquipo(true)).filter(e => e.local === LOCAL || e.admin);
-  box.innerHTML = `<div style="margin-bottom:10px"><button class="btn" onclick="caraProbar()">Probar la cámara</button> <span class="mini">Abre la misma ventana que aparece al emitir y dice a quién reconoció, sin emitir nada.</span></div>` + (eq.length ? '<table><tbody>' + eq.map(e => `<tr><td><b>${esc(tit(e.nombre))}</b>${e.local !== LOCAL ? ' <span class="chip gray">admin</span>' : ''}</td><td>${e.descriptor ? '<span class="chip green">Cara registrada</span> <span class="mini">' + fechaAR(String(e.cara_at).slice(0, 10)) + '</span>' : '<span class="chip gray">Sin registrar</span>'}</td>
-    <td class="acc"><button class="btn chico${e.descriptor ? '' : ' primary'}" onclick="caraRegistrar(${e.empleado_id})">${e.descriptor ? 'Volver a registrar' : 'Registrar cara'}</button>${e.descriptor ? `<button class="btn ico peligro" onclick="caraBorrar(${e.empleado_id})" title="Borrar la cara registrada" aria-label="Borrar">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">No hay empleadas cargadas en este local.</div>');
+  box.innerHTML = `<div style="margin-bottom:10px"><button class="btn" onclick="caraProbar()">Probar la cámara</button> <span class="mini">Abre la misma ventana que aparece al emitir y dice a quién reconoció, sin emitir nada.</span></div>` + (eq.length ? '<table><tbody>' + eq.map(e => `<tr><td><b>${esc(tit(e.nombre))}</b>${e.local !== LOCAL ? ' <span class="chip gray">admin</span>' : ''}</td><td>${e.cara ? '<span class="chip green">Cara registrada</span> <span class="mini">' + fechaAR(String(e.cara_at).slice(0, 10)) + '</span>' : '<span class="chip gray">Sin registrar</span>'}</td>
+    <td class="acc"><button class="btn chico${e.cara ? '' : ' primary'}" onclick="caraRegistrar(${e.empleado_id})">${e.cara ? 'Volver a registrar' : 'Registrar cara'}</button>${e.cara ? `<button class="btn ico peligro" onclick="caraBorrar(${e.empleado_id})" title="Borrar la cara registrada" aria-label="Borrar">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">No hay empleadas cargadas en este local.</div>');
 }
 async function caraProbar() { const r = await quienEmite(true); if (!r) return; const e = (CARA.equipo || []).find(x => x.empleado_id === r.id); toast(r.modo === 'cara' ? 'La cámara reconoció a ' + pila(e ? e.nombre : '') : 'Elegido a mano: ' + pila(e ? e.nombre : ''), 'success'); }
 async function caraRegistrar(id) {
@@ -2740,8 +2741,8 @@ async function caraRegistrar(id) {
     if (ds.length < 3) { msg('No llegué a ver bien la cara. Acercate, buscá más luz y probá de nuevo.'); b.disabled = false; return; }
     const prom = Array.from({ length: 128 }, (_, i) => ds.reduce((t, d) => t + d[i], 0) / ds.length);
     if (Math.max(...ds.map(d => caraDist(d, prom))) > 0.35) { msg('Las lecturas salieron muy distintas (¿se movió o había otra persona?). Probá de nuevo.'); b.disabled = false; return; }
-    const otra = caraMejor(prom, (CARA.equipo || []).filter(x => x.descriptor && x.empleado_id !== id));
-    if (otra && otra.dist < CARA_UMBRAL && !confirm('Esta cara se parece mucho a la que ya registró ' + pila(otra.e.nombre) + '. ¿Seguro que es ' + pila(e.nombre) + '?')) { b.disabled = false; return; }
+    let otra = null; try { otra = (await sb.rpc('pos_cara_identificar', { p_local: LOCAL, p_descriptor: prom, p_excluir: id })).data; } catch (x) {}
+    if (otra && !confirm('Esta cara se parece mucho a la que ya registró ' + pila(otra.nombre) + '. ¿Seguro que es ' + pila(e.nombre) + '?')) { b.disabled = false; return; }
     caraCamOff(); cerrarModal();
     const aid = await autorizar('cara', 'Registrar la cara de ' + tit(e.nombre) + ' para saber quién emite en ' + LOCALES[LOCAL], !PERFIL.empleado_id); if (aid === null) return;
     const { error } = await sb.rpc('pos_cara_guardar', { p_local: LOCAL, p_empleado_id: id, p_descriptor: prom, p_autorizacion_id: aid || null });
@@ -2838,8 +2839,49 @@ const pila = n => n ? tit((String(n).split(',')[1] || n).trim()) : '';
 let AUT = null;
 function autorizar(accion, resumen, forzar) {
   if (PERFIL.autoriza && !forzar) return Promise.resolve(0);   // 0 = no hace falta: la que emite ya tiene rango
-  return new Promise(resolve => {
+  return new Promise(async resolve => {
     AUT = { accion, resumen, resolve, id: null, poll: null, fin: false, desde: 0, lista: [] };
+    if (await autCara()) return;   // 1) la cámara: si reconoce a la encargada o la cajera, queda autorizado (o se canceló)
+    autVentana();                  // 2) pedir al celu y 3) usuario y clave
+  });
+}
+// 1) La cámara mira quién está en la caja. La comparación la hace la base (pos_autorizacion_cara): si es alguien con rango, crea la autorización ya aceptada.
+// Devuelve true si el pedido terminó (autorizado o cancelado) y false si hay que seguir por los otros caminos.
+async function autCara() {
+  const A = AUT; let eq = []; try { eq = await caraEquipo(); } catch (e) {}
+  if (AUT !== A || A.fin) return true;
+  if (!eq.some(e => e.cara) || !navigator.mediaDevices) return false;
+  const quien = A.accion === 'mov' ? 'la encargada' : 'la encargada o la cajera';
+  modal(`<div class="m-head"><h3>Autorización · mirá a la cámara</h3><span class="spacer"></span><button class="btn ico" onclick="autCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="mini">${esc(A.resumen)} · pide ${esc(pila(PERFIL.nombre))}</div>
+    <div id="qe-box"><video id="qe-video" autoplay muted playsinline></video><div id="qe-msg">Abriendo la cámara…</div></div>
+    <div class="mini" style="margin-top:8px">Si sos ${quien}, mirá a la cámara: queda autorizado con tu nombre. Si no está en el local, pedíselo al celu.</div>
+    <div class="m-foot"><button class="btn" onclick="autCancelar()">Cancelar</button><span class="spacer"></span><button class="btn" id="aut-otro">Pedir al celu o con clave</button></div>`);
+  let saltar = false; document.getElementById('aut-otro').onclick = () => { saltar = true; };
+  const video = document.getElementById('qe-video');
+  const msg = (t, ok) => { const m = document.getElementById('qe-msg'); if (m) { m.textContent = t; m.classList.toggle('ok', !!ok); } };
+  const sigue = () => AUT === A && !A.fin && !saltar && !!document.getElementById('qe-video');
+  let camOk = true; try { await Promise.all([caraLib(), caraCam(video)]); } catch (e) { camOk = false; }
+  const t0 = Date.now(); if (camOk) msg('Mirá a la cámara…');
+  while (camOk && sigue() && Date.now() - t0 < 9000) {
+    let d = null; try { d = await caraLeer(video); } catch (e) {}
+    if (!sigue()) break;
+    if (d) {
+      let r = null; try { r = (await sb.rpc('pos_autorizacion_cara', { p_local: LOCAL, p_accion: A.accion, p_detalle: { resumen: A.resumen, pedido_por: PERFIL.nombre, pedido_por_email: PERFIL.email }, p_descriptor: Array.from(d) })).data; } catch (e) {}
+      if (r && r.ok) { if (AUT !== A || A.fin) { caraCamOff(); return true; } msg('✔ Autoriza ' + pila(r.autorizadora), true); await _esp(700); caraCamOff(); toast('Autorizó ' + pila(r.autorizadora) + ' con la cámara', 'success'); autFin(r.id); return true; }
+      if (!sigue()) break;
+      if (r && r.motivo === 'sin_rango') { msg(pila(r.nombre) + ': esto lo autoriza ' + quien); await _esp(1600); break; }
+      msg('No te reconozco: acercate a la cámara');
+    }
+    await _esp(250);
+  }
+  caraCamOff();
+  if (AUT !== A || A.fin) return true;                                            // se canceló con el botón
+  if (!saltar && !document.getElementById('qe-video')) { autFin(null); return true; }   // se cerró con Escape
+  return false;
+}
+function autVentana() {
+    const accion = AUT.accion, resumen = AUT.resumen;
     modal(`<div class="m-head"><h3>Esta operación necesita autorización</h3><span class="spacer"></span><button class="btn ico" onclick="autCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
       <div class="mini">${esc(resumen)} · pide ${esc(pila(PERFIL.nombre))}</div>
       <div class="aut-caja" id="aut-caja"><div class="mini"><span class="spin"></span>Buscando quién está en ${esc(LOCALES[LOCAL])}…</div></div>
@@ -2847,9 +2889,8 @@ function autorizar(accion, resumen, forzar) {
       <div class="aut-clave"><input id="aut-mail" type="email" placeholder="Usuario (mail)" autocomplete="off"><input id="aut-pass" type="password" placeholder="Clave" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();autClave()}"></div>
       <div class="m-foot"><span class="spacer"></span><button class="btn" onclick="autCancelar()">Cancelar</button><button class="btn primary" onclick="autClave()">Autorizar con clave</button></div>`);
     sb.rpc('pos_presentes', { p_local: LOCAL }).then(({ data, error }) => { if (!AUT || AUT.fin) return; if (error) { toast(error.message, 'error'); } AUT.lista = (data || []).filter(p => accion !== 'mov' || p.rol !== 'cajero'); autLista(); });   // los movimientos de stock los autoriza solo la encargada (o un admin)
-  });
 }
-function autFin(v) { if (!AUT || AUT.fin) return; AUT.fin = true; clearInterval(AUT.poll); const r = AUT.resolve; AUT = null; cerrarModal(); r(v); }
+function autFin(v) { if (!AUT || AUT.fin) return; AUT.fin = true; clearInterval(AUT.poll); caraCamOff(); const r = AUT.resolve; AUT = null; cerrarModal(); r(v); }
 function autCancelar() { if (AUT && AUT.id) sb.rpc('pos_autorizacion_cancelar', { p_id: AUT.id }); autFin(null); }
 function autPersona(p, boton) {
   return `<div class="aut-p"><span class="nom"><b>${esc(pila(p.nombre))}</b> <span class="chip ${p.rol === 'admin' ? 'gray' : 'amber'}">${p.rol === 'gerente' ? 'encargada' : p.rol === 'cajero' ? 'cajera' : p.rol}</span><span class="mini">${p.fuente === 'reloj' ? 'fichó ' + p.hora : p.fuente === 'turno' ? 'turno desde ' + p.hora : p.rol === 'admin' ? 'fuera del local' : 'no está'}${p.push ? '' : ' · sin notificaciones en el celu'}</span></span>
@@ -2857,11 +2898,12 @@ function autPersona(p, boton) {
 }
 function autLista(msg) {
   if (!AUT) return; const caja = document.getElementById('aut-caja'); if (!caja) return;
-  const pres = AUT.lista.filter(p => p.presente), admins = AUT.lista.filter(p => p.rol === 'admin');
+  const pres = AUT.lista.filter(p => p.presente), fuera = AUT.lista.filter(p => !p.presente);
   caja.className = 'aut-caja' + (pres.length ? '' : ' sin');
-  caja.innerHTML = (msg ? `<div class="mini" style="color:var(--red);margin-bottom:4px">${esc(msg)}</div>` : '') + (pres.length
-    ? `<b>Quiénes están en ${esc(LOCALES[LOCAL])} ahora</b>${pres.map(p => autPersona(p, true)).join('')}`
-    : `<b>No hay ${AUT.accion === 'mov' ? 'encargada' : 'encargada ni cajera'} en ${esc(LOCALES[LOCAL])} ahora</b><div class="mini">Según el reloj hoy no fichó entrada ninguna autorizadora y ninguna tiene turno a esta hora. Podés pedirle a un admin, o que alguien autorice con su clave.</div>${admins.map(p => autPersona(p, true)).join('')}`);
+  caja.innerHTML = (msg ? `<div class="mini" style="color:var(--red);margin-bottom:4px">${esc(msg)}</div>` : '')
+    + (pres.length ? `<b>Están en ${esc(LOCALES[LOCAL])} ahora</b>${pres.map(p => autPersona(p, true)).join('')}`
+                   : `<b>No hay ${AUT.accion === 'mov' ? 'encargada' : 'encargada ni cajera'} en ${esc(LOCALES[LOCAL])} ahora</b><div class="mini">Según el reloj hoy no fichó entrada ninguna y ninguna tiene turno a esta hora.</div>`)
+    + (fuera.length ? `<b style="display:block;margin-top:10px">No están en el local (pueden autorizar desde donde estén)</b>${fuera.map(p => autPersona(p, true)).join('')}` : '');
 }
 async function autPedir(empId) {
   if (!AUT) return; const p = AUT.lista.find(x => x.empleado_id === empId); if (!p) return;
@@ -3150,6 +3192,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=84"></script>
+<script src="manual.js?v=85"></script>
 </body>
 </html>
