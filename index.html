@@ -2390,7 +2390,7 @@ function mpZonas() {
 // Transferencia, Point y QR «No integrado» y link de pago: antes de emitir se busca el cobro en la cuenta de Mercado Pago
 // (misma consulta que «Verificar ahora» de Tesorería: Edge sync-mp-on-demand + RPC pos_mp_buscar). Cuando aparece, la factura se emite sola.
 const COBRO_V = { transferencia: 'la transferencia', mp_point_ni: 'el cobro del Point', mp_qr_ni: 'el cobro por QR', link: 'el pago del link' };
-const cobroAplica = () => LOCAL !== 'oficina' && T.tipo !== 'NC' && T.tipo !== 'PR' && T.tipo !== 'RE';
+const cobroAplica = () => T.tipo !== 'NC' && T.tipo !== 'PR' && T.tipo !== 'RE';
 function cobroOlvidar(row) { delete row.dataset.mov; delete row.dataset.buscando; delete row.dataset.noesta; delete row.dataset.sinverif; const i = row.querySelector('.imp'); if (i && row.dataset.m !== 'efectivo_usd') i.readOnly = false; }
 function cobroZonas() {
   for (const r of document.querySelectorAll('#v-pagos .medio')) {
@@ -3114,6 +3114,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=82"></script>
+<script src="manual.js?v=83"></script>
 </body>
 </html>
