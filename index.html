@@ -2329,7 +2329,7 @@ function pMedio(sel) {
   ref.placeholder = sel.value === 'vale' ? 'Código del vale / gift card' : 'Nº cupón / ref.';
   if (sel.value === 'vale') { ref.oninput = () => valeDebounce(row); ref.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); valeConsultar(row); } }; } else { ref.oninput = null; ref.onkeydown = null; }
   { const imp = row.querySelector('.imp'); const usd = sel.value === 'efectivo_usd'; imp.readOnly = usd; imp.title = usd ? 'Se calcula: dólares × tipo de cambio' : 'Importe'; if (!usd) { row.dataset.usd = ''; } row.querySelector('.mp-zona').innerHTML = ''; }
-  delete row.dataset.vale; delete row.dataset.valeErr; cobroOlvidar(row);
+  delete row.dataset.vale; delete row.dataset.valeErr; cobroOlvidar(row); delete row.dataset.link;
   // ícono del medio al lado del desplegable: cambia y hace un saltito cada vez que se elige
   const ico = row.querySelector('.med-ico'); ico.textContent = sel.value ? mIco(sel.value) : ''; ico.classList.remove('pop'); void ico.offsetWidth; ico.classList.add('pop');
   const seg = row.querySelector('.seg'); const ni = pTieneNI(sel.value); seg.style.display = ni ? '' : 'none';
@@ -2400,7 +2400,8 @@ function cobroZonas() {
     if (r.dataset.mov) { const m = JSON.parse(r.dataset.mov); imp.readOnly = true; z.innerHTML = `<span class="chip green" title="${esc(m.codigo || '')}${m.detalle ? ' · ' + esc(m.detalle) : ''}">✔ está en Mercado Pago · ${esc(m.dia)} ${esc(m.hora)}</span><button type="button" class="btn ico chico" onclick="cobroSoltar(this)" title="No es este cobro: soltarlo" aria-label="Soltar">${_i('x')}</button>`; continue; }
     if (r.dataset.buscando) { z.innerHTML = `<span class="mini"><span class="spin"></span>Buscando ${COBRO_V[r.dataset.m]} de ${plata(v)} en Mercado Pago…</span><button type="button" class="btn chico" onclick="cobroCancelar(this)">Cancelar</button>`; continue; }
     if (r.dataset.sinverif) { z.innerHTML = `<span class="chip amber">sin verificar · al emitir pide autorización</span><button type="button" class="btn chico" onclick="cobroVerificar(this)">Verificar</button>`; continue; }
-    z.innerHTML = `<button type="button" class="btn primary chico" onclick="cobroVerificar(this)"${v > 0 ? '' : ' disabled'} title="Busca ${COBRO_V[r.dataset.m]} en la cuenta de Mercado Pago; cuando aparece, se emite sola">Verificar en Mercado Pago</button>`
+    if (r.dataset.m === 'link' && r.dataset.link) { imp.readOnly = true; z.innerHTML = `<span class="chip viol">link generado · ${plata(JSON.parse(r.dataset.link).importe)}</span><button type="button" class="btn chico" onclick="linkVer(this)">Mandarlo de nuevo</button><button type="button" class="btn primary chico" onclick="cobroVerificar(this)">Ver si ya pagó</button><button type="button" class="btn ico chico" onclick="linkSoltar(this)" title="Descartar este link (por ejemplo para cambiar el importe)" aria-label="Descartar">${_i('x')}</button>` + (r.dataset.noesta ? `<span class="mini" style="color:var(--red)">Todavía no pagó.</span><button type="button" class="btn chico" onclick="cobroSinVerificar(this)">Emitir sin verificar</button>` : ''); continue; }
+    z.innerHTML = (r.dataset.m === 'link' ? `<button type="button" class="btn primary chico" onclick="linkCrear(this)"${v >= 15 ? '' : ' disabled'} title="Arma el link de Mercado Pago por este importe para mandárselo al cliente">Generar link de pago</button>` : '') + `<button type="button" class="btn ${r.dataset.m === 'link' ? '' : 'primary '}chico" onclick="cobroVerificar(this)"${v > 0 ? '' : ' disabled'} title="Busca ${COBRO_V[r.dataset.m]} en la cuenta de Mercado Pago; cuando aparece, se emite sola">${r.dataset.m === 'link' ? 'Ya pagó con otro link: verificar' : 'Verificar en Mercado Pago'}</button>`
       + (r.dataset.noesta ? `<span class="mini" style="color:var(--red)">No aparece todavía.</span><button type="button" class="btn chico" onclick="cobroSinVerificar(this)" title="Emitir igual: pide la autorización de la encargada o la cajera">Emitir sin verificar</button>` : '');
   }
 }
@@ -2413,6 +2414,12 @@ async function cobroVerificar(b) {
   cobroOlvidar(row); const tok = String(Date.now()); row.dataset.buscando = tok; cobroZonas();
   const t0 = Date.now(); let vuelta = 0; const vivo = () => row.isConnected && row.dataset.buscando === tok;
   while (vivo() && Date.now() - t0 < 120000) {
+    if (medio === 'link' && row.dataset.link) {
+      let e = null; try { e = await mpLlamar('link_estado', { ext: JSON.parse(row.dataset.link).ext }); } catch (x) {}
+      if (!vivo()) return;
+      if (e && e.pagado) { try { await sb.functions.invoke('sync-mp-on-demand', { body: { minutes_back: 30 } }); } catch (x) {} const { data: m } = await sb.rpc('pos_mp_por_pago', { p_local: LOCAL, p_payment_id: e.payment_id }); if (!vivo()) return; if (m) { cobroTomar(row, m); return; } }
+      vuelta++; await _esp(8000); continue;
+    }
     try { await sb.functions.invoke('sync-mp-on-demand', { body: { minutes_back: vuelta === 0 && medio === 'transferencia' ? 180 : 30 } }); } catch (e) {}
     if (!vivo()) return;
     const { data, error } = await sb.rpc('pos_mp_buscar', { p_local: LOCAL, p_medio: medio, p_importe: v });
@@ -2424,6 +2431,7 @@ async function cobroVerificar(b) {
     if (lista.length > 1) { delete row.dataset.buscando; cobroElegir(row, lista); return; }
     vuelta++; await _esp(8000);
   }
+  if (row.dataset.buscando === tok && medio === 'link' && row.dataset.link) { delete row.dataset.buscando; row.dataset.noesta = '1'; cobroZonas(); toast('El cliente todavía no pagó el link. Cuando avise, tocá «Ver si ya pagó».', 'error'); return; }
   if (row.dataset.buscando === tok) { delete row.dataset.buscando; row.dataset.noesta = '1'; cobroZonas(); toast('No apareció ' + COBRO_V[medio] + ' de ' + plata(v) + ' en Mercado Pago. Pedile el comprobante al cliente y probá de nuevo.', 'error'); }
 }
 function cobroTomar(row, m) {
@@ -2432,6 +2440,34 @@ function cobroTomar(row, m) {
   // cuando el cobro aparece y el ticket queda pagado completo, se emite sola
   setTimeout(() => { const t = vTotales(); const pag = pPagos().reduce((a, p) => a + p.importe, 0); if (T.items.length && Math.abs(pag - t.tot) < 1 && !cobroFaltan().length && !document.getElementById('v-cobrar').disabled) emitirTicket(); }, 500);
 }
+// ─── Link de pago generado desde el POS (JP 10-nov): Edge mp-point · link_crear / link_estado ───
+async function linkCrear(b) {
+  const row = b.closest('.medio'); const v = r2(num(row.querySelector('.imp').value));
+  if (!(v >= 15)) { toast('El link de pago se arma desde $ 15', 'error'); return; }
+  b.disabled = true; let d;
+  try { d = await mpLlamar('link_crear', { local: LOCAL, importe: v, descripcion: 'Compra en Claudia Adorno · ' + (LOCALES[LOCAL] || ''), es_prueba: MODO === 'prueba' }); }
+  catch (e) { toast(e.message, 'error'); b.disabled = false; return; }
+  cobroOlvidar(row); row.dataset.link = JSON.stringify({ ext: d.ext, url: d.link, importe: v }); pRender(); linkVer(row);
+}
+let _linkTxt = '';
+function linkVer(b) {
+  const row = b.closest ? b.closest('.medio') : b; const L = JSON.parse(row.dataset.link); const c = T.cliente || {};
+  const nom = c.nombre ? ' ' + pila(c.nombre) : ''; const cel = c.celular || (c.ficha && c.ficha.celular) || '';
+  _linkTxt = `Hola${nom}! Te paso el link para pagar tu compra en Claudia Adorno por ${plata(L.importe)}: ${L.url}`;
+  modal(`<div class="m-head"><h3>🔗 Link de pago por ${plata(L.importe)}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="vale-cod"><div class="mini" style="word-break:break-all;font-size:14px;color:var(--text)">${esc(L.url)}</div><div class="mini" style="margin-top:6px">Vence en 48 horas · el cliente paga con tarjeta, débito o dinero en cuenta${MODO === 'prueba' ? ' · <b>ojo: aunque el POS esté en prueba, este link cobra de verdad</b>' : ''}</div></div>
+    <div class="mini" style="margin:8px 0">Poné el WhatsApp del cliente y tocá «Enviar por WhatsApp»: se abre el chat con el mensaje y el link listos. Cuando avise que pagó, tocá «Ver si ya pagó» (o Emitir): la factura sale sola.</div>
+    <div class="vale-wa-fila"><input id="lk-wa" inputmode="tel" autocomplete="off" placeholder="WhatsApp del cliente: 11 1234 5678" value="${esc(cel)}" onkeydown="if(event.key==='Enter'){event.preventDefault();linkWa()}"><button class="btn primary" onclick="linkWa()">Enviar por WhatsApp</button></div>
+    <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText('${esc(L.url)}').then(() => toast('Link copiado', 'success'))">Copiar el link</button><span class="spacer"></span><button class="btn" onclick="cerrarModal()">Listo</button></div>`);
+  if (!cel) setTimeout(() => { const i = document.getElementById('lk-wa'); if (i) i.focus(); }, 80);
+}
+function linkWa() {
+  const i = document.getElementById('lk-wa'); let tel = (i.value || '').replace(/[^0-9]/g, '');
+  if (tel.length < 8) { toast('Escribí el WhatsApp del cliente', 'error'); i.focus(); return; }
+  if (!tel.startsWith('54')) tel = '549' + tel.replace(/^0/, '').replace(/^15/, '');
+  waAbrir('https://wa.me/' + tel + '?text=' + encodeURIComponent(_linkTxt));
+}
+function linkSoltar(b) { const row = b.closest('.medio'); if (!confirm('¿Descartar este link? Si el cliente ya lo tiene, que no lo pague: armale uno nuevo.')) return; delete row.dataset.link; cobroOlvidar(row); pRender(); }
 let _cobroEl = null;
 function cobroElegir(row, lista) {
   _cobroEl = { row, lista };
@@ -3114,6 +3150,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=83"></script>
+<script src="manual.js?v=84"></script>
 </body>
 </html>
