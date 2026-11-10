@@ -513,7 +513,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .cli-chk { display: flex; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer; }
 .cli-mail { display: flex; align-items: center; gap: 8px; margin: -4px 0 10px; padding: 6px 10px; border: 1px solid #7dd3fc; border-radius: 999px; background: #e0f2fe; color: #0369a1; }
 .cli-mail input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 15px; font-family: inherit; color: var(--text); padding: 2px 0; }
-.cli-mail input, .cli-sin input { border-radius: 0 !important; padding-left: 3px !important; }   /* la punta redonda de la casilla le comía la primera letra */
+.cli-mail input, .cli-sin input, .buscador input { border-radius: 0 !important; padding-left: 4px !important; }   /* la punta redonda de la casilla le comía la primera letra */
 .cli-mail.falta { border-color: var(--amber); background: #fffbeb; } .cli-mail.falta #v-mail-st { color: #b45309; font-weight: 600; white-space: nowrap; }
 #ov .box.ficha { max-width: 940px; padding: 0; overflow: hidden; }
 #ov .box.ficha-prod { max-width: 1100px; width: 96vw; padding: 10px 12px 12px; } .prod-if { width: 100%; height: 80vh; border: none; border-radius: 12px; background: #fff; margin-top: 8px; } .pf-link { color: var(--primary-dark); white-space: nowrap; }
@@ -787,6 +787,11 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <div class="card"><h3>Mi Point en esta caja</h3>
         <div class="mini" style="margin-bottom:8px">Elegí la terminal Mercado Pago Point que está en esta caja. Queda guardado en esta computadora o tablet; cada caja elige la suya.</div>
         <div id="a-point" class="pils"></div></div>
+      <div class="card" id="a-reg-card" style="display:none"><h3>Registro · quién hizo y quién autorizó</h3>
+        <div class="mini" style="margin-bottom:8px">Todo lo que se emite, se anula, se mueve de stock o se pide autorizar: quién lo hizo (y si el POS lo supo por la cámara, porque eligió su nombre o por su usuario) y quién lo autorizó (cámara, celular o usuario y clave). Con la hora exacta, para cruzarlo con las cámaras del local. Solo lo ven los admin.</div>
+        <div class="filters" style="margin-bottom:8px"><label>Desde <input type="date" id="reg-d" onchange="regCargar()"></label><label>Hasta <input type="date" id="reg-h" onchange="regCargar()"></label>
+          <label>Local <select id="reg-l" onchange="regCargar()"></select></label><label>Buscar <input id="reg-q" placeholder="persona, comprobante, artículo" oninput="regPinta()"></label><span class="stat" id="reg-stat"></span></div>
+        <div id="a-reg"></div></div>
       <div class="card"><h3>CAI de los remitos</h3>
         <div class="mini" style="margin-bottom:8px">El CAI es el código que ARCA autoriza para imprimir los remitos R de cada punto de venta. Dura un año: cuando faltan 14 días (o si ya venció) el sistema avisa al celu de los admin todos los días a las 9, y repite cada semana hasta que se cargue el nuevo. Se pide en ARCA › Autorización de Impresión de Comprobantes › Contribuyente › Solicitud de C.A.I.</div>
         <div id="a-cai"></div></div>
@@ -2386,6 +2391,32 @@ function mpZonas() {
                      : `<button type="button" class="btn chico" onclick="switchTab('ajustes')">Elegí tu Point en Ajustes</button>`;
   }
 }
+// ═══ Acciones que Clodi puede dejar preparadas (JP 10-nov): arma el ticket; la persona revisa y recién ahí se emite ═══
+const CLODI_MEDIOS = { efectivo: 'efectivo', dolares: 'efectivo_usd', point: 'mp_point', qr: 'mp_qr', link: 'link', transferencia: 'transferencia', vale: 'vale' };
+window.ADORNO_ACCIONES = [{
+  nombre: 'armar_venta',
+  descripcion: 'Deja cargado un ticket en la pestaña Vender (factura o presupuesto) con los artículos y, si se dijo, la forma de pago. No emite: la persona revisa y emite. Usar cuando piden "haceme / armame / cargame una factura (o presupuesto) con tal código por tal cantidad".',
+  parametros: { type: 'object', required: ['items'], properties: {
+    comprobante: { type: 'string', enum: ['factura', 'presupuesto'], description: 'Qué se arma; por defecto factura' },
+    items: { type: 'array', description: 'Artículos por código (SKU) y cantidad', items: { type: 'object', required: ['sku'], properties: { sku: { type: 'string', description: 'Código del artículo tal como lo dijo la persona' }, cantidad: { type: 'number', description: 'Unidades; por defecto 1' } } } },
+    medio_pago: { type: 'string', enum: Object.keys(CLODI_MEDIOS), description: 'Forma de pago si la dijo (un solo medio por el total)' } } },
+  disponible: () => !!(typeof ARTS !== 'undefined' && ARTS.length),
+  preparar: async (p) => {
+    const pedidos = (p.items || []).map(i => ({ q: String(i.sku || '').toUpperCase().replace(/\s+/g, ''), n: Math.max(1, Math.round(Number(i.cantidad) || 1)) })).filter(i => i.q);
+    if (!pedidos.length) return { ok: false, error: 'decime el código del artículo' };
+    const enc = [], mal = [];
+    for (const i of pedidos) { const a = ARTS.find(x => x.sku.toUpperCase() === i.q) || ARTS.find(x => x.sku.toUpperCase().replace(/[^A-Z0-9]/g, '') === i.q.replace(/[^A-Z0-9]/g, '')); if (a) enc.push({ a, n: i.n }); else mal.push(i.q); }
+    if (mal.length) return { ok: false, error: 'no encuentro ' + (mal.length === 1 ? 'el código ' : 'los códigos ') + mal.join(', ') + ' en ' + (LOCALES[LOCAL] || 'este local') };
+    if (T.items.length && !confirm('Hay un ticket empezado. ¿Lo vacío para armar el nuevo?')) return { ok: false, error: 'quedó el ticket que ya estaba' };
+    switchTab('vender'); vVaciar(); if (p.comprobante === 'presupuesto') vTipo('PR', 'X');
+    for (const e of enc) { T.pend = e.n; vAgregar(e.a.sku); }
+    const t = vTotales(); const medio = p.comprobante === 'presupuesto' ? null : CLODI_MEDIOS[p.medio_pago];
+    if (medio && pMedios().some(m => m.clave === medio)) { const row = document.querySelector('#v-pagos .medio'); const sel = row.querySelector('.med'); sel.value = medio; pMedio(sel); if (medio !== 'efectivo_usd') row.querySelector('.imp').value = plata(t.tot); pRender(); }
+    const sinStock = enc.filter(e => Number(e.a.stock) < e.n).map(e => e.a.sku);
+    return { ok: true, resumen: (p.comprobante === 'presupuesto' ? 'Presupuesto' : 'Factura') + ' con ' + enc.map(e => e.n + ' × ' + e.a.sku).join(', ') + ' · total ' + plata(t.tot) + (medio ? ' · ' + ((MEDIOS.find(m => m.clave === medio) || {}).nombre || medio) : '') + (sinStock.length ? ' · ojo, sin stock suficiente: ' + sinStock.join(', ') : '') };
+  },
+  confirmar: async () => { if (!T.items.length) return { ok: false, error: 'el ticket está vacío' }; emitirTicket(); return { ok: true, mensaje: 'Le di a Emitir: seguí en la pantalla, que te pide el cliente y quién emite.' }; }
+}];
 // ═══ Cobros por Mercado Pago que no pasan por el Point integrado (JP 10-nov) ═══
 // Transferencia, Point y QR «No integrado» y link de pago: antes de emitir se busca el cobro en la cuenta de Mercado Pago
 // (misma consulta que «Verificar ahora» de Tesorería: Edge sync-mp-on-demand + RPC pos_mp_buscar). Cuando aparece, la factura se emite sola.
@@ -2685,6 +2716,32 @@ function quienEmite(probar) {
       await _esp(200);
     }
   });
+}
+// ─── Registro de quién hizo y quién autorizó (JP 10-nov): RPC pos_registro, solo admin ───
+let REG = [];
+function regAjustes() {
+  const card = document.getElementById('a-reg-card'); if (!card) return; card.style.display = PERFIL.es_admin ? '' : 'none'; if (!PERFIL.es_admin) return;
+  const d = document.getElementById('reg-d'), h = document.getElementById('reg-h'), l = document.getElementById('reg-l');
+  if (!d.value) { const hoy = new Date(); const iso = x => new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 10); h.value = iso(hoy); d.value = iso(new Date(hoy.getTime() - 6 * 86400000)); l.innerHTML = '<option value="">Todos</option>' + Object.keys(LOCALES).map(k => `<option value="${k}">${esc(LOCALES[k])}</option>`).join(''); l.value = LOCAL; }
+  regCargar();
+}
+async function regCargar() {
+  const box = document.getElementById('a-reg'); box.innerHTML = '<div class="mini"><span class="spin"></span>Cargando…</div>';
+  const { data, error } = await sb.rpc('pos_registro', { p_desde: document.getElementById('reg-d').value, p_hasta: document.getElementById('reg-h').value, p_local: document.getElementById('reg-l').value || null });
+  if (error) { box.innerHTML = '<div class="mini">' + esc(error.message.replace(/^.*?: /, '')) + '</div>'; return; }
+  REG = data || []; regPinta();
+}
+function regPinta() {
+  const q = document.getElementById('reg-q').value.trim().toUpperCase(); const nom = n => n ? (String(n).includes('@') ? String(n).split('@')[0] : tit(n)) : '';
+  const lista = REG.filter(r => !q || [r.cosa, r.detalle, r.quien, r.usuario, r.autorizo, r.que].join(' ').toUpperCase().includes(q));
+  document.getElementById('reg-stat').textContent = lista.length + (lista.length === 1 ? ' registro' : ' registros');
+  document.getElementById('a-reg').innerHTML = lista.length ? `<table><thead><tr><th>Cuándo</th><th>Local</th><th>Qué</th><th>Quién</th><th>Autorizó</th><th></th></tr></thead><tbody>` + lista.slice(0, 500).map(r => { const f = new Date(r.cuando);
+    return `<tr><td class="mini"><b>${f.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}</b> ${f.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td><td class="mini">${esc(LOCALES[r.local] || r.local || '')}</td>
+      <td><span class="mini">${esc(r.que)}</span> <b>${esc(r.cosa)}</b>${r.prueba ? ' <span class="chip red">prueba</span>' : ''}${r.detalle ? '<div class="mini">' + esc(r.detalle) + '</div>' : ''}</td>
+      <td><b>${esc(nom(r.quien))}</b><div class="mini">${esc(r.como || '')}${r.usuario && r.como !== 'su usuario' ? ' · sesión de ' + esc(String(r.usuario).split('@')[0]) : ''}</div></td>
+      <td>${r.autorizo ? '<b>' + esc(nom(r.autorizo)) + '</b>' + (r.autorizo_como ? '<div class="mini">' + esc(r.autorizo_como) + '</div>' : '') : '<span class="mini">' + (r.autorizo_como === 'tiene rango' ? 'no hizo falta' : '') + '</span>'}</td>
+      <td class="acc">${r.comprobante_id ? `<button class="btn ico" onclick="verComprobante(${r.comprobante_id})" title="Ver el comprobante" aria-label="Ver">${_i('ver')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>' + (lista.length > 500 ? '<div class="mini">Se muestran los primeros 500: achicá las fechas o buscá.</div>' : '')
+    : '<div class="empty chico">No hay nada registrado en esas fechas.</div>';
 }
 // ─── CAI de los remitos R (JP 10-nov): vencimiento por punto de venta, con aviso 14 días antes (cron pos_cai_revisar_diario) ───
 let CAI = [];
@@ -3175,7 +3232,7 @@ async function cargarCaja() {
 
 // ═══ Ajustes (admin) ═══════════════════════════════════════════════════
 async function cargarAjustes() {
-  pointAjustes(); waAjustes(); caraAjustes(); caiAjustes(); cargarRangos(); cargarParamsPedidos(); tcPintaAjustes(); cargarModo().then(pruebaAjustes);
+  pointAjustes(); waAjustes(); caraAjustes(); caiAjustes(); regAjustes(); cargarRangos(); cargarParamsPedidos(); tcPintaAjustes(); cargarModo().then(pruebaAjustes);
   const [{ data: pv }, { data: mp }, { data: tp }] = await Promise.all([sb.from('pos_puntos_venta').select('*').order('local').order('tipo'), sb.from('pos_medios_pago').select('*').order('orden'), sb.from('pos_parametros').select('*').eq('clave', 'tope_cf_arca').maybeSingle()]);
   document.getElementById('a-tope').innerHTML = tp ? `<b style="font-size:18px;color:var(--text)">${plata(tp.valor_num)}</b> · abajo de este importe la factura B sale a Consumidor Final sin datos (el cliente queda igual en nuestra base); desde este importe ARCA exige identificarlo y el POS lo obliga.<br>No se carga a mano: el servicio del CAE lo lee en <a href="${esc(tp.fuente || '')}" target="_blank" rel="noopener">la página de ARCA</a> una vez por mes. Última lectura: ${tp.actualizado_at ? new Date(tp.actualizado_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '—'}.${tp.error ? `<div style="color:var(--red);margin-top:4px">⚠ ${esc(tp.error)}</div>` : ''}` : 'No está configurado el tope (pos_parametros).';
   document.getElementById('a-pv').innerHTML = `<table><thead><tr><th>Local</th><th>Tipo</th><th class="num">Punto de venta</th><th>Activo</th><th>Nota</th></tr></thead><tbody>` +
@@ -3192,6 +3249,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=85"></script>
+<script src="manual.js?v=86"></script>
 </body>
 </html>
