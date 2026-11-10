@@ -3035,7 +3035,7 @@ async function cargarComprobantes() {
   document.getElementById('c-stat').textContent = lista.length + ' comprobantes · ' + plata(lista.filter(c => c.estado === 'emitido').reduce((s, c) => s + c.signo * Number(c.total), 0));
   document.getElementById('c-lista').innerHTML = lista.length ? `<table><thead><tr><th>Comprobante</th><th>Fecha</th><th>Cliente</th><th>Vendedora</th><th class="num">Total</th><th>Estado</th><th></th></tr></thead><tbody>` +
     lista.map(c => `<tr class="${c.estado === 'anulado' ? 'dim' : ''}">
-      <td><b>${TIPO_NOM[c.tipo]}${c.tipo === 'RE' ? '' : ' ' + c.letra}</b> ${fmtNum(c.punto_venta, c.numero)}${c.relacionado_id ? '<div class="mini">devuelve #' + c.relacionado_id + '</div>' : ''}${c.remito_id ? '<div class="mini">sobre un remito</div>' : ''}</td>
+      <td><b>${TIPO_NOM[c.tipo]}${c.tipo === 'RE' ? '' : ' ' + c.letra}</b> ${fmtNum(c.punto_venta, c.numero)}${c.relacionado_id ? '<div class="mini">devuelve #' + c.relacionado_id + '</div>' : ''}${c.remito_id ? '<div class="mini">sobre un remito</div>' : ''}${c.local_venta && c.local_venta !== c.local ? '<div><span class="chip viol" title="Facturada con la sucursal ' + esc(LOCALES[c.local] || c.local) + ' por ' + esc(LOCALES[c.local_venta] || c.local_venta) + ': la venta se le computa a ' + esc(LOCALES[c.local_venta] || c.local_venta) + ' (columna Fc Oficina)">venta de ' + esc(LOCALES[c.local_venta] || c.local_venta) + '</span></div>' : ''}</td>
       <td>${fechaAR(c.fecha)} <span class="mini">${String(c.hora).slice(0, 5)}</span></td>
       <td>${esc(c.cliente_nombre)}<div class="mini">${c.cliente_doc ? (c.cliente_doc_tipo || '') + ' ' + c.cliente_doc : ''}${c.cliente_informado === false && c.cliente_interno ? '<span title="Cliente registrado en nuestra base; a ARCA fue como Consumidor Final">👤 ' + esc(c.cliente_interno) + '</span>' : (!c.cliente_globalid && !c.cliente_doc && c.tipo !== 'NC' ? '<span title="Se vendió sin cargar cliente">sin cliente</span>' : '')}</div></td>
       <td class="mini">${esc(c.vendedora_nombre || '')}${c.autorizado_por && c.autorizado_modo !== 'propia' ? '<div>autorizó ' + esc(pila(c.autorizado_por)) + ' <span class="chip green">' + c.autorizado_modo + '</span></div>' : ''}</td>
@@ -3249,6 +3249,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=86"></script>
+<script src="manual.js?v=87"></script>
 </body>
 </html>
