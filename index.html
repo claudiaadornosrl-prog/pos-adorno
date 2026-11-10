@@ -715,7 +715,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
     <section id="content-remitos" class="tab-content">
       <div class="filters" id="rm-filtros">
         <button class="btn primary" id="rm-nuevo" onclick="rmNuevo()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo remito</button>
-        <span class="pils"><button class="pil on" data-f="pend" onclick="rmFiltro('pend')">Sin facturar</button><button class="pil" data-f="tr" onclick="rmFiltro('tr')">En tránsito<span class="badge" id="rm-tr-n" style="display:none"></span></button><button class="pil" data-f="todos" onclick="rmFiltro('todos')">Todos</button><span class="pil-sep"></span><button class="pil" data-f="mov" onclick="rmFiltro('mov')" title="Entradas, bajas y ajustes de stock hechos a mano (solo encargada)">Movimientos</button></span>
+        <span class="pils"><button class="pil on" data-f="pend" onclick="rmFiltro('pend')">Sin facturar</button><button class="pil" data-f="tr" onclick="rmFiltro('tr')">En tránsito<span class="badge" id="rm-tr-n" style="display:none"></span></button><button class="pil" data-f="ac" onclick="rmFiltro('ac')" title="Traslados que el destino ya aceptó (entraron al stock)">Aceptados</button><button class="pil" data-f="todos" onclick="rmFiltro('todos')">Todos</button><span class="pil-sep"></span><button class="pil" data-f="mov" onclick="rmFiltro('mov')" title="Entradas, bajas y ajustes de stock hechos a mano (solo encargada)">Movimientos</button></span>
         <label>Buscar <input id="rm-q" placeholder="cliente, número, dirección" oninput="rmDebounce()"></label>
         <span class="stat" id="rm-stat"></span>
       </div>
@@ -1343,9 +1343,10 @@ async function cargarRemitos() {
   rmModo('lista');
   document.querySelectorAll('#rm-filtros .pil[data-f]').forEach(b => b.classList.toggle('on', b.dataset.f === RM.filtro));
   rmBadge();
-  if (RM.filtro === 'tr') return cargarTransito();
+  if (RM.filtro === 'tr' || RM.filtro === 'ac') return cargarTransito(RM.filtro === 'ac');
   if (RM.filtro === 'mov') return cargarMovimientos();
-  let qq = sb.from('pos_comprobantes').select('*, fact:facturado_en(tipo,letra,punto_venta,numero)').eq('local', LOCAL).eq('tipo', 'RE').order('id', { ascending: false }).limit(300);
+  let qq = sb.from('pos_comprobantes').select('*, fact:facturado_en(tipo,letra,punto_venta,numero)').eq('tipo', 'RE').order('id', { ascending: false }).limit(300);
+  qq = RM.filtro === 'pend' ? qq.eq('local', LOCAL) : qq.or(`local.eq.${LOCAL},destino_local.eq.${LOCAL}`);
   if (RM.filtro === 'pend') qq = qq.is('facturado_en', null).is('destino_local', null).eq('estado', 'emitido');
   const { data, error } = await qq; if (error) { toast(error.message, 'error'); return; }
   const q = document.getElementById('rm-q').value.trim().toUpperCase();
@@ -1417,15 +1418,15 @@ async function rmBadge() {
 }
 const puedeRecibir = () => (PERFIL.rol === 'gerente' || PERFIL.es_admin) && !!PERFIL.empleado_id;
 // En tránsito: lo que viene a este local y lo que este local mandó
-async function cargarTransito() {
+async function cargarTransito(aceptados) {
   const { data, error } = await sb.from('pos_comprobantes').select('*').eq('tipo', 'RE').not('destino_local', 'is', null).or(`local.eq.${LOCAL},destino_local.eq.${LOCAL}`).order('id', { ascending: false }).limit(200);
   if (error) { toast(error.message, 'error'); return; }
-  const lista = data || []; const dets = {};
+  const lista = (data || []).filter(c => c.estado === 'emitido' && (aceptados ? (c.transito_estado === 'recibido' || c.transito_estado === 'con_diferencia') : c.transito_estado === 'en_transito')); const dets = {};
   if (lista.length) { const { data: dd } = await sb.from('pos_comprobantes_det').select('comprobante_id,sku,descripcion,cantidad,cantidad_recibida').in('comprobante_id', lista.map(c => c.id)).order('nro_item'); (dd || []).forEach(d => { (dets[d.comprobante_id] = dets[d.comprobante_id] || []).push(d); }); }
   const q = document.getElementById('rm-q').value.trim().toUpperCase();
   const vis = q ? lista.filter(c => (c.numero + ' ' + (c.entrega_nota || '') + ' ' + (dets[c.id] || []).map(d => d.sku + ' ' + d.descripcion).join(' ') + ' ' + (c.vendedora_nombre || '')).toUpperCase().includes(q)) : lista;
   const puedeAnular = true;
-  document.getElementById('rm-stat').textContent = vis.filter(c => c.transito_estado === 'en_transito' && c.estado === 'emitido').length + ' en tránsito';
+  document.getElementById('rm-stat').textContent = vis.length + (aceptados ? (vis.length === 1 ? ' aceptado' : ' aceptados') : ' en tránsito');
   document.getElementById('rm-lista').innerHTML = vis.length ? `<table><thead><tr><th>Remito</th><th>Trayecto</th><th>Mercadería</th><th>Estado</th><th></th></tr></thead><tbody>` +
     vis.map(c => `<tr class="tr-fila ${c.estado === 'anulado' ? 'dim' : ''}" onclick="if(!event.target.closest('button,a,input'))trAbrir(${c.id})" title="Tocá para ver la mercadería">
       <td><b>${fmtNum(c.punto_venta, c.numero)}</b><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(pila(c.vendedora_nombre))}</div></td>
@@ -1441,7 +1442,7 @@ async function cargarTransito() {
         ${c.destino_local === LOCAL && c.estado === 'emitido' && c.transito_estado === 'en_transito' ? `<div class="acciones" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="trConfirmar(${c.id})">${_i('ok')} Confirmar: llegó todo</button><button class="btn" onclick="rmRecibir(${c.id})">Llegó con diferencia</button><button class="btn peligro" onclick="trRechazar(${c.id})">${_i('x')} Rechazar</button><button class="btn" onclick="etDesdeRemito(${c.id})" title="Carga los artículos de este remito en Etiquetas">Etiquetas</button><span class="mini" style="align-self:center">${puedeRecibir() ? '' : 'Pide la autorización de la encargada.'}</span></div>`
           : c.local === LOCAL && c.estado === 'emitido' && c.transito_estado === 'en_transito' ? `<div class="acciones" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="mini">Esperando que ${esc(LOCALES[c.destino_local])} la confirme o la rechace. Mientras no la acepten se puede:</span><button class="btn" onclick="trCorregir(${c.id})">${_i('edit')} Corregir</button><button class="btn peligro" onclick="anular(${c.id}).then(cargarRemitos)">${_i('anular')} Anular</button></div>` : ''}
       </div></td></tr>`).join('') + '</tbody></table>'
-    : `<div class="empty">No hay mercadería en tránsito desde ni hacia ${esc(LOCALES[LOCAL])}.</div>`;
+    : `<div class="empty">${aceptados ? 'Todavía no hay traslados aceptados de' : 'No hay mercadería en tránsito desde ni hacia'} ${esc(LOCALES[LOCAL])}.</div>`;
 }
 // La encargada cuenta lo que llegó y acepta: entra al stock de este local; lo que falta queda como diferencia para el origen
 async function rmRecibir(id) {
@@ -3324,6 +3325,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=93"></script>
+<script src="manual.js?v=94"></script>
 </body>
 </html>
