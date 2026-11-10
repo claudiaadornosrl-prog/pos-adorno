@@ -1440,12 +1440,12 @@ async function cargarTransito(aceptados) {
   const lista = (data || []).filter(c => c.estado === 'emitido' && (aceptados ? (c.transito_estado === 'recibido' || c.transito_estado === 'con_diferencia') : (c.transito_estado === 'en_transito' || c.dif_estado === 'pendiente'))); const dets = {};
   if (lista.length) { const { data: dd } = await sb.from('pos_comprobantes_det').select('comprobante_id,sku,descripcion,cantidad,cantidad_recibida').in('comprobante_id', lista.map(c => c.id)).order('nro_item'); (dd || []).forEach(d => { (dets[d.comprobante_id] = dets[d.comprobante_id] || []).push(d); }); }
   const q = document.getElementById('rm-q').value.trim().toUpperCase();
-  const vis = q ? lista.filter(c => (c.numero + ' ' + (c.entrega_nota || '') + ' ' + (dets[c.id] || []).map(d => d.sku + ' ' + d.descripcion).join(' ') + ' ' + (c.vendedora_nombre || '')).toUpperCase().includes(q)) : lista;
+  const vis = q ? lista.filter(c => (remNum(c) + ' ' + trNum(c) + ' ' + c.numero + ' ' + (c.entrega_nota || '') + ' ' + (dets[c.id] || []).map(d => d.sku + ' ' + d.descripcion).join(' ') + ' ' + (c.vendedora_nombre || '')).toUpperCase().includes(q)) : lista;
   const puedeAnular = true;
   document.getElementById('rm-stat').textContent = vis.length + (aceptados ? (vis.length === 1 ? ' aceptado' : ' aceptados') : ' en tránsito');
   document.getElementById('rm-lista').innerHTML = vis.length ? `<table><thead><tr><th>Remito</th><th>Trayecto</th><th>Mercadería</th><th>Estado</th><th></th></tr></thead><tbody>` +
     vis.map(c => `<tr class="tr-fila ${c.estado === 'anulado' ? 'dim' : ''}" onclick="if(!event.target.closest('button,a,input'))trAbrir(${c.id})" title="Tocá para ver la mercadería">
-      <td><b>${fmtNum(c.punto_venta, c.numero)}</b><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(pila(c.vendedora_nombre))}</div></td>
+      <td><b>${esc(remNum(c))}</b><div class="mini">Tránsito <b>${trNum(c)}</b></div><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(pila(c.vendedora_nombre))}</div></td>
       <td>${c.local === LOCAL ? '<b>' + esc(LOCALES[c.local]) + '</b>' : esc(LOCALES[c.local])} → ${c.destino_local === LOCAL ? '<b>' + esc(LOCALES[c.destino_local]) + '</b>' : esc(LOCALES[c.destino_local])}${c.dif_estado === 'pendiente' ? '<div class="mini" style="color:#b45309">' + (difN(dets[c.id]).falta ? '↩ lo que faltó vuelve a ' + esc(LOCALES[c.local]) : '') + (difN(dets[c.id]).falta && difN(dets[c.id]).sobra ? ' · ' : '') + (difN(dets[c.id]).sobra ? '⚠ llegó de más' : '') + '</div>' : ''}</td>
       <td class="mini">${(dets[c.id] || []).map(d => Number(d.cantidad) + ' × ' + esc(d.sku) + (d.cantidad_recibida != null && Number(d.cantidad_recibida) !== Number(d.cantidad) ? ' <span class="chip red">llegaron ' + Number(d.cantidad_recibida) + '</span>' : '')).join(' · ')}${c.entrega_nota ? '<div>«' + esc(c.entrega_nota) + '»</div>' : ''}</td>
       <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : trChip(c)}</td>
@@ -1765,22 +1765,28 @@ function etImprimir() {
   setTimeout(() => { try { w.focus(); w.print(); } catch (e) { toast('No pude abrir el diálogo de impresión', 'error'); } }, 400);
 }
 // Movimientos manuales (JP 6-nov): entrada, baja o ajuste con motivo; solo encargada/admin con legajo; quedan en el libro con quién y por qué
-const MOV_NOM = { alta: 'Entrada', baja: 'Baja', ajuste: 'Ajuste', traslado_entrada: 'Recibido de un traslado' };
+const MOV_NOM = { alta: 'Entrada', baja: 'Baja', ajuste: 'Ajuste', traslado_entrada: 'Entró por traslado', traslado_salida: 'Salió por traslado' };
+const COD_LOCAL = { alcorta: 'ALC', unicenter: 'UNI', oficina: 'OFI', libertador: 'ATE' };
+const remNum = c => (COD_LOCAL[c.local] || String(c.local || '').slice(0, 3).toUpperCase()) + ' ' + fmtNum(c.punto_venta, c.numero);   // único: la numeración es por local
+const trNum = c => 'TR-' + String(c.id).padStart(6, '0');   // número único de la mercadería en tránsito
 function etDesdeMov(sku, n) { etAgregar(sku, n); switchTab('etiquetas'); }
 async function cargarMovimientos() {
   const q = document.getElementById('rm-q').value.trim().toUpperCase();
-  let qm = sb.from('stock_movimientos').select('*').eq('local', LOCAL).in('tipo', ['alta', 'baja', 'ajuste', 'inicial', 'compra', 'traslado_entrada']).order('id', { ascending: false });
+  let qm = sb.from('stock_movimientos').select('*').eq('local', LOCAL).in('tipo', ['alta', 'baja', 'ajuste', 'inicial', 'compra', 'traslado_entrada', 'traslado_salida']).order('id', { ascending: false });
   // con un motivo fijo elegido se trae toda la tirada de ese motivo (hasta 2.000), no solo los últimos 200
   qm = MOV_FILTRO && MOV_FILTRO !== 'Otro' && MOV_FILTRO !== 'Traslado' ? qm.like('ref', MOV_FILTRO + '%').limit(2000) : qm.limit(MOV_FILTRO ? 1000 : 200);
   const { data, error } = await qm;
   if (error) { toast(error.message, 'error'); return; }
-  const motDe = m => m.tipo === 'traslado_entrada' ? 'Traslado' : (MOV_MOTIVOS.find(t => (m.ref || '') === t || (m.ref || '').startsWith(t + ' · ')) || 'Otro');
+  const motDe = m => String(m.tipo).startsWith('traslado') ? 'Traslado' : (MOV_MOTIVOS.find(t => (m.ref || '') === t || (m.ref || '').startsWith(t + ' · ')) || 'Otro');
   MOVS = data || [];
-  const lista = (data || []).filter(m => (!q || (m.sku + ' ' + (m.ref || '') + ' ' + (m.usuario_email || '')).toUpperCase().includes(q)) && (!MOV_FILTRO || motDe(m) === MOV_FILTRO));
+  // los movimientos que nacieron de un remito de traslado: se trae el remito para mostrar su número y el de la mercadería en tránsito
+  const REM = {}; { const ids = [...new Set(MOVS.filter(m => m.comprobante_id && String(m.tipo).startsWith('traslado')).map(m => m.comprobante_id))]; if (ids.length) { const { data: rr } = await sb.from('pos_comprobantes').select('id,local,destino_local,punto_venta,numero').in('id', ids); (rr || []).forEach(r => { REM[r.id] = r; }); } }
+  const remTxt = m => { const r = REM[m.comprobante_id]; return r ? 'Remito ' + remNum(r) + ' · Tránsito ' + trNum(r) : ''; };
+  const lista = (data || []).filter(m => (!q || (m.sku + ' ' + (m.ref || '') + ' ' + (m.usuario_email || '') + ' ' + remTxt(m)).toUpperCase().includes(q)) && (!MOV_FILTRO || motDe(m) === MOV_FILTRO));
   document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' movimiento' : ' movimientos') + (MOV_FILTRO ? ' · ' + lista.reduce((t, m) => t + Number(m.cantidad), 0) + ' unidades netas' : '');
   document.getElementById('rm-lista').innerHTML = `<div class="pils mov-mot" style="margin-bottom:10px"><span class="mini" style="align-self:center;margin-right:4px">Motivo:</span>${['', ...MOV_MOTIVOS, 'Traslado'].map(t => `<button type="button" class="pil ${MOV_FILTRO === t ? 'on' : ''}" onclick="movFiltrar('${t}')">${t || 'Todos'}</button>`).join('')}</div>` + (STOCK_FUENTE === 'libro' ? '' : '<div class="mini" style="margin-bottom:8px">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</div>') +
     (lista.length ? `<table><thead><tr><th>Cuándo</th><th>Qué</th><th>Artículo</th><th class="num">Cantidad</th><th>Motivo</th><th>Quién</th><th></th></tr></thead><tbody>` +
-    lista.map(m => `<tr class="${m.anulado_at ? 'dim' : ''}"><td class="mini">${movFecha(m.creado_at)}</td><td>${esc(MOV_NOM[m.tipo] || m.tipo)}</td><td><b>${esc(m.sku)}</b><div class="mini">${esc((ARTS.find(a => a.sku === m.sku) || {}).descripcion || '')}</div></td><td class="num ${Number(m.cantidad) < 0 ? 'rojo' : ''}"><b>${Number(m.cantidad) > 0 ? '+' : ''}${Number(m.cantidad)}</b>${m.detalle ? '<div class="mini">' + esc(m.detalle) + '</div>' : ''}</td><td>${m.tipo === 'traslado_entrada' && m.comprobante_id ? `<a href="#" onclick="verComprobante(${m.comprobante_id});return false">Ver el remito</a>` : esc(m.ref || '')}${m.anulado_at ? '<div><span class="chip red">Anulado</span> <span class="mini">' + esc(pila(m.anulado_por)) + ' · ' + esc(m.anulado_motivo || '') + '</span></div>' : ''}</td><td class="mini">${esc((m.usuario_email || '').split('@')[0])}</td><td class="acc">${!m.anulado_at && ['alta', 'baja', 'ajuste'].includes(m.tipo) ? `<button class="btn ico" onclick="movCorregir(${m.id})" title="Corregir: anula este movimiento y abre uno nuevo con lo mismo para cambiarlo" aria-label="Corregir">${_i('edit')}</button><button class="btn ico peligro" onclick="movAnular(${m.id})" title="Anular: restablece el stock y deja la línea marcada" aria-label="Anular">${_i('anular')}</button>` : ''}${!m.anulado_at && Number(m.cantidad) > 0 ? `<button class="btn ico" onclick="etDesdeMov('${esc(m.sku)}', ${Number(m.cantidad)})" title="Imprimir las etiquetas de este movimiento (${Number(m.cantidad)})" aria-label="Etiquetas">${_i('print')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
+    lista.map(m => `<tr class="${m.anulado_at ? 'dim' : ''}"><td class="mini">${movFecha(m.creado_at)}</td><td>${esc(MOV_NOM[m.tipo] || m.tipo)}</td><td><b>${esc(m.sku)}</b><div class="mini">${esc((ARTS.find(a => a.sku === m.sku) || {}).descripcion || '')}</div></td><td class="num ${Number(m.cantidad) < 0 ? 'rojo' : ''}"><b>${Number(m.cantidad) > 0 ? '+' : ''}${Number(m.cantidad)}</b>${m.detalle ? '<div class="mini">' + esc(m.detalle) + '</div>' : ''}</td><td>${String(m.tipo).startsWith('traslado') && m.comprobante_id ? (REM[m.comprobante_id] ? `<a href="#" onclick="verComprobante(${m.comprobante_id});return false" title="Ver el remito"><b>Remito ${esc(remNum(REM[m.comprobante_id]))}</b></a><div class="mini">Tránsito <b>${trNum(REM[m.comprobante_id])}</b> · ${esc(LOCALES[REM[m.comprobante_id].local] || '')} → ${esc(LOCALES[REM[m.comprobante_id].destino_local] || '')}</div>` : `<a href="#" onclick="verComprobante(${m.comprobante_id});return false">Ver el remito</a>`) : esc(m.ref || '')}${m.anulado_at ? '<div><span class="chip red">Anulado</span> <span class="mini">' + esc(pila(m.anulado_por)) + ' · ' + esc(m.anulado_motivo || '') + '</span></div>' : ''}</td><td class="mini">${esc((m.usuario_email || '').split('@')[0])}</td><td class="acc">${!m.anulado_at && ['alta', 'baja', 'ajuste'].includes(m.tipo) ? `<button class="btn ico" onclick="movCorregir(${m.id})" title="Corregir: anula este movimiento y abre uno nuevo con lo mismo para cambiarlo" aria-label="Corregir">${_i('edit')}</button><button class="btn ico peligro" onclick="movAnular(${m.id})" title="Anular: restablece el stock y deja la línea marcada" aria-label="Anular">${_i('anular')}</button>` : ''}${!m.anulado_at && Number(m.cantidad) > 0 ? `<button class="btn ico" onclick="etDesdeMov('${esc(m.sku)}', ${Number(m.cantidad)})" title="Imprimir las etiquetas de este movimiento (${Number(m.cantidad)})" aria-label="Etiquetas">${_i('print')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : `<div class="empty">Todavía no hay movimientos en ${esc(LOCALES[LOCAL])}.</div>`);
 }
 let MOV = { tipo: 'alta', sku: null }, MOV_FILTRO = '';
@@ -1990,7 +1996,7 @@ function a4HTML(x) {
   const titulo = re ? 'Remito X' : ma ? 'Comprobante' : pr ? 'Presupuesto' : (nc ? 'Nota de crédito ' : 'Factura ') + c.letra;
   const cod = fiscal && c.arca_cbte_tipo ? ` · Cód. ${String(c.arca_cbte_tipo).padStart(3, '0')}` : '';
   const quien = (re ? 'Lo emitió ' : pr ? 'Te lo preparó ' : 'Te atendió ') + esc(tit((String(c.vendedora_nombre || '').split(',')[1] || c.vendedora_nombre || '').trim()));
-  const nroTxt = c.preview ? 'Vista previa · sin emitir' : 'N° ' + fmtNum(c.punto_venta, c.numero) + cod;
+  const nroTxt = c.preview ? 'Vista previa · sin emitir' : 'N° ' + (re ? remNum(c) : fmtNum(c.punto_venta, c.numero)) + cod + (re && c.destino_local ? ' · Tránsito ' + trNum(c) : '');
   const devuelve = nc && rel ? `<br>Devuelve la ${rel.tipo === 'MA' ? 'Comprobante' : 'Factura ' + rel.letra} ${fmtNum(rel.punto_venta, rel.numero)}` : '';
   let cli = `<b>${esc(c.cliente_interno || c.cliente_nombre || 'Consumidor Final')}</b>`;
   if (c.cliente_doc && !ma) { cli += `<br>${esc(c.cliente_doc_tipo || '')} ${esc(c.cliente_doc)}`; if ((c.cliente_cond_iva || 'CF') !== 'CF') cli += `<br>${esc(COND[c.cliente_cond_iva] || '')}`; }
@@ -3416,6 +3422,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=102"></script>
+<script src="manual.js?v=103"></script>
 </body>
 </html>
