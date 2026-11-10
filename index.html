@@ -714,7 +714,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
     </section>
     <section id="content-remitos" class="tab-content">
       <div class="filters" id="rm-filtros">
-        <button class="btn primary" id="rm-nuevo" onclick="rmNuevo()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo remito</button>
+        <button class="btn primary" id="rm-nuevo" onclick="rmNuevo()" title="Nuevo remito"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Remito</button><button class="btn primary" id="rm-mov-nuevo" onclick="movNuevo()" title="Movimiento manual de stock: entrada, baja o ajuste. Desde el usuario del local pide la autorización de la encargada."><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Movimiento</button>
         <span class="pils"><button class="pil on" data-f="pend" onclick="rmFiltro('pend')">Sin facturar</button><button class="pil" data-f="tr" onclick="rmFiltro('tr')">En tránsito<span class="badge" id="rm-tr-n" style="display:none"></span></button><button class="pil" data-f="ac" onclick="rmFiltro('ac')" title="Traslados que el destino ya aceptó (entraron al stock)">Aceptados</button><button class="pil" data-f="todos" onclick="rmFiltro('todos')">Todos</button><span class="pil-sep"></span><button class="pil" data-f="mov" onclick="rmFiltro('mov')" title="Entradas, bajas y ajustes de stock hechos a mano (solo encargada)">Movimientos</button></span>
         <label>Buscar <input id="rm-q" placeholder="cliente, número, dirección" oninput="rmDebounce()"></label>
         <span class="stat" id="rm-stat"></span>
@@ -1317,8 +1317,9 @@ function rmFiltro(f) { RM.filtro = f; cargarRemitos(); }
 // Las dos ventanas de Vender se mudan a la pestaña Remitos para armar uno (mismo buscador, mismo ticket) y vuelven al salir
 function rmModo(m) {
   const pos = document.getElementById('pos'), rp = document.getElementById('rm-pos'), lista = document.getElementById('rm-lista'), btn = document.getElementById('rm-nuevo'); if (!pos || !rp) return;
-  if (m === 'nuevo') { if (pos.parentElement !== rp) rp.appendChild(pos); lista.style.display = 'none'; btn.innerHTML = _i('x') + ' Cancelar el remito'; btn.onclick = cargarRemitos; }
-  else { if (pos.parentElement === rp) { document.getElementById('content-vender').appendChild(pos); if (T.tipo === 'RE') vVaciar(); } lista.style.display = ''; btn.innerHTML = _i('plus') + ' Nuevo remito'; btn.onclick = rmNuevo; }
+  { const bm = document.getElementById('rm-mov-nuevo'); if (bm) bm.style.display = m === 'nuevo' ? 'none' : ''; }
+  if (m === 'nuevo') { if (pos.parentElement !== rp) rp.appendChild(pos); lista.style.display = 'none'; btn.innerHTML = _i('x') + ' Cancelar'; btn.title = 'Cancelar el remito'; btn.onclick = cargarRemitos; }
+  else { if (pos.parentElement === rp) { document.getElementById('content-vender').appendChild(pos); if (T.tipo === 'RE') vVaciar(); } lista.style.display = ''; btn.innerHTML = _i('plus') + ' Remito'; btn.title = 'Nuevo remito'; btn.onclick = rmNuevo; }
   RM.modo = m;
 }
 function rmNuevo() { rmModo('nuevo'); vVaciar(); vTipo('RE', 'X'); setTimeout(() => document.getElementById('v-cli-doc').focus(), 50); }
@@ -1755,7 +1756,7 @@ async function cargarMovimientos() {
   if (error) { toast(error.message, 'error'); return; }
   const lista = (data || []).filter(m => !q || (m.sku + ' ' + (m.ref || '') + ' ' + (m.usuario_email || '')).toUpperCase().includes(q));
   document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' movimiento' : ' movimientos');
-  document.getElementById('rm-lista').innerHTML = `<div style="margin-bottom:10px"><button class="btn primary" onclick="movNuevo()">${_i('plus')} Movimiento manual</button>${puedeRecibir() ? '' : ' <span class="mini">Al guardar se le pide autorización al celu de la encargada.</span>'}${STOCK_FUENTE === 'libro' ? '' : ' <span class="mini">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</span>'}</div>` +
+  document.getElementById('rm-lista').innerHTML = (STOCK_FUENTE === 'libro' ? '' : '<div class="mini" style="margin-bottom:8px">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</div>') +
     (lista.length ? `<table><thead><tr><th>Cuándo</th><th>Qué</th><th>Artículo</th><th class="num">Cantidad</th><th>Motivo</th><th>Quién</th><th></th></tr></thead><tbody>` +
     lista.map(m => `<tr><td class="mini">${movFecha(m.creado_at)}</td><td>${esc(MOV_NOM[m.tipo] || m.tipo)}</td><td><b>${esc(m.sku)}</b><div class="mini">${esc((ARTS.find(a => a.sku === m.sku) || {}).descripcion || '')}</div></td><td class="num ${Number(m.cantidad) < 0 ? 'rojo' : ''}"><b>${Number(m.cantidad) > 0 ? '+' : ''}${Number(m.cantidad)}</b>${m.detalle ? '<div class="mini">' + esc(m.detalle) + '</div>' : ''}</td><td>${m.tipo === 'traslado_entrada' && m.comprobante_id ? `<a href="#" onclick="verComprobante(${m.comprobante_id});return false">Ver el remito</a>` : esc(m.ref || '')}</td><td class="mini">${esc((m.usuario_email || '').split('@')[0])}</td><td class="acc">${Number(m.cantidad) > 0 ? `<button class="btn ico" onclick="etDesdeMov('${esc(m.sku)}', ${Number(m.cantidad)})" title="Imprimir las etiquetas de este movimiento (${Number(m.cantidad)})" aria-label="Etiquetas">${_i('print')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : `<div class="empty">Todavía no hay movimientos en ${esc(LOCALES[LOCAL])}.</div>`);
@@ -1802,7 +1803,7 @@ async function movGuardar() {
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); if (!document.getElementById('mov-ok')) movNuevo(prev); else document.getElementById('mov-ok').disabled = false; return; }
   MOV = prev; cerrarModal(); toast(MOV_NOM[MOV.tipo] + ' anotada: ' + (data.delta > 0 ? '+' : '') + data.delta + ' × ' + data.sku, 'success');
   if (STOCK_FUENTE === 'libro') { const a = ARTS.find(z => z.sku === data.sku); if (a) { a.stock_fisico = Number(a.stock_fisico) + Number(data.delta); a.stock = a.stock_fisico - (a.reservado || 0); a.flash = Number(data.delta); delete _fStock[data.sku]; setTimeout(() => { delete a.flash; }, 6000); } }
-  cargarMovimientos();
+  rmFiltro('mov');   // después de guardar se muestra la lista de movimientos
 }
 async function rmFacturar(id) {
   const x = await traerComprobante(id); if (!x.c) return;
@@ -3325,6 +3326,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=94"></script>
+<script src="manual.js?v=95"></script>
 </body>
 </html>
