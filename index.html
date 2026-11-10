@@ -716,7 +716,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
     <section id="content-remitos" class="tab-content">
       <div class="filters" id="rm-filtros">
         <button class="btn primary" id="rm-nuevo" onclick="rmNuevo()" title="Nuevo remito"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Remito</button>
-        <span class="pils"><button class="pil on" data-f="pend" onclick="rmFiltro('pend')">Sin facturar</button><button class="pil" data-f="tr" onclick="rmFiltro('tr')">En tránsito<span class="badge" id="rm-tr-n" style="display:none"></span></button><button class="pil" data-f="ac" onclick="rmFiltro('ac')" title="Traslados que el destino ya aceptó (entraron al stock)">Aceptados</button><button class="pil" data-f="todos" onclick="rmFiltro('todos')">Todos</button><span class="pil-sep"></span><button class="btn primary" id="rm-mov-nuevo" onclick="movNuevo()" title="Movimiento manual de stock: entrada, baja o ajuste. Desde el usuario del local pide la autorización de la encargada."><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Movimiento</button><button class="pil" data-f="mov" onclick="rmFiltro('mov')" title="Entradas, bajas y ajustes de stock hechos a mano (solo encargada)">Movimientos</button></span>
+        <span class="pils"><button class="pil on" data-f="tr" onclick="rmFiltro('tr')">En tránsito<span class="badge" id="rm-tr-n" style="display:none"></span></button><button class="pil" data-f="ac" onclick="rmFiltro('ac')" title="Traslados que el destino ya aceptó (entraron al stock)">Aceptados</button><button class="pil" data-f="todos" onclick="rmFiltro('todos')">Todos</button><span class="pil-sep"></span><button class="btn primary" id="rm-mov-nuevo" onclick="movNuevo()" title="Movimiento manual de stock: entrada, baja o ajuste. Desde el usuario del local pide la autorización de la encargada."><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Movimiento</button><button class="pil" data-f="mov" onclick="rmFiltro('mov')" title="Entradas, bajas y ajustes de stock hechos a mano (solo encargada)">Movimientos</button></span>
         <label>Buscar <input id="rm-q" placeholder="cliente, número, dirección" oninput="rmDebounce()"></label>
         <span class="stat" id="rm-stat"></span>
       </div>
@@ -1313,7 +1313,7 @@ function vRemitoUsar(x) {
   sonar('mas'); vRender(); toast('Remito cargado: revisá precios y cobrá', 'success');
 }
 function vRemitoNoUsar() { T.remito = null; T.items.forEach(i => delete i.entregado); vRender(); }
-let RM = { modo: 'lista', filtro: 'pend' }, _rmT; function rmDebounce() { clearTimeout(_rmT); _rmT = setTimeout(cargarRemitos, 500); }
+let RM = { modo: 'lista', filtro: 'tr' }, _rmT; function rmDebounce() { clearTimeout(_rmT); _rmT = setTimeout(cargarRemitos, 500); }
 function rmFiltro(f) { RM.filtro = f; cargarRemitos(); }
 // Las dos ventanas de Vender se mudan a la pestaña Remitos para armar uno (mismo buscador, mismo ticket) y vuelven al salir
 function rmModo(m) {
@@ -3422,6 +3422,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=104"></script>
+<script src="manual.js?v=105"></script>
 </body>
 </html>
