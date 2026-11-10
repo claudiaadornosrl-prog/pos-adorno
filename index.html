@@ -466,7 +466,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .renglones tr.cambio td { background: #ede9fe; } .renglones tr.cambio .num b { color: #5b21b6; }
 .pos-ticket.es-re { background: #fef3c7; border-color: #fcd34d; }   /* remito: ámbar */ .pos-ticket.es-re .renglones table { background: white; }
 .rebox { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; } .rebox .sena-h b { color: #92400e; } .re-seg { margin: 0; }
-.pos-ticket.es-tr { background: #ede9fe; border-color: #c4b5fd; } .pos-ticket.es-tr .renglones table { background: white; } .pos-ticket.es-tr .rebox .sena-h b { color: #5b21b6; }
+.pos-ticket.es-re #v-descs, .pos-ticket.es-re .renglones th:nth-child(4), .pos-ticket.es-re .renglones td:nth-child(4) { display: none; } .pos-ticket.es-tr { background: #ede9fe; border-color: #c4b5fd; } .pos-ticket.es-tr .renglones table { background: white; } .pos-ticket.es-tr .rebox .sena-h b { color: #5b21b6; }
 .badge { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; background: #7c3aed; color: #fff; font-size: 11px; font-weight: 700; margin-left: 6px; text-align: center; } .pil.on .badge { background: #fff; color: #5b21b6; }
 .chip.viol { background: #ede9fe; color: #5b21b6; }
 .pd-prov td { background: #f8fafc; font-weight: 700; } .pd-t td.num input { width: 64px; text-align: right; } .pd-t td.num input.ed { border-color: #7dd3fc; background: var(--primary-bg); } .pd-t .rojo { color: var(--red); font-weight: 700; } .pd-items { margin-top: 6px; } .pd-items td input { width: 64px; text-align: right; }
@@ -669,7 +669,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
             <div class="cli-sin" id="v-re-loc" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><select id="v-re-dest" onchange="T.re_destino=this.value;vRender()"></select></div>
             <div class="cli-sin" id="v-re-prov-box" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-re-prov" list="v-re-provs" placeholder="Proveedor: Familia García, Espalma u otro (escribí el nombre)" autocomplete="off" oninput="vRender()"><datalist id="v-re-provs"><option value="Familia García Regueira"><option value="Espalma"></datalist></div>
             <div class="cli-sin" id="v-re-dir-box"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><input id="v-re-dir" placeholder="Dirección de entrega (opcional)" autocomplete="off"></div>
-            <div class="cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><input id="v-re-nota" placeholder="Nota para la entrega: horario, portería, quién recibe… (opcional)" autocomplete="off"></div>
+            <div class="cli-sin" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><input id="v-re-nota" placeholder="Nota para la entrega: horario, portería, quién recibe… (opcional)" autocomplete="off"></div>
           </div>
           <div class="cli" id="v-cli">
             <div class="cli-sin" id="v-cli-sin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-cli-doc" placeholder="Cliente: DNI, CUIT o nombre · o escaneá el DNI" autocomplete="off" oninput="cliSugerir()" onkeydown="if(event.key==='Enter'){event.preventDefault();cliEnter();} if(event.key==='Escape'){cliSugCerrar()}"><button class="btn ico chico" onclick="buscarPorNombre()" title="Buscar por nombre" aria-label="Buscar por nombre"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button></div>
@@ -1316,7 +1316,8 @@ function reDestino(m) {
   document.getElementById('v-re-loc').style.display = tr ? '' : 'none'; document.getElementById('v-re-prov-box').style.display = pv ? '' : 'none'; document.getElementById('v-re-dir-box').style.display = tr || pv ? 'none' : '';
   document.getElementById('v-cli').style.display = tr || pv ? 'none' : ''; if (tr || pv) document.getElementById('v-cli-mail').style.display = 'none';
   document.getElementById('v-re-tit').textContent = tr ? 'Remito de traslado' : pv ? 'Remito a proveedor' : 'Remito de venta';
-  document.getElementById('v-re-sub').textContent = pv ? 'devolución o mercadería defectuosa · baja del stock de ' + LOCALES[LOCAL] + ' y no cobra' : tr ? 'baja del stock de ' + LOCALES[LOCAL] + ' y queda en tránsito: entra al destino cuando la encargada lo recibe · le avisamos al celu' : 'baja el stock y no cobra · se factura después desde Vender, al cargar el cliente';
+  document.getElementById('v-re-sub').textContent = pv || tr ? '' : 'baja el stock y no cobra · se factura después desde Vender, al cargar el cliente';
+  document.getElementById('v-obs').placeholder = pv ? 'Motivo: devolución, mercadería defectuosa… (opcional)' : 'Observación (opcional)';
   document.getElementById('v-re-nota').placeholder = pv ? 'Motivo: devolución, mercadería defectuosa, quién la retira…' : tr ? 'Nota para el transporte: bultos, camión, quién lleva… (opcional)' : 'Nota para la entrega: horario, portería, quién recibe… (opcional)';
   document.querySelector('.pos-ticket').classList.toggle('es-tr', tr);
   vRender();
@@ -1432,7 +1433,7 @@ function pedArmar() {
   const ids = marc.map(c => Number(c.dataset.id)), dest = marc[0].dataset.loc; const peds = PED.filter(p => ids.includes(p.id));
   switchTab('remitos'); rmNuevo(); reDestino('loc'); document.getElementById('v-re-dest').value = dest; T.re_destino = dest; T.re_pedidos = ids;
   for (const p of peds) { const a = ARTS.find(x => x.sku === p.sku); const it = T.items.find(x => x.sku === p.sku); if (it) it.cantidad += Number(p.cantidad); else T.items.push({ sku: p.sku, descripcion: p.descripcion || (a ? a.descripcion : p.sku), cantidad: Number(p.cantidad), precio_unit: a ? Number(a.precio) || 0 : 0, descuento_pct: 0, descuento_monto: 0, stock: a ? Number(a.stock) : 0 }); }
-  document.getElementById('v-re-nota').value = 'Pedidos de traslado ' + ids.map(i => '#' + i).join(', ');
+  document.getElementById('v-obs').value = 'Pedidos de traslado ' + ids.map(i => '#' + i).join(', ');
   reDestino('loc'); vRender(); toast('Remito armado con ' + peds.length + (peds.length === 1 ? ' pedido' : ' pedidos') + ' para ' + LOCALES[dest] + ': revisá y emití', 'success');
 }
 async function pedCerrar(id) {
@@ -1689,14 +1690,14 @@ async function cargarMovimientos() {
   if (error) { toast(error.message, 'error'); return; }
   const lista = (data || []).filter(m => !q || (m.sku + ' ' + (m.ref || '') + ' ' + (m.usuario_email || '')).toUpperCase().includes(q));
   document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' movimiento' : ' movimientos');
-  document.getElementById('rm-lista').innerHTML = `<div style="margin-bottom:10px">${puedeRecibir() ? `<button class="btn primary" onclick="movNuevo()">${_i('plus')} Movimiento manual</button>` : '<span class="mini">Los movimientos manuales los hace la encargada.</span>'}${STOCK_FUENTE === 'libro' ? '' : ' <span class="mini">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</span>'}</div>` +
+  document.getElementById('rm-lista').innerHTML = `<div style="margin-bottom:10px"><button class="btn primary" onclick="movNuevo()">${_i('plus')} Movimiento manual</button>${puedeRecibir() ? '' : ' <span class="mini">Al guardar se le pide autorización al celu de la encargada.</span>'}${STOCK_FUENTE === 'libro' ? '' : ' <span class="mini">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</span>'}</div>` +
     (lista.length ? `<table><thead><tr><th>Cuándo</th><th>Qué</th><th>Artículo</th><th class="num">Cantidad</th><th>Motivo</th><th>Quién</th></tr></thead><tbody>` +
     lista.map(m => `<tr><td class="mini">${movFecha(m.creado_at)}</td><td>${esc(MOV_NOM[m.tipo] || m.tipo)}</td><td><b>${esc(m.sku)}</b><div class="mini">${esc((ARTS.find(a => a.sku === m.sku) || {}).descripcion || '')}</div></td><td class="num ${Number(m.cantidad) < 0 ? 'rojo' : ''}"><b>${Number(m.cantidad) > 0 ? '+' : ''}${Number(m.cantidad)}</b>${m.detalle ? '<div class="mini">' + esc(m.detalle) + '</div>' : ''}</td><td>${esc(m.ref || '')}</td><td class="mini">${esc((m.usuario_email || '').split('@')[0])}</td></tr>`).join('') + '</tbody></table>'
     : `<div class="empty">Todavía no hay movimientos manuales en ${esc(LOCALES[LOCAL])}.</div>`);
 }
 let MOV = { tipo: 'alta', sku: null };
-function movNuevo() {
-  MOV = { tipo: 'alta', sku: null };
+function movNuevo(prev) {
+  MOV = prev || { tipo: 'alta', sku: null };
   modal(`<div class="m-head"><h3>Movimiento de stock manual · ${esc(LOCALES[LOCAL])}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="mov-f">
       <div class="pils"><button class="pil on" data-t="alta" onclick="movTipo('alta')">Entrada</button><button class="pil" data-t="baja" onclick="movTipo('baja')">Baja</button><button class="pil" data-t="ajuste" onclick="movTipo('ajuste')">Ajuste a</button></div>
@@ -1707,7 +1708,15 @@ function movNuevo() {
       <div class="cli-sin">${_i('ver')}<input id="mov-motivo" placeholder="Motivo (obligatorio): compra, rotura, recuento, muestra…"></div>
     </div>
     <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="mov-ok" onclick="movGuardar()">Guardar</button></div>`);
-  setTimeout(() => document.getElementById('mov-q').focus(), 50);
+  if (prev) { movTipo(prev.tipo); if (prev.sku) movElegir(prev.sku); document.getElementById('mov-cant').value = prev.cant; document.getElementById('mov-motivo').value = prev.motivo; return; }   // vuelve del cartel de autorización como estaba
+  setTimeout(() => { const q = document.getElementById('mov-q'); if (q) q.focus(); }, 50);
+}
+// Autorización de la encargada para movimientos: vale 15 minutos para varios seguidos (se guarda 12 min acá). 0 = ya tiene rango; null = cancelada
+async function movAut(resumen) {
+  if (puedeRecibir()) return 0;
+  const k = 'mov:' + LOCAL, c = PD_AUT[k]; if (c && Date.now() - c.t < 12 * 60000) return c.id;
+  const aid = await autorizar('mov', resumen, true); if (!aid) return null;
+  PD_AUT[k] = { id: aid, t: Date.now() }; return aid;
 }
 function movTipo(t) { MOV.tipo = t; document.querySelectorAll('#ov .pils .pil').forEach(b => b.classList.toggle('on', b.dataset.t === t)); document.getElementById('mov-cant-lb').textContent = t === 'alta' ? 'unidades que entran' : t === 'baja' ? 'unidades que salen' : 'stock que tiene que quedar'; }
 function movBuscar() {
@@ -1722,9 +1731,13 @@ async function movGuardar() {
   const cant = num(document.getElementById('mov-cant').value), motivo = document.getElementById('mov-motivo').value.trim();
   if (!MOV.sku) { toast('Elegí el producto', 'error'); return; } if (!(cant >= 0) || (MOV.tipo !== 'ajuste' && !(cant > 0))) { toast('Poné la cantidad', 'error'); return; } if (!motivo) { toast('Falta el motivo', 'error'); document.getElementById('mov-motivo').focus(); return; }
   document.getElementById('mov-ok').disabled = true;
-  const { data, error } = await sb.rpc('stock_movimiento_manual', { p_local: LOCAL, p_sku: MOV.sku, p_tipo: MOV.tipo, p_cantidad: cant, p_motivo: motivo });
-  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); document.getElementById('mov-ok').disabled = false; return; }
-  cerrarModal(); toast(MOV_NOM[MOV.tipo] + ' anotada: ' + (data.delta > 0 ? '+' : '') + data.delta + ' × ' + data.sku, 'success');
+  // el cartel de autorización reemplaza esta ventana: si se cancela o falla, se vuelve a abrir como estaba
+  const prev = { tipo: MOV.tipo, sku: MOV.sku, cant: document.getElementById('mov-cant').value, motivo };
+  const aid = await movAut('Movimiento de stock en ' + LOCALES[LOCAL] + ' · ' + MOV_NOM[MOV.tipo] + ' ' + (MOV.tipo === 'ajuste' ? 'a ' : 'de ') + cant + ' × ' + MOV.sku + ' · ' + motivo);
+  if (aid === null) { movNuevo(prev); return; }
+  const { data, error } = await sb.rpc('stock_movimiento_manual', { p_local: LOCAL, p_sku: prev.sku, p_tipo: prev.tipo, p_cantidad: cant, p_motivo: motivo, p_autorizacion_id: aid || null });
+  if (error) { if (/autorizaci/i.test(error.message || '')) delete PD_AUT['mov:' + LOCAL]; toast(error.message.replace(/^.*?: /, ''), 'error'); if (!document.getElementById('mov-ok')) movNuevo(prev); else document.getElementById('mov-ok').disabled = false; return; }
+  MOV = prev; cerrarModal(); toast(MOV_NOM[MOV.tipo] + ' anotada: ' + (data.delta > 0 ? '+' : '') + data.delta + ' × ' + data.sku, 'success');
   if (STOCK_FUENTE === 'libro') { const a = ARTS.find(z => z.sku === data.sku); if (a) { a.stock_fisico = Number(a.stock_fisico) + Number(data.delta); a.stock = a.stock_fisico - (a.reservado || 0); a.flash = Number(data.delta); delete _fStock[data.sku]; setTimeout(() => { delete a.flash; }, 6000); } }
   cargarMovimientos();
 }
@@ -1906,7 +1919,7 @@ function vTipo(tipo, letra) {
   document.querySelector('.pagos-tk').style.display = tipo === 'PR' || tipo === 'RE' ? 'none' : '';
   { const eraMA = document.querySelector('.pos-ticket').classList.contains('es-ma'); if ((tipo === 'MA') !== eraMA) { document.getElementById('v-pagos').innerHTML = ''; pAgregar(tipo === 'MA' && !T.gift ? 'efectivo' : undefined); } }
   document.getElementById('v-re').style.display = tipo === 'RE' ? '' : 'none';
-  if (tipo === 'RE') reDestino(T.re_modo === 'prov' ? 'prov' : T.re_modo === 'cli' || (!T.re_modo && T.cliente) ? null : 'loc'); else { T.re_destino = null; T.re_modo = null; document.getElementById('v-cli').style.display = ''; document.querySelector('.pos-ticket').classList.remove('es-tr'); }
+  if (tipo === 'RE') reDestino(T.re_modo === 'prov' ? 'prov' : T.re_modo === 'cli' || (!T.re_modo && T.cliente) ? null : 'loc'); else { T.re_destino = null; T.re_modo = null; document.getElementById('v-obs').placeholder = 'Observación (opcional)'; document.getElementById('v-cli').style.display = ''; document.querySelector('.pos-ticket').classList.remove('es-tr'); }
   if (tipo !== 'FC' && tipo !== 'MA') { T.remito = null; T.items.forEach(i => delete i.entregado); }
   const tk = document.querySelector('.pos-ticket'); tk.classList.toggle('es-nc', nc); tk.classList.toggle('es-pr', tipo === 'PR'); tk.classList.toggle('es-ma', tipo === 'MA'); tk.classList.toggle('es-re', tipo === 'RE');
   // Cambiar de pastilla NO borra los artículos (JP): solo se limpia lo propio de la nota de crédito
@@ -2532,9 +2545,10 @@ async function emitir(esNC) {
   const valeWaN = esNC ? ((document.querySelector('#v-pagos .vale-wa') || {}).value || '').trim() : '';   // el WhatsApp va aparte: el mail lo manda el servicio y el chat se abre acá
   const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && !(t.tot > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
-  const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: document.getElementById('v-obs').value.trim() || null,
+  const p = { local: LOCAL, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
-    entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? document.getElementById('v-re-nota').value.trim() || null : undefined,
+    entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? document.getElementById('v-obs').value.trim() || null : undefined,   // en el remito la observación de abajo es la nota de entrega
+   
     items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_monto > 0 ? 0 : i.descuento_pct, descuento_monto: i.descuento_monto || 0, iva_pct: 21 })),
     pagos: sinPago() ? [] : pagos };
   const { data, error } = await sb.rpc('pos_emitir', { p });
@@ -2593,8 +2607,8 @@ async function vlAnular(codigo) {
 const ACCION_NOM = { nc: 'una nota de crédito', ma: 'un comprobante X', re: 'un remito', anular: 'una anulación' };
 const pila = n => n ? tit((String(n).split(',')[1] || n).trim()) : '';
 let AUT = null;
-function autorizar(accion, resumen) {
-  if (PERFIL.autoriza) return Promise.resolve(0);   // 0 = no hace falta: la que emite ya tiene rango
+function autorizar(accion, resumen, forzar) {
+  if (PERFIL.autoriza && !forzar) return Promise.resolve(0);   // 0 = no hace falta: la que emite ya tiene rango
   return new Promise(resolve => {
     AUT = { accion, resumen, resolve, id: null, poll: null, fin: false, desde: 0, lista: [] };
     modal(`<div class="m-head"><h3>Esta operación necesita autorización</h3><span class="spacer"></span><button class="btn ico" onclick="autCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
@@ -2603,7 +2617,7 @@ function autorizar(accion, resumen) {
       <div class="mini" style="margin-top:12px">¿No tienen el celu a mano? Que lo autorice acá con su clave:</div>
       <div class="aut-clave"><input id="aut-mail" type="email" placeholder="Usuario (mail)" autocomplete="off"><input id="aut-pass" type="password" placeholder="Clave" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();autClave()}"></div>
       <div class="m-foot"><span class="spacer"></span><button class="btn" onclick="autCancelar()">Cancelar</button><button class="btn primary" onclick="autClave()">Autorizar con clave</button></div>`);
-    sb.rpc('pos_presentes', { p_local: LOCAL }).then(({ data, error }) => { if (!AUT || AUT.fin) return; if (error) { toast(error.message, 'error'); } AUT.lista = data || []; autLista(); });
+    sb.rpc('pos_presentes', { p_local: LOCAL }).then(({ data, error }) => { if (!AUT || AUT.fin) return; if (error) { toast(error.message, 'error'); } AUT.lista = (data || []).filter(p => accion !== 'mov' || p.rol !== 'cajero'); autLista(); });   // los movimientos de stock los autoriza solo la encargada (o un admin)
   });
 }
 function autFin(v) { if (!AUT || AUT.fin) return; AUT.fin = true; clearInterval(AUT.poll); const r = AUT.resolve; AUT = null; cerrarModal(); r(v); }
@@ -2618,7 +2632,7 @@ function autLista(msg) {
   caja.className = 'aut-caja' + (pres.length ? '' : ' sin');
   caja.innerHTML = (msg ? `<div class="mini" style="color:var(--red);margin-bottom:4px">${esc(msg)}</div>` : '') + (pres.length
     ? `<b>Quiénes están en ${esc(LOCALES[LOCAL])} ahora</b>${pres.map(p => autPersona(p, true)).join('')}`
-    : `<b>No hay encargada ni cajera en ${esc(LOCALES[LOCAL])} ahora</b><div class="mini">Según el reloj hoy no fichó entrada ninguna autorizadora y ninguna tiene turno a esta hora. Podés pedirle a un admin, o que alguien autorice con su clave.</div>${admins.map(p => autPersona(p, true)).join('')}`);
+    : `<b>No hay ${AUT.accion === 'mov' ? 'encargada' : 'encargada ni cajera'} en ${esc(LOCALES[LOCAL])} ahora</b><div class="mini">Según el reloj hoy no fichó entrada ninguna autorizadora y ninguna tiene turno a esta hora. Podés pedirle a un admin, o que alguien autorice con su clave.</div>${admins.map(p => autPersona(p, true)).join('')}`);
 }
 async function autPedir(empId) {
   if (!AUT) return; const p = AUT.lista.find(x => x.empleado_id === empId); if (!p) return;
@@ -2907,6 +2921,6 @@ function cerrarModal() { const ov = document.getElementById('ov'); ov.style.disp
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ov').style.display !== 'none') cerrarModal(); });
 
 </script>
-<script src="manual.js?v=73"></script>
+<script src="manual.js?v=74"></script>
 </body>
 </html>
