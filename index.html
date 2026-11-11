@@ -760,7 +760,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
           <details style="margin-top:12px"><summary class="mini" style="cursor:pointer">Rollo e impresora (medidas, por fila, nombre)</summary>
           <div class="mini" style="margin-bottom:8px">Medidas en milímetros. Se imprime por el driver de Windows de la impresora (Zebra); en el diálogo de impresión elegí la Zebra y la hoja sale del tamaño de una fila de etiquetas. Queda guardado en esta computadora.</div>
           <div class="et-f"><label>Ancho <input id="et-ancho" inputmode="decimal"></label><label>Alto <input id="et-alto" inputmode="decimal"></label><label>Por fila <input id="et-cols" inputmode="numeric"></label></div>
-          <div class="et-f"><label>Separación <input id="et-gap" inputmode="decimal"></label><label>Margen izq. <input id="et-margen" inputmode="decimal"></label><label>Nombre <select id="et-nombre"><option value="Claudia Adorno">Claudia Adorno</option><option value="Atelier Claudia Adorno">Atelier Claudia Adorno</option></select></label></div>
+          <div class="et-f"><label>Separación <input id="et-gap" inputmode="decimal"></label><label>Margen izq. <input id="et-margen" inputmode="decimal"></label><label>Nombre <select id="et-nombre"><option value="Claudia Adorno">Claudia Adorno</option><option value="Atelier Claudia Adorno">Atelier Claudia Adorno</option></select></label><label title="Para qué lado sale la etiqueta de la impresora">Sentido <select id="et-girar"><option value="1">Girada 180°</option><option value="0">Sin girar</option></select></label></div>
           <div class="acciones" style="margin-top:8px"><button class="btn" onclick="etRolloDefault()">Volver al rollo de siempre (31,7 × 12,7, 3 por fila)</button><span class="spacer"></span><button class="btn" onclick="etGuardarRollo();toast('Rollo guardado','success')">Guardar rollo</button></div>
           <div class="mini" style="margin-top:10px">Diseño C1 (el que elegiste el 30-oct): QR con el SKU a la izquierda, SKU grande y el nombre debajo. Si una fila sale corrida, ajustá separación y margen y volvé a probar con una sola fila.</div>
           </details>
@@ -1751,11 +1751,11 @@ async function pdCancelar(id) { const m = await pedirTexto('Motivo para cancelar
 // ═══ Etiquetas (JP 6-nov): logo + SKU + QR con el SKU; cola de productos × cantidad; se imprime por el driver de la Zebra ═══
 // Diseño C1 (JP, 30-oct-2026, medido en la ZD220): etiqueta 31,7 × 12,7 mm, 3 bandas, 3,2 mm entre bandas, la 1ª arranca 1,5 mm antes del
 // cabezal → margen 2,5 mm. QR de 7,9 mm (21 módulos a 3 puntos) a la izquierda; SKU grande en negrita y "Claudia Adorno" debajo (Avant Garde).
-const ET_DEF = { ancho: 31.7, alto: 12.7, cols: 3, gap: 3.2, margen: 2.5, nombre: 'Claudia Adorno' };
+const ET_DEF = { ancho: 31.7, alto: 12.7, cols: 3, gap: 3.2, margen: 2.5, nombre: 'Claudia Adorno', girar: 1 };
 let ET = { cola: [], pend: 0 };
 function etRollo() { try { return Object.assign({}, ET_DEF, JSON.parse(localStorage.getItem('pos_etiq') || '{}')); } catch (e) { return Object.assign({}, ET_DEF); } }
-function etPintaRollo() { const r = etRollo(); for (const k of ['ancho', 'alto', 'cols', 'gap', 'margen', 'nombre']) { const el = document.getElementById('et-' + k); if (el) el.value = r[k]; } }
-function etGuardarRollo() { const r = {}; for (const k of ['ancho', 'alto', 'cols', 'gap', 'margen']) r[k] = Math.max(0, num(document.getElementById('et-' + k).value)) || ET_DEF[k]; r.cols = Math.max(1, Math.round(r.cols)); r.nombre = document.getElementById('et-nombre').value; localStorage.setItem('pos_etiq', JSON.stringify(r)); }
+function etPintaRollo() { const r = etRollo(); for (const k of ['ancho', 'alto', 'cols', 'gap', 'margen', 'nombre']) { const el = document.getElementById('et-' + k); if (el) el.value = r[k]; } { const g = document.getElementById('et-girar'); if (g) g.value = r.girar === 0 ? '0' : '1'; } }
+function etGuardarRollo() { const r = {}; for (const k of ['ancho', 'alto', 'cols', 'gap', 'margen']) r[k] = Math.max(0, num(document.getElementById('et-' + k).value)) || ET_DEF[k]; r.cols = Math.max(1, Math.round(r.cols)); r.nombre = document.getElementById('et-nombre').value; r.girar = document.getElementById('et-girar').value === '0' ? 0 : 1; localStorage.setItem('pos_etiq', JSON.stringify(r)); }
 function etRolloDefault() { localStorage.removeItem('pos_etiq'); etPintaRollo(); }
 function etBuscar() {
   let q = document.getElementById('et-q').value.trim().toUpperCase(); const box = document.getElementById('et-res');
@@ -1806,11 +1806,11 @@ function etHTML(cola) {
     .fila { width: ${W}mm; height: ${H}mm; display: flex; align-items: center; page-break-after: always; break-after: page; padding-left: ${r.margen}mm; box-sizing: border-box; gap: ${r.gap}mm; overflow: hidden; }
     .fila:last-child { page-break-after: auto; break-after: auto; }
     @font-face { font-family: 'URW Gothic'; src: url('fonts/URWGothic-Book.ttf') format('truetype'); font-weight: 400; }   /* solo Book: la negrita del SKU la sintetiza el navegador */
-    .et { width: ${r.ancho}mm; height: ${r.alto}mm; position: relative; box-sizing: border-box; overflow: hidden; font-family: 'URW Gothic', 'ITC Avant Garde Gothic', Avenir, Arial, sans-serif; color: #000; background: #fff; }
+    .et { width: ${r.ancho}mm; height: ${r.alto}mm; position: relative; box-sizing: border-box; overflow: hidden; font-family: 'URW Gothic', 'ITC Avant Garde Gothic', Avenir, Arial, sans-serif; color: #000; background: #fff;${r.girar === 0 ? '' : ' transform: rotate(180deg);'} }
     .et img.q { position: absolute; left: ${izq}mm; top: ${((r.alto - qrmm) / 2).toFixed(2)}mm; width: ${qrmm}mm; height: ${qrmm}mm; image-rendering: pixelated; }
-    .et .s { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; line-height: 1; height: 1.3em; font-weight: 700; white-space: nowrap; overflow: hidden; letter-spacing: 0; }
-    .et .n { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; line-height: 1; height: 1.3em; font-size: ${fsN.toFixed(2)}pt; font-weight: 400; letter-spacing: 0.1mm; white-space: nowrap; overflow: hidden; }
-    .et .w { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; top: ${(qrBot - 0.88 * fsW * MM).toFixed(2)}mm; line-height: 1; height: 1.3em; font-size: ${fsW.toFixed(2)}pt; font-weight: 400; white-space: nowrap; overflow: hidden; }
+    .et .s { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; line-height: 1; height: 1.3em; font-weight: 700; -webkit-text-stroke: 0.06mm #000; white-space: nowrap; overflow: hidden; letter-spacing: 0; }
+    .et .n { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; line-height: 1; height: 1.3em; font-size: ${fsN.toFixed(2)}pt; font-weight: 400; -webkit-text-stroke: 0.13mm #000; letter-spacing: 0.1mm; white-space: nowrap; overflow: hidden; }
+    .et .w { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; top: ${(qrBot - 0.88 * fsW * MM).toFixed(2)}mm; line-height: 1; height: 1.3em; font-size: ${fsW.toFixed(2)}pt; font-weight: 400; -webkit-text-stroke: 0.1mm #000; white-space: nowrap; overflow: hidden; }
   </style></head><body>${filas.map(f => `<div class="fila">${f.map(sku => `<div class="et"><img class="q" src="${qr(sku)}" alt=""><div class="s" style="font-size:${fsSku(sku).toFixed(2)}pt;top:${topS(fsSku(sku)).toFixed(2)}mm">${esc(sku)}</div><div class="n" style="top:${topN(fsSku(sku)).toFixed(2)}mm">${esc(r.nombre || 'Claudia Adorno')}</div><div class="w">${ET_WEB}</div></div>`).join('')}</div>`).join('')}</body></html>`;
 }
 async function etDesdeRemito(id) { const { data } = await sb.from('pos_comprobantes_det').select('sku,cantidad,cantidad_recibida').eq('comprobante_id', id); (data || []).forEach(d => { const n = Number(d.cantidad_recibida != null ? d.cantidad_recibida : d.cantidad); if (n > 0) etAgregar(d.sku, n); }); switchTab('etiquetas'); }
@@ -1823,7 +1823,7 @@ function etPrevVivo() {
     const filas = Math.ceil(tot / r.cols); const Z = Math.max(1, Math.min(2.2, (ifr.parentElement.clientWidth - 24) / ((r.margen + r.cols * r.ancho + (r.cols - 1) * r.gap) * 3.78)));
     lb.textContent = tot + (tot === 1 ? ' etiqueta' : ' etiquetas') + ' · ' + filas + (filas === 1 ? ' fila' : ' filas') + ' de ' + r.cols + ' · ' + r.ancho + ' × ' + r.alto + ' mm';
     ifr.style.height = Math.ceil(r.alto * 3.78 * Z * Math.min(filas, 12) + 14) + 'px';
-    ifr.srcdoc = etHTML(ET.cola.slice(0, 200)).replace('</style>', 'body { zoom: ' + Z.toFixed(2) + '; } .fila { page-break-after: auto; break-after: auto; border-bottom: 1px dashed #cbd5e1; }</style>');
+    ifr.srcdoc = etHTML(ET.cola.slice(0, 200)).replace('</style>', '.et { transform: none !important; } body { zoom: ' + Z.toFixed(2) + '; } .fila { page-break-after: auto; break-after: auto; border-bottom: 1px dashed #cbd5e1; }</style>');
   }, 150);
 }
 function etImprimir() {
@@ -3494,6 +3494,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=116"></script>
+<script src="manual.js?v=117"></script>
 </body>
 </html>
