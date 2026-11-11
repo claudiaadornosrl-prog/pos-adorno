@@ -750,7 +750,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
           <div class="buscador" style="margin:8px 0"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="chip amber" id="et-pend" style="display:none;margin-right:6px"></span><input id="et-q" placeholder="Cantidad y + (ej. 12 +), después el SKU o escaneá · o directo 12 SMINI" autocomplete="off" oninput="etBuscar()" onkeydown="if(event.key==='Enter'){event.preventDefault();etEnter()}"></div>
           <div id="et-res" class="prod-lista mov-res"></div>
           <div id="et-cola"></div>
-          <div class="acciones" style="margin-top:10px"><button class="btn" onclick="etVaciar()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar</button><span class="spacer"></span><span class="mini" id="et-tot"></span><button class="btn primary" id="et-imprimir" onclick="etPreview()" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Vista previa e imprimir</button></div>
+          <div class="acciones" style="margin-top:10px"><button class="btn" onclick="etVaciar()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar</button><span class="spacer"></span><span class="mini" id="et-tot"></span><button class="btn primary" id="et-imprimir" onclick="etImprimir()" disabled title="Abre el cuadro de impresión de Windows: elegí la etiquetadora"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button></div>
         </div>
         <div class="card et-rollo">
           <h3>Así va saliendo el rollo</h3>
@@ -1789,6 +1789,7 @@ function etRender() {
   document.getElementById('et-imprimir').disabled = !tot;
 }
 // HTML de las etiquetas: una "hoja" por fila del rollo; @page del tamaño exacto para que el driver no escale nada
+const ET_WEB = 'www.claudiaadorno.com';
 function etHTML(cola) {
   const r = etRollo(); const unidades = []; cola.forEach(it => { for (let k = 0; k < it.cantidad; k++) unidades.push(it.sku); });
   const filas = []; for (let i = 0; i < unidades.length; i += r.cols) filas.push(unidades.slice(i, i + r.cols));
@@ -1803,9 +1804,10 @@ function etHTML(cola) {
     @font-face { font-family: 'URW Gothic'; src: url('fonts/URWGothic-Book.ttf') format('truetype'); font-weight: 400; }   /* solo Book: la negrita del SKU la sintetiza el navegador */
     .et { width: ${r.ancho}mm; height: ${r.alto}mm; position: relative; box-sizing: border-box; overflow: hidden; font-family: 'URW Gothic', 'ITC Avant Garde Gothic', Avenir, Arial, sans-serif; color: #000; background: #fff; }
     .et img.q { position: absolute; left: ${izq}mm; top: ${((r.alto - qrmm) / 2).toFixed(2)}mm; width: ${qrmm}mm; height: ${qrmm}mm; image-rendering: pixelated; }
-    .et .s { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; top: ${(r.alto / 2 - 5.2).toFixed(2)}mm; height: 4.4mm; line-height: 4.4mm; font-weight: 700; white-space: nowrap; overflow: hidden; letter-spacing: 0; }
-    .et .n { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; top: ${(r.alto / 2 + 0.3).toFixed(2)}mm; height: 2.6mm; line-height: 2.6mm; font-size: ${Math.min(6.4, anchoTx / 9.2 * 2.835).toFixed(2)}pt; font-weight: 400; letter-spacing: 0.1mm; white-space: nowrap; overflow: hidden; }
-  </style></head><body>${filas.map(f => `<div class="fila">${f.map(sku => `<div class="et"><img class="q" src="${qr(sku)}" alt=""><div class="s" style="font-size:${fsSku(sku).toFixed(2)}pt">${esc(sku)}</div><div class="n">${esc(r.nombre || 'Claudia Adorno')}</div></div>`).join('')}</div>`).join('')}</body></html>`;
+    .et .s { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; top: ${(r.alto / 2 - 5.45).toFixed(2)}mm; height: 4.4mm; line-height: 4.4mm; font-weight: 700; white-space: nowrap; overflow: hidden; letter-spacing: 0; }
+    .et .n { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; top: ${(r.alto / 2 - 1.05).toFixed(2)}mm; height: 2.6mm; line-height: 2.6mm; font-size: ${Math.min(6.4, anchoTx / 9.2 * 2.835).toFixed(2)}pt; font-weight: 400; letter-spacing: 0.1mm; white-space: nowrap; overflow: hidden; }
+    .et .w { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; top: ${(r.alto / 2 + 2.45).toFixed(2)}mm; height: 2.2mm; line-height: 2.2mm; font-size: ${Math.min(4.8, anchoTx / (0.64 * ET_WEB.length) * 2.835).toFixed(2)}pt; font-weight: 400; white-space: nowrap; overflow: hidden; }
+  </style></head><body>${filas.map(f => `<div class="fila">${f.map(sku => `<div class="et"><img class="q" src="${qr(sku)}" alt=""><div class="s" style="font-size:${fsSku(sku).toFixed(2)}pt">${esc(sku)}</div><div class="n">${esc(r.nombre || 'Claudia Adorno')}</div><div class="w">${ET_WEB}</div></div>`).join('')}</div>`).join('')}</body></html>`;
 }
 async function etDesdeRemito(id) { const { data } = await sb.from('pos_comprobantes_det').select('sku,cantidad,cantidad_recibida').eq('comprobante_id', id); (data || []).forEach(d => { const n = Number(d.cantidad_recibida != null ? d.cantidad_recibida : d.cantidad); if (n > 0) etAgregar(d.sku, n); }); switchTab('etiquetas'); }
 let _etPv;
@@ -1820,16 +1822,9 @@ function etPrevVivo() {
     ifr.srcdoc = etHTML(ET.cola.slice(0, 200)).replace('</style>', 'body { zoom: ' + Z.toFixed(2) + '; } .fila { page-break-after: auto; break-after: auto; border-bottom: 1px dashed #cbd5e1; }</style>');
   }, 150);
 }
-function etPreview() {
-  if (!ET.cola.length) return; const r = etRollo(); const tot = ET.cola.reduce((s, i) => s + i.cantidad, 0);
-  modal(`<div class="m-head"><h3>Etiquetas · ${tot} en ${Math.ceil(tot / r.cols)} ${Math.ceil(tot / r.cols) === 1 ? 'fila' : 'filas'} de ${r.cols}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="mini" style="margin:6px 0 8px">Así sale cada fila del rollo (${r.ancho} × ${r.alto} mm). Si está bien, Imprimir abre el diálogo: elegí la Zebra.</div>
-    <div class="pv-a4" style="padding:14px"><iframe id="et-if" style="width:${Math.ceil((r.margen + r.cols * r.ancho + (r.cols - 1) * r.gap) * 3.78 * 2.5) + 6}px;height:${Math.ceil(r.alto * 3.78 * 2.5 * Math.min(3, Math.ceil(tot / r.cols))) + 12}px;border:none;background:#fff;border-radius:6px;max-width:100%"></iframe></div>
-    <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" onclick="etImprimir()">${_i('print')} Imprimir</button></div>`, 'preview');
-  const ifr = document.getElementById('et-if'); ifr.srcdoc = etHTML(ET.cola).replace('</style>', 'body { zoom: 2.5; overflow: hidden; } .fila { page-break-after: auto; break-after: auto; border-bottom: 1px dashed #cbd5e1; }</style>');
-}
 function etImprimir() {
-  const ifr = document.getElementById('et-if'); if (!ifr) return;
+  if (!ET.cola.length) return;
+  let ifr = document.getElementById('et-if'); if (!ifr) { ifr = document.createElement('iframe'); ifr.id = 'et-if'; ifr.setAttribute('aria-hidden', 'true'); ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'; document.body.appendChild(ifr); }
   const w = ifr.contentWindow; const html = etHTML(ET.cola);
   const doc = w.document; doc.open(); doc.write(html); doc.close();
   setTimeout(() => { try { w.focus(); w.print(); } catch (e) { toast('No pude abrir el diálogo de impresión', 'error'); } }, 400);
@@ -3495,6 +3490,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=115"></script>
+<script src="manual.js?v=116"></script>
 </body>
 </html>
