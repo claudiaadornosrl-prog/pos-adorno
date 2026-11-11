@@ -751,7 +751,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
           <div class="buscador" style="margin:8px 0"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="chip amber" id="et-pend" style="display:none;margin-right:6px"></span><input id="et-q" placeholder="Cantidad y + (ej. 12 +), después el SKU o escaneá · o directo 12 SMINI" autocomplete="off" oninput="etBuscar()" onkeydown="if(event.key==='Enter'){event.preventDefault();etEnter()}"></div>
           <div id="et-res" class="prod-lista mov-res"></div>
           <div id="et-cola"></div>
-          <div class="acciones" style="margin-top:10px"><button class="btn" onclick="etVaciar()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar</button><span class="spacer"></span><span class="mini" id="et-tot"></span><button class="btn primary" id="et-imprimir" onclick="etImprimir()" disabled title="Manda las etiquetas a la etiquetadora del local"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button></div>
+          <div class="acciones" style="margin-top:10px"><button class="btn" onclick="etVaciar()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar</button><button class="btn" id="et-df" style="display:none" onclick="etRemitosDF()" title="Cargar las etiquetas de un remito de venta del Dragonfish"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Desde remito</button><span class="spacer"></span><span class="mini" id="et-tot"></span><button class="btn primary" id="et-imprimir" onclick="etImprimir()" disabled title="Manda las etiquetas a la etiquetadora del local"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button></div>
           <div class="acciones" style="margin-top:6px"><span class="mini" id="et-dest"></span><span class="spacer"></span><button class="btn chico" id="et-win" style="display:none" onclick="etImprimirWin()" title="Imprime por el cuadro de Windows de esta PC, eligiendo la impresora a mano">Desde esta PC</button></div>
         </div>
         <div class="card et-rollo">
@@ -1834,6 +1834,25 @@ function etPrevVivo() {
     ifr.srcdoc = etHTML(ET.cola.slice(0, 200)).replace('</style>', '.et { transform: none !important; } body { zoom: ' + Z.toFixed(2) + '; } .fila { page-break-after: auto; break-after: auto; border-bottom: 1px dashed #cbd5e1; }</style>');
   }, 150);
 }
+let ET_DF = [], _etDfT;
+async function etRemitosDF() {
+  modal(`<div class="m-head"><h3>Etiquetas desde un remito del Dragonfish</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="mini" style="margin-bottom:8px">Remitos de venta de Oficina de los últimos días. Tocá uno y sus artículos entran a la lista de etiquetas, con la cantidad de cada uno.</div>
+    <div class="cli-sin">${_i('buscar')}<input id="et-df-q" placeholder="Número de remito o destino (ej. 72725, Alcorta)" autocomplete="off" oninput="clearTimeout(_etDfT);_etDfT=setTimeout(etRemitosDFCargar,300)"></div>
+    <div id="et-df-lista" style="margin-top:10px;max-height:56vh;overflow:auto"><div class="empty chico">Cargando…</div></div>`);
+  etRemitosDFCargar();
+}
+async function etRemitosDFCargar() {
+  const box = document.getElementById('et-df-lista'); if (!box) return; const q = (document.getElementById('et-df-q') || {}).value || '';
+  const { data, error } = await sb.rpc('pos_df_remitos_listar', { p_q: q.trim() || null }); if (error) { box.innerHTML = '<div class="empty chico">' + esc(error.message) + '</div>'; return; }
+  ET_DF = data || [];
+  box.innerHTML = ET_DF.length ? '<table><thead><tr><th>Remito</th><th>Destino</th><th class="num">Artículos</th><th class="num">Unidades</th><th></th></tr></thead><tbody>' + ET_DF.map((r, i) => `<tr style="cursor:pointer" onclick="etRemitoDFUsar(${i})"><td><b>${esc(r.numero)}</b><div class="mini">${fechaAR(r.fecha)} ${esc(String(r.hora || '').slice(0, 5))}</div></td><td>${esc(r.destino || '')}${r.obs ? '<div class="mini">«' + esc(r.obs) + '»</div>' : ''}</td><td class="num">${r.renglones}</td><td class="num"><b>${Number(r.unidades)}</b></td><td><button class="btn chico primary" onclick="event.stopPropagation();etRemitoDFUsar(${i})">Cargar</button></td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">No encontré remitos' + (q.trim() ? ' con «' + esc(q.trim()) + '»' : ' de los últimos días') + '.</div>';
+}
+function etRemitoDFUsar(i) {
+  const r = ET_DF[i]; if (!r) return; let n = 0;
+  for (const it of r.items || []) { const c = Math.max(0, Math.round(Number(it.cantidad))); if (!c || !it.sku) continue; const ya = ET.cola.find(x => x.sku === it.sku); if (ya) ya.cantidad += c; else ET.cola.push({ sku: it.sku, descripcion: it.descripcion || '', cantidad: c }); n += c; }
+  cerrarModal(); etRender(); toast('Remito ' + r.numero + ': ' + n + (n === 1 ? ' etiqueta' : ' etiquetas') + ' en la lista. Revisá y tocá Imprimir', 'success');
+}
 let ET_IMPS = null;
 async function etImpresoras(forzar) {
   if (!forzar && ET_IMPS && ET_IMPS.local === LOCAL && Date.now() - ET_IMPS.at < 60000) return ET_IMPS.l;
@@ -1843,6 +1862,7 @@ async function etDestino() {
   const el = document.getElementById('et-dest'), w = document.getElementById('et-win'); if (!el) return; const l = await etImpresoras();
   el.innerHTML = l.length ? 'Sale por ' + l.map(i => '<b>' + esc(i.nombre) + '</b>' + (l.length > 1 ? ' (' + (i.tipo === 'rfid' ? 'RFID' : 'comunes') + ')' : '') + (i.en_linea ? '' : ' <span class="chip red" title="La PC que imprime no está respondiendo: lo que mandes sale cuando vuelva">sin conexión</span>')).join(' y ') : (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? '<span class="chip red">' + esc(LOCALES[LOCAL]) + ' todavía no tiene etiquetadora conectada al POS</span>' : 'Sale por el cuadro de impresión de esta PC');
   if (w) w.style.display = l.length ? '' : 'none';
+  { const b = document.getElementById('et-df'); if (b) b.style.display = LOCAL === 'oficina' ? '' : 'none'; }
 }
 async function etImprimir() {
   if (!ET.cola.length) return;
@@ -3530,6 +3550,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=118"></script>
+<script src="manual.js?v=119"></script>
 </body>
 </html>
