@@ -751,7 +751,8 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
           <div class="buscador" style="margin:8px 0"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="chip amber" id="et-pend" style="display:none;margin-right:6px"></span><input id="et-q" placeholder="Cantidad y + (ej. 12 +), después el SKU o escaneá · o directo 12 SMINI" autocomplete="off" oninput="etBuscar()" onkeydown="if(event.key==='Enter'){event.preventDefault();etEnter()}"></div>
           <div id="et-res" class="prod-lista mov-res"></div>
           <div id="et-cola"></div>
-          <div class="acciones" style="margin-top:10px"><button class="btn" onclick="etVaciar()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar</button><span class="spacer"></span><span class="mini" id="et-tot"></span><button class="btn primary" id="et-imprimir" onclick="etImprimir()" disabled title="Abre el cuadro de impresión de Windows: elegí la etiquetadora"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button></div>
+          <div class="acciones" style="margin-top:10px"><button class="btn" onclick="etVaciar()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar</button><span class="spacer"></span><span class="mini" id="et-tot"></span><button class="btn primary" id="et-imprimir" onclick="etImprimir()" disabled title="Manda las etiquetas a la etiquetadora del local"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button></div>
+          <div class="acciones" style="margin-top:6px"><span class="mini" id="et-dest"></span><span class="spacer"></span><button class="btn chico" id="et-win" style="display:none" onclick="etImprimirWin()" title="Imprime por el cuadro de Windows de esta PC, eligiendo la impresora a mano">Desde esta PC</button></div>
         </div>
         <div class="card et-rollo">
           <h3>Así va saliendo el rollo</h3>
@@ -1787,7 +1788,7 @@ function etRender() {
   box.className = 'et-cola'; box.innerHTML = ET.cola.length ? `<table><thead><tr><th>Artículo</th><th class="num">Etiquetas</th><th></th></tr></thead><tbody>` + ET.cola.map((it, i) => `<tr><td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td><td class="num cant"><button class="btn ico chico" onclick="etCant(${i},${it.cantidad + 1})" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="etCant(${i},this.value)" inputmode="numeric"><button class="btn ico chico" onclick="etCant(${i},${it.cantidad - 1})" aria-label="Menos">${_i('minus')}</button></td><td><button class="btn ico chico" onclick="etQuitar(${i})" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">Buscá un producto y tocalo para sumarlo a la cola. Escaneá su QR para ir más rápido.</div>';
   etPrevVivo();
   const r = etRollo(); document.getElementById('et-tot').textContent = tot ? tot + (tot === 1 ? ' etiqueta' : ' etiquetas') + ' · ' + Math.ceil(tot / r.cols) + (Math.ceil(tot / r.cols) === 1 ? ' fila' : ' filas') : '';
-  document.getElementById('et-imprimir').disabled = !tot;
+  document.getElementById('et-imprimir').disabled = !tot; etDestino();
 }
 // HTML de las etiquetas: una "hoja" por fila del rollo; @page del tamaño exacto para que el driver no escale nada
 const ET_WEB = 'www.claudiaadorno.com';
@@ -1829,7 +1830,35 @@ function etPrevVivo() {
     ifr.srcdoc = etHTML(ET.cola.slice(0, 200)).replace('</style>', '.et { transform: none !important; } body { zoom: ' + Z.toFixed(2) + '; } .fila { page-break-after: auto; break-after: auto; border-bottom: 1px dashed #cbd5e1; }</style>');
   }, 150);
 }
-function etImprimir() {
+let ET_IMPS = null;
+async function etImpresoras(forzar) {
+  if (!forzar && ET_IMPS && ET_IMPS.local === LOCAL && Date.now() - ET_IMPS.at < 60000) return ET_IMPS.l;
+  const { data } = await sb.rpc('pos_etiq_impresoras_listar', { p_local: LOCAL }); ET_IMPS = { local: LOCAL, at: Date.now(), l: data || [] }; return ET_IMPS.l;
+}
+async function etDestino() {
+  const el = document.getElementById('et-dest'), w = document.getElementById('et-win'); if (!el) return; const l = await etImpresoras();
+  el.innerHTML = l.length ? 'Sale por ' + l.map(i => '<b>' + esc(i.nombre) + '</b>' + (l.length > 1 ? ' (' + (i.tipo === 'rfid' ? 'RFID' : 'comunes') + ')' : '') + (i.en_linea ? '' : ' <span class="chip red" title="La PC que imprime no está respondiendo: lo que mandes sale cuando vuelva">sin conexión</span>')).join(' y ') : 'Sale por el cuadro de impresión de esta PC';
+  if (w) w.style.display = l.length ? '' : 'none';
+}
+async function etImprimir() {
+  if (!ET.cola.length) return;
+  const imps = await etImpresoras(true);
+  if (!imps.length) return etImprimirWin();
+  const btn = document.getElementById('et-imprimir'); btn.disabled = true;
+  const { data, error } = await sb.rpc('pos_etiq_enviar', { p_local: LOCAL, p_items: ET.cola.map(i => ({ sku: i.sku, cantidad: i.cantidad })), p_nombre: etRollo().nombre });
+  if (error) { btn.disabled = false; toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  const tr = data.trabajos || [];
+  toast(tr.map(t => t.etiquetas + (t.etiquetas === 1 ? ' etiqueta' : ' etiquetas') + ' a ' + t.impresora).join(' · ') + (tr.some(t => !t.en_linea) ? ' · la PC que imprime no responde: salen cuando vuelva' : ''), tr.some(t => !t.en_linea) ? 'error' : 'success');
+  ET.cola = []; etRender(); etDestino();
+  let n = 0; const ids = tr.map(t => t.id);
+  const tm = setInterval(async () => {
+    if (++n > 20) { clearInterval(tm); return; }
+    const { data: es } = await sb.rpc('pos_etiq_estado', { p_ids: ids }); if (!es) return;
+    const mal = es.find(e => e.estado === 'error'); if (mal) { clearInterval(tm); toast('La etiquetadora no pudo imprimir: ' + (mal.error || ''), 'error'); return; }
+    if (es.every(e => e.estado === 'impreso')) { clearInterval(tm); toast('Etiquetas impresas', 'success'); }
+  }, 2000);
+}
+function etImprimirWin() {
   if (!ET.cola.length) return;
   let ifr = document.getElementById('et-if'); if (!ifr) { ifr = document.createElement('iframe'); ifr.id = 'et-if'; ifr.setAttribute('aria-hidden', 'true'); ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'; document.body.appendChild(ifr); }
   const w = ifr.contentWindow; const html = etHTML(ET.cola);
@@ -3497,6 +3526,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=117"></script>
+<script src="manual.js?v=118"></script>
 </body>
 </html>
