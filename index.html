@@ -1795,23 +1795,26 @@ function etHTML(cola) {
   const r = etRollo(); const unidades = []; cola.forEach(it => { for (let k = 0; k < it.cantidad; k++) unidades.push(it.sku); });
   const filas = []; for (let i = 0; i < unidades.length; i += r.cols) filas.push(unidades.slice(i, i + r.cols));
   const W = r.margen + r.cols * r.ancho + (r.cols - 1) * r.gap, H = r.alto;
-  const qr = sku => { try { const q = qrcode(0, 'M'); q.addData(sku); q.make(); return q.createDataURL(4, 0); } catch (e) { return ''; } };
-  const qrmm = 7.9, izq = 2.5, der = 2, tx = izq + qrmm + 1.25, anchoTx = Math.max(8, r.ancho - der - tx);
+  const D = 0.125, snap = v => Math.round(v / D) * D;   // un punto de la impresora (203 dpi)
+  const qr = sku => { try { const q = qrcode(0, 'M'); q.addData(sku); q.make(); const n = q.getModuleCount(), dots = Math.max(2, Math.floor(7.9 / D / n)); return { url: q.createDataURL(dots, 0), mm: n * dots * D }; } catch (e) { return { url: '', mm: 7.875 }; } };
+  const qrPos = mm => r.girar === 0 ? { l: snap(izq), t: snap((r.alto - mm) / 2) } : { l: r.ancho - mm - snap(r.ancho - mm - izq), t: r.alto - mm - snap((r.alto - mm) / 2) };   // girada: lo que tiene que caer en la grilla es la posición ya dada vuelta
+  const xEt = i => snap(r.margen + i * (r.ancho + r.gap));
+  const qrmm = 7.875, izq = 2.5, der = 2, tx = izq + qrmm + 1.25, anchoTx = Math.max(8, r.ancho - der - tx);
   const fsSku = sku => Math.max(5, Math.min(10.6, anchoTx / (0.82 * Math.max(3, sku.length)) * 2.835));   // pt: entra en el ancho (~0,82 em por mayúscula en URW Gothic negrita)
   const MM = 0.3528, qrTop = (r.alto - qrmm) / 2, qrBot = qrTop + qrmm, fsN = Math.min(6.4, anchoTx / 9.2 * 2.835), fsW = Math.min(4.8, anchoTx / (0.64 * ET_WEB.length) * 2.835);
   const topS = fs => qrTop - 0.13 * fs * MM;   // la mayúscula del SKU toca el borde de arriba del QR
   const topN = fs => { const baseS = qrTop + 0.75 * fs * MM, topW = qrBot - 0.55 * fsW * MM; return (baseS + topW) / 2 + 0.37 * fsN * MM - 0.88 * fsN * MM; };   // centrado entre la base del SKU y la web
   return `<!doctype html><html><head><meta charset="utf-8"><title>Etiquetas</title><style>
     @page { size: ${W}mm ${H}mm; margin: 0; } html, body { margin: 0; padding: 0; }
-    .fila { width: ${W}mm; height: ${H}mm; display: flex; align-items: center; page-break-after: always; break-after: page; padding-left: ${r.margen}mm; box-sizing: border-box; gap: ${r.gap}mm; overflow: hidden; }
+    .fila { width: ${W}mm; height: ${H}mm; position: relative; page-break-after: always; break-after: page; box-sizing: border-box; overflow: hidden; }
     .fila:last-child { page-break-after: auto; break-after: auto; }
     @font-face { font-family: 'URW Gothic'; src: url('fonts/URWGothic-Book.ttf') format('truetype'); font-weight: 400; }   /* solo Book: la negrita del SKU la sintetiza el navegador */
-    .et { width: ${r.ancho}mm; height: ${r.alto}mm; position: relative; box-sizing: border-box; overflow: hidden; font-family: 'URW Gothic', 'ITC Avant Garde Gothic', Avenir, Arial, sans-serif; color: #000; background: #fff;${r.girar === 0 ? '' : ' transform: rotate(180deg);'} }
-    .et img.q { position: absolute; left: ${izq}mm; top: ${((r.alto - qrmm) / 2).toFixed(2)}mm; width: ${qrmm}mm; height: ${qrmm}mm; image-rendering: pixelated; }
+    .et { width: ${r.ancho}mm; height: ${r.alto}mm; position: absolute; top: 0; box-sizing: border-box; overflow: hidden; font-family: 'URW Gothic', 'ITC Avant Garde Gothic', Avenir, Arial, sans-serif; color: #000; background: #fff;${r.girar === 0 ? '' : ' transform: rotate(180deg);'} }
+    .et img.q { position: absolute; image-rendering: pixelated; }
     .et .s { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; line-height: 1; height: 1.3em; font-weight: 700; -webkit-text-stroke: 0.06mm #000; white-space: nowrap; overflow: hidden; letter-spacing: 0; }
     .et .n { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; line-height: 1; height: 1.3em; font-size: ${fsN.toFixed(2)}pt; font-weight: 400; -webkit-text-stroke: 0.13mm #000; letter-spacing: 0.1mm; white-space: nowrap; overflow: hidden; }
     .et .w { position: absolute; left: ${tx}mm; width: ${anchoTx}mm; top: ${(qrBot - 0.88 * fsW * MM).toFixed(2)}mm; line-height: 1; height: 1.3em; font-size: ${fsW.toFixed(2)}pt; font-weight: 400; -webkit-text-stroke: 0.1mm #000; white-space: nowrap; overflow: hidden; }
-  </style></head><body>${filas.map(f => `<div class="fila">${f.map(sku => `<div class="et"><img class="q" src="${qr(sku)}" alt=""><div class="s" style="font-size:${fsSku(sku).toFixed(2)}pt;top:${topS(fsSku(sku)).toFixed(2)}mm">${esc(sku)}</div><div class="n" style="top:${topN(fsSku(sku)).toFixed(2)}mm">${esc(r.nombre || 'Claudia Adorno')}</div><div class="w">${ET_WEB}</div></div>`).join('')}</div>`).join('')}</body></html>`;
+  </style></head><body>${filas.map(f => `<div class="fila">${f.map((sku, i) => { const Q = qr(sku), p = qrPos(Q.mm); return `<div class="et" style="left:${xEt(i).toFixed(3)}mm"><img class="q" src="${Q.url}" alt="" style="left:${p.l.toFixed(3)}mm;top:${p.t.toFixed(3)}mm;width:${Q.mm}mm;height:${Q.mm}mm"><div class="s" style="font-size:${fsSku(sku).toFixed(2)}pt;top:${topS(fsSku(sku)).toFixed(2)}mm">${esc(sku)}</div><div class="n" style="top:${topN(fsSku(sku)).toFixed(2)}mm">${esc(r.nombre || 'Claudia Adorno')}</div><div class="w">${ET_WEB}</div></div>`; }).join('')}</div>`).join('')}</body></html>`;
 }
 async function etDesdeRemito(id) { const { data } = await sb.from('pos_comprobantes_det').select('sku,cantidad,cantidad_recibida').eq('comprobante_id', id); (data || []).forEach(d => { const n = Number(d.cantidad_recibida != null ? d.cantidad_recibida : d.cantidad); if (n > 0) etAgregar(d.sku, n); }); switchTab('etiquetas'); }
 let _etPv;
