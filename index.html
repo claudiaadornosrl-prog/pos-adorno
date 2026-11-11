@@ -1279,7 +1279,14 @@ async function vSenaIniciar() {
   setTimeout(() => { const i = document.querySelector('#v-renglones input.din'); if (i) i.focus(); }, 50);
   if (!T.cliente) toast('Cargá el cliente: la seña necesita DNI o CUIT', 'error');
 }
-function vSenaQuitar() { if (!T.sena) return; T.items = T.sena.items.map(i => ({ ...i, descuento_pct: 0, descuento_monto: 0, stock: (ARTS.find(a => a.sku === i.sku) || { stock: 1 }).stock })); T.sena = null; vRender(); }
+function vSenaDto(i, v) {
+  const it = T.sena.items[i]; if (it.lista == null) it.lista = it.precio_unit; const t = String(v || '').trim();
+  if (!t || !(num(t) > 0)) { it.dto = ''; it.precio_unit = it.lista; }
+  else if (t.endsWith('%')) { const p = Math.min(100, num(t)); it.dto = p + '%'; it.precio_unit = r2(it.lista * (1 - p / 100)); }
+  else { const m = Math.min(it.lista, num(t)); it.dto = plata(m); it.precio_unit = r2(it.lista - m); }
+  vRender();
+}
+function vSenaQuitar() { if (!T.sena) return; T.items = T.sena.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.lista != null ? i.lista : i.precio_unit, descuento_pct: 0, descuento_monto: 0, stock: (ARTS.find(a => a.sku === i.sku) || { stock: 1 }).stock })); T.sena = null; vRender(); }
 function vSenaCant(i, d) { const it = T.sena.items[i]; it.cantidad = Math.max(0, r2(it.cantidad + d)); if (!it.cantidad) T.sena.items.splice(i, 1); sonar(d > 0 ? 'mas' : 'menos'); vRender(); }
 function vSenaSacar(i) { T.sena.items.splice(i, 1); sonar('menos'); vRender(); }
 function senaHTML() {
@@ -1288,7 +1295,8 @@ function senaHTML() {
   return `<div class="sena-box"><div class="sena-h"><b>Artículos señados</b><span class="mini">lo que el cliente reserva con esta seña · buscá y tocá los productos para agregarlos</span><button class="btn ico chico" onclick="vSenaQuitar()" title="Cancelar la seña (los artículos vuelven al ticket)" aria-label="Cancelar seña">${_i('x')}</button></div>
     ${T.sena.items.length ? `<table><tbody>${T.sena.items.map((it, i) => `<tr><td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td>
       <td class="num cant"><button class="btn ico chico" onclick="vSenaCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" readonly style="text-align:center"><button class="btn ico chico" onclick="vSenaCant(${i},-1)" aria-label="Menos">${_i('minus')}</button></td>
-      <td class="num"><b>${plata(it.cantidad * it.precio_unit)}</b></td><td><button class="btn ico chico" onclick="vSenaSacar(${i})" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('')}</tbody></table>
+      <td class="num"><input value="${esc(it.dto || '')}" onfocus="dtoFoco(this)" onchange="vSenaDto(${i},this.value)" placeholder="$ o %" title="Descuento de este artículo señado: un número son pesos por unidad; con % al final es porcentaje. El precio queda congelado ya con el descuento." style="width:74px;text-align:right"></td>
+      <td class="num">${it.dto ? '<div class="mini" style="text-decoration:line-through">' + plata(it.cantidad * it.lista) + '</div>' : ''}<b class="${it.dto ? 'dto-imp' : ''}">${plata(it.cantidad * it.precio_unit)}</b></td><td><button class="btn ico chico" onclick="vSenaSacar(${i})" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('')}</tbody></table>
     <div class="fila mini"><span>Valor de lo reservado</span><span>${plata(tot)}</span></div>` : '<div class="empty chico">Todavía no reservaste nada: buscá el producto y tocalo.</div>'}</div>`;
 }
 // Usar: al cargar un cliente con señas vigentes, el POS avisa y las ofrece
@@ -1617,10 +1625,10 @@ function pdRender() {
       else if (ofi) { const rec = its.filter(i => i.transito === 'recibido' || i.transito === 'con_diferencia').length, env = its.filter(i => i.remito_id).length;
         est = rec === its.length ? '<span class="chip green">Recibido</span>' : env ? '<span class="chip viol">En tránsito</span> <span class="mini">' + [...new Set(its.filter(i => i.remito).map(i => 'remito ' + i.remito))].join(', ') + '</span>' : '<span class="chip amber">Pendiente en Oficina</span>' + (its.some(i => i.traslado === 'apartado') ? ' <span class="mini">apartado</span>' : ''); }
       else est = '<span class="chip amber">Pendiente de entrega</span> <span class="mini">' + (p.mail_enviado_at ? 'mail ✔' : p.mail_error ? '<span class="chip red" title="' + esc(p.mail_error) + '">mail no salió</span>' : p.mail_para ? 'mail en camino' : 'sin mail configurado') + ' · ' + (p.wa_abierto_at ? 'WhatsApp ✔' : 'WhatsApp pendiente') + '</span>';
-      return `<tr class="${p.estado === 'cancelado' ? 'dim' : ''}"><td><b>${esc(p.numero)}</b><div class="mini">${fechaAR(String(p.creado_at).slice(0, 10))} ${new Date(p.creado_at).toTimeString().slice(0, 5)} · ${esc(pila(p.por))}</div></td><td>${esc(PD_NOM[p.destino] || p.destino)}</td>
+      return `<tr class="${p.estado === 'cancelado' ? 'dim' : ''}"><td><a href="#" onclick="pdVer(${p.id});return false" title="Abrir el pedido"><b>${esc(p.numero)}</b></a><div class="mini">${fechaAR(String(p.creado_at).slice(0, 10))} ${new Date(p.creado_at).toTimeString().slice(0, 5)} · ${esc(pila(p.por))}</div></td><td>${esc(PD_NOM[p.destino] || p.destino)}</td>
         <td class="mini">${its.map(i => Number(i.cantidad) + ' × ' + esc(i.sku === 'VARIOS' ? (i.descripcion || 'varios') : i.sku) + (i.recibida != null && Number(i.recibida) < Number(i.cantidad) ? ' <span class="chip red">llegaron ' + Number(i.recibida) + '</span>' : '')).join(' · ')}${p.nota ? '<div>«' + esc(p.nota) + '»</div>' : ''}</td>
         <td>${est}</td>
-        <td class="acc">${!ofi && p.pdf_url ? `<a class="btn ico" href="${esc(p.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}${!ofi && p.xlsx_url ? `<a class="btn chico" href="${esc(p.xlsx_url)}" title="Bajar el pedido en Excel" aria-label="Excel">Excel</a>` : ''}${!ofi && p.estado === 'enviado' && p.wa_para ? `<button class="btn ico" onclick="pdWA(${p.id})" title="Abrir el WhatsApp con el pedido" aria-label="WhatsApp">${_i('mail')}</button>` : ''}
+        <td class="acc"><button class="btn ico" onclick="pdVer(${p.id})" title="Abrir el pedido y ver todo lo que se pidió" aria-label="Ver el pedido">${_i('ver')}</button>${!ofi && p.pdf_url ? `<a class="btn ico" href="${esc(p.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}${!ofi && p.xlsx_url ? `<a class="btn chico" href="${esc(p.xlsx_url)}" title="Bajar el pedido en Excel" aria-label="Excel">Excel</a>` : ''}${!ofi && p.estado === 'enviado' && p.wa_para ? `<button class="btn ico" onclick="pdWA(${p.id})" title="Abrir el WhatsApp con el pedido" aria-label="WhatsApp">${_i('mail')}</button>` : ''}
           ${!ofi && p.estado === 'enviado' ? `<button class="btn ico" onclick="pdRecibir(${p.id})" title="Llegó el pedido: marcarlo recibido" aria-label="Recibido">${_i('ok')}</button>` : ''}${p.estado === 'enviado' ? `<button class="btn ico peligro" onclick="pdCancelar(${p.id})" title="Cancelar el pedido" aria-label="Cancelar">${_i('anular')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>'
       : `<div class="empty">Todavía no hay pedidos de ${esc(LOCALES[LOCAL])}.</div>`;
   } else {
@@ -1676,6 +1684,17 @@ function pdArmar() {
 }
 // (JP 10-nov) «Fuera de lista»: lo que no está en Qué falta se suma acá, antes de armar el pedido (queda guardado por proveedor hasta que se envía)
 PD.extras = { fg: [], espalma: [], oficina: [] };
+function pdVer(id) {
+  const p = (PD.hechos || []).find(x => x.id === id); if (!p) return; const its = p.items || []; const ofi = p.destino === 'oficina';
+  const est = p.estado === 'cancelado' ? 'Cancelado' + (p.cancelado_motivo ? ' · ' + p.cancelado_motivo : '') : p.estado === 'recibido' ? 'Recibido' + (p.recibido_por ? ' por ' + pila(p.recibido_por) : '') + (p.recibido_at ? ' el ' + fechaAR(String(p.recibido_at).slice(0, 10)) : '') : ofi ? (its.some(i => i.remito_id) ? 'En tránsito' : 'Pendiente en Oficina') : 'Pendiente de entrega';
+  const hayRec = its.some(i => i.recibida != null);
+  modal(`<div class="m-head"><h3>Pedido ${esc(p.numero)}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="mini" style="line-height:1.7">A <b>${esc(PD_NOM[p.destino] || p.destino)}</b> · ${fechaAR(String(p.creado_at).slice(0, 10))} ${new Date(p.creado_at).toTimeString().slice(0, 5)} · pidió <b>${esc(pila(p.por))}</b><br>Estado: <b>${esc(est)}</b>${!ofi ? '<br>' + (p.mail_enviado_at ? 'Mail enviado a ' + esc(p.mail_para || '') : p.mail_error ? 'El mail no salió: ' + esc(p.mail_error) : p.mail_para ? 'Mail en camino a ' + esc(p.mail_para) : 'Sin mail configurado') + ' · ' + (p.wa_abierto_at ? 'WhatsApp abierto' : 'WhatsApp pendiente') : ''}</div>
+    <table class="pd-items pd-t" style="margin-top:12px"><thead><tr><th>Artículo</th><th class="num">Pedido</th>${hayRec ? '<th class="num">Llegó</th>' : ''}${ofi ? '<th>Remito</th>' : ''}</tr></thead><tbody>${its.map(i => `<tr><td><div class="art">${i.sku === 'VARIOS' ? '' : foto(i.sku, 'chica')}<div><b>${esc(i.sku === 'VARIOS' ? (i.descripcion || 'Varios') : i.sku)}</b>${i.sku === 'VARIOS' ? ' <span class="chip gray">renglón libre</span>' : '<div class="mini">' + esc(i.descripcion || '') + '</div>'}</div></div></td><td class="num"><b>${Number(i.cantidad)}</b></td>${hayRec ? '<td class="num">' + (i.recibida != null ? (Number(i.recibida) < Number(i.cantidad) ? '<span class="chip red">' + Number(i.recibida) + '</span>' : Number(i.recibida)) : '') + '</td>' : ''}${ofi ? '<td class="mini">' + (i.remito ? esc(i.remito) + (i.transito === 'recibido' || i.transito === 'con_diferencia' ? ' · recibido' : ' · en tránsito') : i.traslado === 'apartado' ? 'apartado' : 'pendiente') + '</td>' : ''}</tr>`).join('')}</tbody></table>
+    <div class="mini"><b>${its.reduce((t, i) => t + Number(i.cantidad), 0)}</b> unidades en ${its.length} ${its.length === 1 ? 'renglón' : 'renglones'}</div>
+    ${p.nota ? '<div class="aviso" style="margin-top:10px">Nota: «' + esc(p.nota) + '»</div>' : ''}
+    <div class="m-foot">${!ofi && p.pdf_url ? `<a class="btn" href="${esc(p.pdf_url)}" target="_blank" rel="noopener">${_i('pdf')} PDF</a>` : ''}${!ofi && p.xlsx_url ? `<a class="btn" href="${esc(p.xlsx_url)}">Excel</a>` : ''}<span class="spacer"></span><button class="btn primary" onclick="cerrarModal()">Cerrar</button></div>`);
+}
 function pdLibre() {
   const k = PD.prov || 'fg'; const ex = PD.extras[k];
   modal(`<div class="m-head"><h3>Fuera de lista · ${PD_NOM[PD_DEST[k]]}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal();pdMarcados()" aria-label="Cerrar">${_i('x')}</button></div>
@@ -1842,7 +1861,7 @@ async function cargarMovimientos() {
 }
 let MOV = { tipo: 'alta', sku: null }, MOV_FILTRO = '';
 // Motivos fijos (JP 10-nov): así se puede filtrar, por ejemplo, toda la tirada de un inventario
-const MOV_MOTIVOS = ['Inventario', 'Rotura', 'Ingreso de mercadería', 'Muestra', 'Uso interno', 'Regalo o cortesía', 'Devolución a proveedor', 'Faltante', 'Error de carga', 'Otro'];
+const MOV_MOTIVOS = ['Inventario', 'Rotura', 'Ingreso de mercadería', 'Muestra', 'Uso interno', 'Retiro de mercadería personal', 'Regalo o cortesía', 'Devolución a proveedor', 'Faltante', 'Error de carga', 'Otro'];
 function movFiltrar(v) { MOV_FILTRO = v; cargarMovimientos(); }
 // (JP 10-nov) Anular o corregir un movimiento manual: siempre con motivo y con autorización de la encargada.
 // Anular = contramovimiento que restablece el stock; la línea original queda marcada «Anulado» con el motivo. Corregir = anular + abrir uno nuevo con lo mismo.
@@ -3476,6 +3495,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=114"></script>
+<script src="manual.js?v=115"></script>
 </body>
 </html>
