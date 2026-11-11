@@ -807,6 +807,9 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <div class="card"><h3>Quién emite · reconocimiento por cámara</h3>
         <div class="mini" style="margin-bottom:8px">Con el usuario del local abierto, al emitir cualquier comprobante (factura, nota de crédito, remito, presupuesto) el POS mira por la cámara quién está en la caja y lo anota como quien emitió. Si no reconoce a nadie o la computadora no tiene cámara, se elige el nombre a mano. Cada una registra su cara una sola vez, con autorización de la encargada o la cajera. No se guarda ninguna foto: solo una huella numérica de la cara.</div>
         <div id="a-caras"></div></div>
+      <div class="card"><h3>Etiquetadoras</h3>
+        <div class="mini" style="margin-bottom:8px">Las etiquetadoras a las que el POS manda a imprimir, y las PC de los locales que las atienden. «Solo desde el local»: las chicas imprimen únicamente estando en el local (misma red WiFi que la PC, o por la ubicación del celular). Los admin imprimen desde cualquier lado.</div>
+        <div id="a-etiq"></div></div>
       <div class="card"><h3>WhatsApp en esta computadora</h3>
         <div class="mini" style="margin-bottom:8px">A dónde van los botones de WhatsApp (vales, gift cards, pedidos). En las PC de los locales elegí «Ventana de WhatsApp del kiosco»: el chat se abre en la ventana de WhatsApp que ya tiene la sesión del local. Queda guardado en esta computadora (es la misma elección que usa el módulo Clientes).</div>
         <div id="a-wa" class="pils"></div></div>
@@ -1860,6 +1863,34 @@ function etRemitoDFUsar(i) {
   for (const it of r.items || []) { const c = Math.max(0, Math.round(Number(it.cantidad))); if (!c || !it.sku) continue; const ya = ET.cola.find(x => x.sku === it.sku); if (ya) ya.cantidad += c; else ET.cola.push({ sku: it.sku, descripcion: it.descripcion || '', cantidad: c }); n += c; }
   cerrarModal(); etRender(); toast('Remito ' + r.numero + ': ' + n + (n === 1 ? ' etiqueta' : ' etiquetas') + ' en la lista. Revisá y tocá Imprimir', 'success');
 }
+function etUbicacion() {
+  return new Promise(res => {
+    if (!navigator.geolocation) return res(null);
+    navigator.geolocation.getCurrentPosition(p => res({ lat: p.coords.latitude, lon: p.coords.longitude, prec: p.coords.accuracy }), () => res(null), { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  });
+}
+// ─── Ajustes → Etiquetadoras (admin): las PC de los locales que imprimen la cola, y el alta con código ───
+async function etAjustes() {
+  const box = document.getElementById('a-etiq'); if (!box) return;
+  const { data, error } = await sb.rpc('pos_etiq_admin_listar'); if (error) { box.innerHTML = '<div class="empty chico">' + esc(error.message) + '</div>'; return; }
+  window._etAdm = data; const pend = (data.agentes || []).filter(a => !a.aprobado);
+  box.innerHTML = ((data.impresoras || []).length ? '<table><thead><tr><th>Local</th><th>Etiquetadora</th><th>Estado</th><th>Solo desde el local</th><th>Oscuridad</th><th></th></tr></thead><tbody>' + data.impresoras.map(i => `<tr class="${i.activa ? '' : 'dim'}"><td><b>${esc(LOCALES[i.local] || i.local)}</b></td><td>${esc(i.nombre)}${i.tipo === 'rfid' ? ' <span class="chip viol">RFID</span>' : ''}<div class="mini">${esc(i.destino)}${i.equipo ? ' · PC ' + esc(i.equipo) : ''}</div></td>
+      <td>${!i.activa ? '<span class="chip gray">Apagada</span>' : i.en_linea ? '<span class="chip green">En línea</span>' : '<span class="chip red" title="La PC que imprime no está respondiendo">Sin conexión</span>'}</td>
+      <td><label class="mini cli-chk"><input type="checkbox" ${i.exige_local ? 'checked' : ''} onchange="etAdmSet(${i.id},'exige_local',this.checked)"> ${i.exige_local ? 'sí' : 'no'}</label></td>
+      <td><input value="${Number((i.rollo || {}).oscuridad || 20)}" inputmode="numeric" style="width:58px;text-align:center" title="De 0 a 30. Más alto = más negro" onchange="etAdmSet(${i.id},'oscuridad',this.value)"></td>
+      <td class="acc"><button class="btn chico" onclick="etAdmSet(${i.id},'activa',${!i.activa})">${i.activa ? 'Apagar' : 'Prender'}</button></td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">Todavía no hay etiquetadoras cargadas.</div>')
+    + (pend.length ? '<div class="mini" style="margin:12px 0 6px"><b>PC esperando aprobación</b> · fijate que el código sea el que muestra esa PC</div>' + pend.map(a => `<div class="et-f" style="align-items:end;gap:8px;flex-wrap:wrap;margin-bottom:8px"><span><b>${esc(a.equipo || 'PC')}</b> ${a.en_linea ? '<span class="chip green">en línea</span>' : '<span class="chip gray">apagada</span>'}</span>
+        <label>Código <input id="ea-cod-${a.id}" inputmode="numeric" maxlength="6" style="width:96px" placeholder="6 números"></label>
+        <label>Local <select id="ea-loc-${a.id}">${Object.keys(LOCALES).map(k => `<option value="${k}">${esc(LOCALES[k])}</option>`).join('')}</select></label>
+        <label>Impresora <select id="ea-imp-${a.id}">${(a.impresoras || []).map(n => `<option${/zebra|zdesigner|tlp|gc420|zd\d/i.test(n) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+        <button class="btn primary" onclick="etAdmAprobar(${a.id})">Aprobar</button></div>`).join('') : '');
+}
+async function etAdmSet(id, campo, v) { const { error } = await sb.rpc('pos_etiq_admin_set', { p_id: id, p_campo: campo, p_valor: String(v) }); if (error) toast(error.message.replace(/^.*?: /, ''), 'error'); else toast('Guardado', 'success'); ET_IMPS = null; etAjustes(); }
+async function etAdmAprobar(id) {
+  const g = k => document.getElementById('ea-' + k + '-' + id).value; const loc = g('loc');
+  const { error } = await sb.rpc('pos_etiq_admin_aprobar', { p_agente_id: id, p_codigo: g('cod'), p_local: loc, p_destino: g('imp'), p_nombre: LOCALES[loc] + ' · etiquetadora', p_tipo: 'comun' });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; } toast('PC aprobada: ' + LOCALES[loc] + ' ya puede imprimir etiquetas desde el POS', 'success'); ET_IMPS = null; etAjustes();
+}
 let ET_IMPS = null;
 async function etImpresoras(forzar) {
   if (!forzar && ET_IMPS && ET_IMPS.local === LOCAL && Date.now() - ET_IMPS.at < 60000) return ET_IMPS.l;
@@ -1876,7 +1907,13 @@ async function etImprimir() {
   const imps = await etImpresoras(true);
   if (!imps.length) { if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { toast(LOCALES[LOCAL] + ' todavía no tiene etiquetadora conectada al POS. Desde el celu se imprime en la de un local que la tenga (hoy, Oficina · depósito)', 'error'); return; } return etImprimirWin(); }
   const btn = document.getElementById('et-imprimir'); btn.disabled = true;
-  const { data, error } = await sb.rpc('pos_etiq_enviar', { p_local: LOCAL, p_items: ET.cola.map(i => ({ sku: i.sku, cantidad: i.cantidad })), p_nombre: etRollo().nombre });
+  const enviar = pos => sb.rpc('pos_etiq_enviar', { p_local: LOCAL, p_items: ET.cola.map(i => ({ sku: i.sku, cantidad: i.cantidad })), p_nombre: etRollo().nombre, p_lat: pos ? pos.lat : null, p_lon: pos ? pos.lon : null, p_prec: pos ? pos.prec : null });
+  let { data, error } = await enviar(null);
+  if (error && /UBICACION_PEDIR/.test(error.message)) {
+    toast('Confirmando que estás en ' + LOCALES[LOCAL] + '…', 'success'); const pos = await etUbicacion();
+    if (!pos) { btn.disabled = false; toast('Para imprimir etiquetas tenés que estar en ' + LOCALES[LOCAL] + ': conectate al WiFi del local, o permití la ubicación en el celular y probá de nuevo', 'error'); return; }
+    ({ data, error } = await enviar(pos));
+  }
   if (error) { btn.disabled = false; toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
   const tr = data.trabajos || [];
   toast(tr.map(t => t.etiquetas + (t.etiquetas === 1 ? ' etiqueta' : ' etiquetas') + ' a ' + t.impresora).join(' · ') + (tr.some(t => !t.en_linea) ? ' · la PC que imprime no responde: salen cuando vuelva' : ''), tr.some(t => !t.en_linea) ? 'error' : 'success');
@@ -3529,7 +3566,7 @@ async function cargarCaja() {
 
 // ═══ Ajustes (admin) ═══════════════════════════════════════════════════
 async function cargarAjustes() {
-  pointAjustes(); waAjustes(); caraAjustes(); caiAjustes(); regAjustes(); plAjustes(); cargarRangos(); cargarParamsPedidos(); tcPintaAjustes(); cargarModo().then(pruebaAjustes);
+  pointAjustes(); waAjustes(); caraAjustes(); etAjustes(); caiAjustes(); regAjustes(); plAjustes(); cargarRangos(); cargarParamsPedidos(); tcPintaAjustes(); cargarModo().then(pruebaAjustes);
   const [{ data: pv }, { data: mp }, { data: tp }] = await Promise.all([sb.from('pos_puntos_venta').select('*').order('local').order('tipo'), sb.from('pos_medios_pago').select('*').order('orden'), sb.from('pos_parametros').select('*').eq('clave', 'tope_cf_arca').maybeSingle()]);
   document.getElementById('a-tope').innerHTML = tp ? `<b style="font-size:18px;color:var(--text)">${plata(tp.valor_num)}</b> · abajo de este importe la factura B sale a Consumidor Final sin datos (el cliente queda igual en nuestra base); desde este importe ARCA exige identificarlo y el POS lo obliga.<br>No se carga a mano: el servicio del CAE lo lee en <a href="${esc(tp.fuente || '')}" target="_blank" rel="noopener">la página de ARCA</a> una vez por mes. Última lectura: ${tp.actualizado_at ? new Date(tp.actualizado_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : '—'}.${tp.error ? `<div style="color:var(--red);margin-top:4px">⚠ ${esc(tp.error)}</div>` : ''}` : 'No está configurado el tope (pos_parametros).';
   document.getElementById('a-pv').innerHTML = `<table><thead><tr><th>Local</th><th>Tipo</th><th class="num">Punto de venta</th><th>Activo</th><th>Nota</th></tr></thead><tbody>` +
@@ -3557,6 +3594,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=121"></script>
+<script src="manual.js?v=122"></script>
 </body>
 </html>
