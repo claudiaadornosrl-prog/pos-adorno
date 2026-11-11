@@ -1039,18 +1039,25 @@ async function init() {
   document.getElementById('v-q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); vEscanear(); } });
   document.getElementById('v-q').focus();
 }
+const prestado = () => !!PERFIL && !PERFIL.es_admin && LOCAL === 'oficina' && PERFIL.local !== 'oficina';
+function prestadoUI() {
+  const pr = prestado();
+  ['remitos', 'pedidos', 'etiquetas', 'caja'].forEach(k => { const b = document.getElementById('tab-' + k); if (b) b.style.display = pr ? 'none' : ''; });
+  const pil = document.querySelector('#v-tipos .pil[data-t="PR"]'); if (pil) { pil.style.display = pr ? 'none' : ''; const sp = pil.previousElementSibling; if (sp && sp.classList.contains('pil-sep')) sp.style.display = pr ? 'none' : ''; }
+  if (pr) { if (['PR', 'MA', 'RE'].includes(T.tipo)) vTipo('FC', 'B'); const act = document.querySelector('.tab-content.active'); if (act && ['content-remitos', 'content-pedidos', 'content-etiquetas', 'content-caja'].includes(act.id)) switchTab('vender'); }
+}
 function pintarLocal() {
   const el = document.getElementById('h-local');
   // Admin: cualquier local. Vendedora/encargada: su local y, si su local está habilitado (pos_parametros.fc_oficina_locales), Oficina. Nunca el otro local.
   const permitidos = PERFIL.es_admin ? Object.keys(LOCALES) : [...new Set(PERFIL.fc_oficina === false ? [PERFIL.local] : [PERFIL.local, 'oficina'])];
   if (!permitidos.includes(LOCAL)) LOCAL = permitidos[0];
   // (JP 6-nov) Oficina no pide desde el POS: sus pedidos a proveedores van por Compras. Pedidos es para que el local le pida a Oficina (o a Familia García).
-  pdOficina();
+  pdOficina(); prestadoUI();
   el.innerHTML = permitidos.length > 1
     ? `<select onchange="cambiarLocal(this.value)" title="Desde qué local facturás">${permitidos.map(k => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${LOCALES[k]}</option>`).join('')}</select>`
     : `<span>${esc(LOCALES[LOCAL] || LOCAL)}</span>`;
 }
-async function cambiarLocal(l) { LOCAL = l; _fStock = {}; FICHA = null; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); pdOficina(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
+async function cambiarLocal(l) { LOCAL = l; _fStock = {}; FICHA = null; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); pdOficina(); prestadoUI(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
 async function cargarArticulos() {
   // Catálogo del local en memoria (≈5.000 filas): búsqueda instantánea y escaneo sin ir a la base.
   const out = []; let desde = 0;
@@ -1108,6 +1115,10 @@ function vBuscar() {
       <div class="gf-card"><img src="logo-ca.png" alt="Claudia Adorno"><span class="gf-t">Gift card</span><span class="gf-m" id="gf-m"></span></div>
       <div class="gf-der"><div class="sku">GIFT CARD</div><div class="mini">Importe libre · llega por mail o WhatsApp · sin vencimiento</div></div>
         <div class="gf-f"><input id="gf-imp" class="din" inputmode="decimal" placeholder="Importe" autocomplete="off" oninput="gfMonto()" onkeydown="if(event.key==='Enter'){event.preventDefault();gfOk()}"><button class="btn primary" onclick="event.stopPropagation();gfOk()">Agregar</button></div></div>`;
+    vFicha(null); return;
+  }
+  if (/^(TARJ|REGAL)/.test(q) || q === TR_SKU) {   // "tarjeta de regalo" → la gift card de la página web: artículo de importe libre
+    box.innerHTML = `<button class="prod" onclick="vTarjetaRegalo()" title="Agregar al ticket: después se le pone el importe"><span class="foto sin"></span><span class="txt"><span class="sku">${TR_SKU}</span><span class="desc">Gift card de la página web. Es un artículo común: se le pone el importe en el ticket. No genera código ni vale (para eso está la «Gift card» digital).</span></span><span></span><span class="pre">+</span></button>`;
     vFicha(null); return;
   }
   if (/^SE[ÑN]A/.test(q)) {   // "seña" en el buscador → cargar una seña (plata a cuenta de artículos reservados)
@@ -1235,6 +1246,13 @@ function sonar(cual) {
       o.start(t); o.stop(t + 0.37);
     }
   } catch (e) { /* sin audio: no pasa nada */ }
+}
+const TR_SKU = 'TARJETA DE REGALO';
+function vTarjetaRegalo() {
+  if (T.gift || T.sena) { toast('Terminá primero la ' + (T.gift ? 'gift card' : 'seña') + ' (o sacala con la ✕)', 'error'); return; }
+  T.items.push({ sku: TR_SKU, descripcion: 'Tarjeta de regalo · página web', cantidad: 1, precio_unit: 0, descuento_pct: 0, descuento_monto: 0, stock: 1, fijo: true, placeholder: 'Importe' });
+  sonar('mas'); vRender(); document.getElementById('v-q').value = ''; vBuscar();
+  setTimeout(() => { const f = [...document.querySelectorAll('#v-renglones input.din')].pop(); if (f) f.focus(); }, 60);
 }
 function vAgregar(sku) {
   const a = ARTS.find(x => x.sku === sku); if (!a) return;
@@ -2043,7 +2061,7 @@ function a4HTML(x) {
   if (re && c.transporte) side += `<div class="et">Transporta</div>${esc(c.transporte)}`;
   if (re) side += '<div class="aviso">Remito · no válido como factura</div>';
   if (pagosH) side += `<div class="et">${nc ? 'Devolución' : 'Pagos'}</div>${pagosH}`;
-  if (pr) { const v = new Date(d); v.setDate(v.getDate() + 7); side += `<div class="et">Validez</div>7 días · hasta el ${fechaAR(v.toISOString().slice(0, 10))}<br>Precios sujetos a cambio<div class="aviso">Presupuesto · no válido como factura</div>`; }
+  if (pr) { const v = new Date(d); v.setDate(v.getDate() + 14); side += `<div class="et">Validez</div>Los precios de este presupuesto se mantienen por 14 días corridos, hasta el ${fechaAR(v.toISOString().slice(0, 10))}.<div class="aviso">Presupuesto · no válido como factura</div>`; }
   if (ma) side += '<div class="aviso">Documento no válido como factura</div>';
   if (fiscal && c.cae_estado === 'ok') side += `<img class="qr" data-qr="${esc(qrArca(c))}" alt="QR ARCA"><div class="cae"><b>CAE ${esc(c.cae)}</b><br>Vencimiento ${fechaAR(c.cae_vto)}<br>Comprobante autorizado por ARCA</div>`;
   if (fiscal && c.preview) side += '<div class="aviso" style="margin-top:auto">Sin CAE · vista previa</div>';
@@ -2078,7 +2096,7 @@ function vVaciar() { T.items = []; T.pend = 0; vPend(); T.cliente = null; T.sin_
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
   const interno = T.tipo === 'MA' || T.tipo === 'PR';
-  document.querySelectorAll('#v-tipos .pil, #v-tipos .pil-sep').forEach(b => { b.style.display = T.tipo === 'RE' ? 'none' : ''; b.classList.toggle('on', b.dataset.t === T.tipo || (b.dataset.t === 'PR' && interno)); });
+  document.querySelectorAll('#v-tipos .pil, #v-tipos .pil-sep').forEach(b => { b.style.display = T.tipo === 'RE' || (prestado() && (b.dataset.t === 'PR' || (b.classList.contains('pil-sep') && b.nextElementSibling && b.nextElementSibling.dataset.t === 'PR'))) ? 'none' : ''; b.classList.toggle('on', b.dataset.t === T.tipo || (b.dataset.t === 'PR' && interno)); });
   const chk = document.getElementById('v-chk-pr'); chk.style.display = interno && !T.gift ? '' : 'none'; document.getElementById('v-chk-pr-in').checked = T.tipo === 'PR';
   document.querySelector('#v-tipos .pil[data-t="PR"]').textContent = 'Presupuesto';
   document.querySelector('#v-tipos .pil[data-t="FC"]').textContent = 'Factura' + (T.tipo === 'FC' && T.letra === 'A' ? ' A' : '');
@@ -2155,7 +2173,7 @@ function vRender() {
       <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? (it.placeholder || 'Importe de la seña') : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:104px" title="Precio unitario (IVA incluido)"></td>
       <td class="num">${it.fijo ? '' : `<input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:74px;text-align:right">`}</td>
       <td class="num"><b class="${it.descuento_monto > 0 ? 'dto-imp' : it.descuento_pct > 0 ? 'dto-pct' : ''}" title="${it.descuento_monto > 0 ? 'Con descuento en pesos' : it.descuento_pct > 0 ? 'Con descuento en %' : ''}">${plata(lineaBruta(it))}</b></td>
-      <td>${it.fijo && it.sku !== 'CONCEPTO' ? '' : `<button class="btn ico chico cli-x" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
+      <td>${it.fijo && it.sku !== 'CONCEPTO' && it.sku !== TR_SKU ? '' : `<button class="btn ico chico cli-x" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
   box.innerHTML += senaHTML() + giftHTML();
   document.getElementById('v-descs').style.display = (T.sena || T.gift) ? 'none' : '';
@@ -2509,6 +2527,7 @@ function pQuitar(btn) { const box = document.getElementById('v-pagos'); btn.clos
 function pLimpiar() { pMontar(); }
 function emitirTicket() {
   const t = vTotales(); if (!T.items.length) return;
+  if (T.items.some(i => i.sku === TR_SKU && !(i.precio_unit > 0))) { toast('Poné el importe de la tarjeta de regalo', 'error'); return; }
   const nc = T.tipo === 'NC';
   const ncLibre = nc && !T.nc_de;   // NC sin factura asociada: se valida como una factura
   if (T.tipo === 'RE') { { const bi = document.getElementById('v-re-bultos'); if (!(parseInt(bi.value, 10) > 0)) { toast('Poné la cantidad de bultos del remito', 'error'); bi.parentElement.classList.add('falta'); bi.focus(); return; } }
@@ -3274,7 +3293,7 @@ function ticketHTML(x) {
   const pru = !!c.es_prueba || (!!c.preview && MODO === 'prueba');
   const cae = c.preview ? '<div class="mini" style="text-align:center">VISTA PREVIA · sin emitir</div><div class="sep"></div>' : !fiscal ? '' : c.cae_estado === 'prueba' ? '<div class="mini" style="text-align:center">Sin CAE · comprobante de prueba, no informado a ARCA</div><div class="sep"></div>' : c.cae_estado === 'ok' ? `<div class="tk-qr"><img class="qr" data-qr="${esc(qrArca(c))}" alt="QR ARCA"><div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div></div><div class="sep"></div>`
     : c.cae_estado === 'error' ? `<div class="mini tk-err">CAE rechazado: ${esc(c.cae_error || '')}</div><div class="sep"></div>` : `<div class="mini" style="text-align:center">${String(c.cae_error || '').startsWith('En espera') ? esc(c.cae_error) : 'CAE pendiente…'}</div><div class="sep"></div>`;
-  const cierre = trasl ? 'Remito de traslado entre locales · sin valor comercial' : c.tipo === 'RE' ? 'Remito · no válido como factura · precios de referencia' : c.tipo === 'PR' ? 'Presupuesto · no válido como factura · precios sujetos a cambio' : c.tipo === 'MA' ? 'Documento no válido como factura' : nc ? 'Gracias por tu confianza.' : EMPRESA.frase;
+  const cierre = trasl ? 'Remito de traslado entre locales · sin valor comercial' : c.tipo === 'RE' ? 'Remito · no válido como factura · precios de referencia' : c.tipo === 'PR' ? 'Presupuesto · no válido como factura. Los precios de este presupuesto se mantienen por 14 días corridos' + (c.fecha ? ', hasta el ' + (() => { const v = new Date(String(c.fecha).slice(0, 10) + 'T12:00:00'); v.setDate(v.getDate() + 14); return fechaAR(v.toISOString().slice(0, 10)); })() : '') + '.' : c.tipo === 'MA' ? 'Documento no válido como factura' : nc ? 'Gracias por tu confianza.' : EMPRESA.frase;
   return `<div class="ticket">${pru ? `<div style="${FRANJA_PRUEBA}font-size:11px;padding:4px 8px;margin-bottom:6px">PRUEBA · SIN VALOR FISCAL</div>` : ''}
     <div class="tk-h"><img class="tk-logo${li.logo === 'atelier-logo-der.png' ? ' atelier' : ''}" src="${esc(li.logo || 'logo-ca.png')}" alt="Claudia Adorno"><div class="tk-local">${esc(LOCALES[c.local] || c.local)}</div><div class="mini">${esc(li.domicilio || '')}</div></div>
     <div class="sep"></div>
@@ -3457,6 +3476,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=113"></script>
+<script src="manual.js?v=114"></script>
 </body>
 </html>
