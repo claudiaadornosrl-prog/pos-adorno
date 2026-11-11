@@ -1785,8 +1785,12 @@ function etVaciar() { ET.cola = []; etRender(); }
 function etRender() {
   etPintaRollo();
   const box = document.getElementById('et-cola'); if (!box) return; const tot = ET.cola.reduce((s, i) => s + i.cantidad, 0);
-  box.className = 'et-cola'; box.innerHTML = ET.cola.length ? `<table><thead><tr><th>Artículo</th><th class="num">Etiquetas</th><th></th></tr></thead><tbody>` + ET.cola.map((it, i) => `<tr><td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td><td class="num cant"><button class="btn ico chico" onclick="etCant(${i},${it.cantidad + 1})" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="etCant(${i},this.value)" inputmode="numeric"><button class="btn ico chico" onclick="etCant(${i},${it.cantidad - 1})" aria-label="Menos">${_i('minus')}</button></td><td><button class="btn ico chico" onclick="etQuitar(${i})" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">Buscá un producto y tocalo para sumarlo a la cola. Escaneá su QR para ir más rápido.</div>';
-  etPrevVivo();
+  box.className = 'et-cola'; box.innerHTML = ET.cola.length ? `<table><thead><tr><th>Artículo</th><th class="num">Etiquetas</th><th></th></tr></thead><tbody>` + ET.cola.map((it, i) => `<tr><td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}</div></div></div></td><td class="num cant"><button class="btn ico chico" onclick="etCant(${i},${it.cantidad + 1})" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" oninput="etCantVivo(${i},this.value)" onchange="etCant(${i},this.value)" onfocus="this.select()" inputmode="numeric" pattern="[0-9]*"><button class="btn ico chico" onclick="etCant(${i},${it.cantidad - 1})" aria-label="Menos">${_i('minus')}</button></td><td><button class="btn ico chico" onclick="etQuitar(${i})" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">Buscá un producto y tocalo para sumarlo a la cola. Escaneá su QR para ir más rápido.</div>';
+  etTot();
+}
+function etCantVivo(i, v) { const n = Math.round(num(v)); if (!(n > 0) || !ET.cola[i]) return; ET.cola[i].cantidad = Math.min(500, n); etTot(); }
+function etTot() {
+  const tot = ET.cola.reduce((s, i) => s + i.cantidad, 0); etPrevVivo();
   const r = etRollo(); document.getElementById('et-tot').textContent = tot ? tot + (tot === 1 ? ' etiqueta' : ' etiquetas') + ' · ' + Math.ceil(tot / r.cols) + (Math.ceil(tot / r.cols) === 1 ? ' fila' : ' filas') : '';
   document.getElementById('et-imprimir').disabled = !tot; etDestino();
 }
