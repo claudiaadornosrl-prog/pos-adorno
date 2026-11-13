@@ -813,6 +813,9 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <div class="card"><h3>WhatsApp en esta computadora</h3>
         <div class="mini" style="margin-bottom:8px">A dónde van los botones de WhatsApp (vales, gift cards, pedidos). En las PC de los locales elegí «Ventana de WhatsApp del kiosco»: el chat se abre en la ventana de WhatsApp que ya tiene la sesión del local. Queda guardado en esta computadora (es la misma elección que usa el módulo Clientes).</div>
         <div id="a-wa" class="pils"></div></div>
+      <div class="card"><h3>Card física de la gift card</h3>
+        <div class="mini" style="margin-bottom:8px">Lo que se cobra de más cuando el cliente se lleva la card física con la gift card. Ese importe se le suma al saldo si después devuelven la card.</div>
+        <div class="et-f"><label>Cargo por la card física ($) <input id="a-card-precio" inputmode="numeric" style="width:130px" onchange="guardarParam('card_fisica_precio',this.value.replace(/[^0-9]/g,''))"></label></div></div>
       <div class="card"><h3>Dólar para cobrar en efectivo</h3>
         <div class="mini" style="margin-bottom:8px">Promedio entre compra y venta del dólar billete del Banco Nación; se actualiza solo cada hora. Si lo escribís a mano vale por hoy y mañana vuelve al automático.</div>
         <div id="a-tc" class="mini"></div>
@@ -1792,7 +1795,7 @@ function pdAdd(v) { const q = String(v || '').trim().toUpperCase(); if (!q) retu
 let PARAMS_PED = {};
 const pedPrueba = () => MODO === 'prueba' && PARAMS_PED.pedidos_modo !== 'real';   // los Pedidos pueden ser reales con el resto del POS en prueba
 function pedFranja() { const f = document.getElementById('franja-pos-prueba'); if (!f || PARAMS_PED.pedidos_modo !== 'real' || f.querySelector('.ped-real')) return; f.insertAdjacentHTML('beforeend', ' <span class="ped-real" style="font-weight:700;letter-spacing:0;white-space:nowrap">· OJO: los PEDIDOS sí son reales</span>'); }
-async function cargarParamsPedidos() { const { data } = await sb.from('pos_parametros').select('clave,valor').in('clave', ['fg_mail', 'es_mail', 'of_mail', 'fg_copia', 'es_copia', 'of_copia', 'pedidos_copia', 'pedidos_modo']); PARAMS_PED = Object.fromEntries((data || []).map(r => [r.clave, r.valor || ''])); for (const k of ['fg_mail', 'es_mail', 'fg_copia']) { const el = document.getElementById('a-' + k.replace('_', '-')); if (el) el.value = PARAMS_PED[k] || ''; }  pedFranja(); }
+async function cargarParamsPedidos() { const { data } = await sb.from('pos_parametros').select('clave,valor').in('clave', ['fg_mail', 'es_mail', 'of_mail', 'fg_copia', 'es_copia', 'of_copia', 'pedidos_copia', 'pedidos_modo', 'card_fisica_precio']); PARAMS_PED = Object.fromEntries((data || []).map(r => [r.clave, r.valor || ''])); { const el = document.getElementById('a-card-precio'); if (el) el.value = PARAMS_PED.card_fisica_precio || ''; if (Number(PARAMS_PED.card_fisica_precio) > 0) CARD_PRECIO = Number(PARAMS_PED.card_fisica_precio); } for (const k of ['fg_mail', 'es_mail', 'fg_copia']) { const el = document.getElementById('a-' + k.replace('_', '-')); if (el) el.value = PARAMS_PED[k] || ''; }  pedFranja(); }
 async function guardarParam(clave, valor) { const { error } = await sb.from('pos_parametros').update({ valor: valor.trim() }).eq('clave', clave); if (error) { toast(error.message, 'error'); return; } toast('Guardado', 'success'); cargarParamsPedidos(); }
 const pdCopia = d => { const k = PD_PAR[d] + '_copia'; return k in PARAMS_PED ? PARAMS_PED[k] : (PARAMS_PED.pedidos_copia || ''); };   // copia del mail según el destino
 function pdWaNum(v) { let n = String(v || '').replace(/\D/g, '').replace(/^0+/, ''); if (n.length === 10) n = '549' + n; else if (n.length === 12 && n.startsWith('54')) n = '549' + n.slice(2); return n.length >= 11 ? n : ''; }
@@ -2165,9 +2168,22 @@ async function vGiftIniciar(imp) {
   if (T.gift) { toast('Ya hay una gift card cargada', 'error'); return; }
   if (T.items.length && !await confirmar('Hay artículos en el ticket. ¿Los saco y arranco la gift card? (la gift card va sola en su comprobante)')) return;
   T.gift = { para: '', de_parte: T.cliente ? (T.cliente.nombre || '') : '', contacto: '', mensaje: '', mostrar_importe: false };
+  sb.rpc('pos_card_precio').then(({ data }) => { if (Number(data) > 0 && Number(data) !== CARD_PRECIO) { CARD_PRECIO = Number(data); if (T.gift) vRender(); } });
   T.items = [{ sku: 'GIFT', descripcion: 'Gift card', cantidad: 1, precio_unit: imp > 0 ? imp : 0, descuento_pct: 0, descuento_monto: 0, stock: 1, fijo: true, placeholder: 'Importe de la gift card' }];
   vTipo('FC', T.cliente ? LETRA_COND[T.cliente.cond_iva] || 'B' : 'B'); dMontar(); document.getElementById('v-q').value = ''; vBuscar(); vRender();   // factura legal: la gift card se factura al venderla
   setTimeout(() => { const i = imp > 0 ? document.querySelector('.gift-box input') : document.querySelector('#v-renglones input.din'); if (i) i.focus(); }, 50);
+}
+let CARD_PRECIO = 5000;
+const cardItem = () => ({ sku: 'CARDFISICA', descripcion: 'Card física · se suma al saldo si la devuelven', cantidad: 1, precio_unit: CARD_PRECIO, descuento_pct: 0, descuento_monto: 0, stock: 1, fijo: true });
+function vGiftCard(on) { if (!T.gift) return; T.gift.card_on = !!on; T.gift.card = null; T.gift.card_cod = ''; T.gift.card_err = ''; T.items = T.items.filter(i => i.sku !== 'CARDFISICA'); vRender(); if (on) setTimeout(() => { const i = document.getElementById('gift-card'); if (i) i.focus(); }, 50); }
+async function vGiftCardCod(v) {
+  if (!T.gift) return; const cod = String(v || '').replace(/\D/g, '').slice(0, 8); const tenia = !!T.gift.card || !!T.gift.card_err;
+  T.gift.card_cod = cod; T.gift.card = null; T.gift.card_err = ''; T.items = T.items.filter(i => i.sku !== 'CARDFISICA');
+  const pinta = () => { vRender(); const i = document.getElementById('gift-card'); if (i && cod.length < 8) { i.focus(); i.setSelectionRange(cod.length, cod.length); } };
+  if (cod.length < 8) { if (tenia) pinta(); return; }
+  const { data, error } = await sb.rpc('pos_card_fisica', { p_codigo: cod }); if (!T.gift || T.gift.card_cod !== cod) return;
+  if (error || !data || !data.ok) { T.gift.card_err = error ? error.message.replace(/^.*?: /, '') : (data && data.motivo) || 'Esa card no se puede usar'; sonar('menos'); pinta(); return; }
+  CARD_PRECIO = Number(data.precio) || CARD_PRECIO; T.gift.card = data.sku; T.items.push(cardItem()); sonar('mas'); pinta();
 }
 function vGiftQuitar() { if (!T.gift) return; T.gift = null; T.items = []; vTipo('FC', 'B'); vRender(); }
 function vGiftSet(k, v) { if (!T.gift) return; T.gift[k] = k === 'mostrar_importe' ? !!v : v; if (k === 'mostrar_importe') vRender(); }
@@ -2178,7 +2194,8 @@ function giftHTML() {
     <div class="gift-f"><input value="${esc(g.para)}" placeholder="Para (nombre de quien la recibe)" oninput="vGiftSet('para',this.value)"><input value="${esc(g.de_parte)}" placeholder="De parte de" oninput="vGiftSet('de_parte',this.value)"></div>
     <div class="gift-f"><input value="${esc(g.contacto)}" placeholder="Mail o WhatsApp de quien la recibe (si va vacío, no se manda nada)" oninput="vGiftSet('contacto',this.value)" style="flex:2"></div>
     <div class="gift-f"><input value="${esc(g.mensaje)}" maxlength="220" placeholder="Dedicatoria (opcional) · «¡Feliz cumple! Elegí lo que más te guste»" oninput="vGiftSet('mensaje',this.value)" style="flex:2"></div>
-    <div class="gift-f mini"><label class="cli-chk"><input type="checkbox"${g.mostrar_importe ? ' checked' : ''} onchange="vGiftSet('mostrar_importe',this.checked)"> Mostrar el importe en la tarjeta</label><span>Sin tildar, el regalo no dice el precio: quien la recibe ve su saldo con el link.</span></div></div>`;
+    <div class="gift-f mini"><label class="cli-chk"><input type="checkbox"${g.mostrar_importe ? ' checked' : ''} onchange="vGiftSet('mostrar_importe',this.checked)"> Mostrar el importe en la tarjeta</label><span>Sin tildar, el regalo no dice el precio: quien la recibe ve su saldo con el link.</span></div>
+    <div class="gift-f mini"><label class="cli-chk"><input type="checkbox"${g.card_on ? ' checked' : ''} onchange="vGiftCard(this.checked)"> Se lleva la <b>card física</b> (+ ${plata(CARD_PRECIO)})</label>${g.card_on ? `<input id="gift-card" inputmode="numeric" maxlength="8" value="${esc(g.card_cod || '')}" placeholder="Código de la card: 8 números" oninput="vGiftCardCod(this.value)" style="flex:0 0 230px">${g.card ? '<span class="chip green">✔ card ' + esc(g.card) + ' lista</span>' : g.card_err ? '<span class="chip red">✖ ' + esc(g.card_err) + '</span>' : '<span>Escaneá o escribí el código que tiene impreso la card.</span>'}` : `<span>Por defecto la gift card es digital. Con card física se cobran ${plata(CARD_PRECIO)} más, que se le suman al saldo si después devuelven la card.</span>`}</div></div>`;
 }
 
 // Comprobante ficticio con lo cargado en el ticket (para la vista previa, sin emitir)
@@ -2322,7 +2339,7 @@ function vPils() {
 }
 function vTipo(tipo, letra) {
   const eraNC = T.tipo === 'NC';
-  if (T.gift && tipo !== 'FC') { toast('La gift card sale siempre con factura: saqué la gift card del ticket', 'error'); T.gift = null; T.items = T.items.filter(i => i.sku !== 'GIFT'); }
+  if (T.gift && tipo !== 'FC') { toast('La gift card sale siempre con factura: saqué la gift card del ticket', 'error'); T.gift = null; T.items = T.items.filter(i => i.sku !== 'GIFT' && i.sku !== 'CARDFISICA'); }
   T.tipo = tipo; T.letra = letra;
   vPils();
   const nc = tipo === 'NC';
@@ -2351,7 +2368,8 @@ function vDto(i, v) {
   else { it.descuento_monto = Math.min(it.precio_unit, Math.max(0, r2(num(txt)))); it.descuento_pct = it.descuento_monto && it.precio_unit ? it.descuento_monto / it.precio_unit * 100 : 0; }
   vRender();
 }
-function vSet(i, campo, v) { const it = T.items[i]; if (campo === 'precio_unit' && it.descuento_monto > 0) { const p = Math.max(0, num(v)); it.descuento_monto = Math.min(p, it.descuento_monto); it.descuento_pct = p ? it.descuento_monto / p * 100 : 0; } if (campo === 'cantidad') { const neg = !it.fijo && (T.tipo === 'FC' || T.tipo === 'MA' || T.tipo === 'NC') && !T.sena && !T.gift; const nv = neg ? num(v) : Math.max(0, num(v)); if (nv !== it.cantidad) sonar(nv > it.cantidad ? 'mas' : 'menos'); it.cantidad = nv; } else it[campo] = Math.max(0, num(v)); if (campo === 'cantidad' && it.cantidad < 0 && it.max) { toast('En una devolución la cantidad negativa quita stock: solo si el cliente se lleva ese artículo', 'error'); } if (campo === 'cantidad' && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; } if (campo === 'cantidad' && !it.cantidad) T.items.splice(i, 1); vRender(); }
+function vSet(i, campo, v) { const it = T.items[i]; if (it && it.sku === 'CARDFISICA') { vRender(); return; }   // el cargo de la card física no se edita
+  if (campo === 'precio_unit' && it.descuento_monto > 0) { const p = Math.max(0, num(v)); it.descuento_monto = Math.min(p, it.descuento_monto); it.descuento_pct = p ? it.descuento_monto / p * 100 : 0; } if (campo === 'cantidad') { const neg = !it.fijo && (T.tipo === 'FC' || T.tipo === 'MA' || T.tipo === 'NC') && !T.sena && !T.gift; const nv = neg ? num(v) : Math.max(0, num(v)); if (nv !== it.cantidad) sonar(nv > it.cantidad ? 'mas' : 'menos'); it.cantidad = nv; } else it[campo] = Math.max(0, num(v)); if (campo === 'cantidad' && it.cantidad < 0 && it.max) { toast('En una devolución la cantidad negativa quita stock: solo si el cliente se lleva ese artículo', 'error'); } if (campo === 'cantidad' && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; } if (campo === 'cantidad' && !it.cantidad) T.items.splice(i, 1); vRender(); }
 // Descuentos generales: uno o más renglones, cada uno por % o por importe en pesos (la última casilla tocada manda y la otra
 // se muestra calculada). Se aplican en cascada: cada uno sobre lo que queda. El "+" del primer renglón agrega otro.
 function dMontar() { document.getElementById('v-descs').innerHTML = ''; dAgregar(); }
@@ -2388,7 +2406,7 @@ function vRender() {
     T.items.map((it, i) => `<tr${it.cantidad < 0 ? ' class="cambio" title="Cantidad negativa: el cliente lo trae para cambiar"' : it.stock <= 0 && !it.fijo ? ' class="sinstock" title="Sin stock en este local"' : ''}${it.fijo ? '' : ` ondblclick="if(!/^(INPUT|BUTTON|svg|path|line|polyline)$/.test(event.target.tagName))prodFicha('${esc(it.sku)}')"`}>
       <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}${(ad => ad && ad !== String(it.descripcion || '').trim() ? '<div class="adic">' + esc(ad) + '</div>' : '')(String((ARTS.find(a => a.sku === it.sku) || {}).descripcion_adicional || '').trim())}${it.entregado ? ' <span class="chip amber" title="Ya salió con el remito: no vuelve a descontar stock">entregado</span>' : ''}${it.cantidad < 0 ? ' <span class="chip viol" title="' + (T.tipo === 'NC' ? 'En la nota de crédito, el negativo SALE del stock' : 'Lo trae para cambiar: ENTRA al stock') + '">cambio · ' + (T.tipo === 'NC' ? 'sale' : 'entra') + '</span>' : ''}</div></div></div></td>
       <td class="num cant">${it.fijo ? '' : `<button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button>`}</td>
-      <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? (it.placeholder || 'Importe de la seña') : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:114px" title="Precio unitario (IVA incluido)"></td>
+      <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? (it.placeholder || 'Importe de la seña') : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:114px" title="Precio unitario (IVA incluido)"${it.sku === 'CARDFISICA' ? ' readonly' : ''}></td>
       <td class="num">${it.fijo ? '' : `<input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:80px;text-align:right">`}</td>
       <td class="num"><b class="${it.descuento_monto > 0 ? 'dto-imp' : it.descuento_pct > 0 ? 'dto-pct' : ''}" title="${it.descuento_monto > 0 ? 'Con descuento en pesos' : it.descuento_pct > 0 ? 'Con descuento en %' : ''}">${plata(lineaBruta(it))}</b></td>
       <td>${it.fijo && it.sku !== 'CONCEPTO' && it.sku !== TR_SKU ? '' : `<button class="btn ico chico cli-x" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
@@ -2915,13 +2933,15 @@ let _vlT = null; function valeDebounce(row) { clearTimeout(_vlT); delete row.dat
 function valeNorm(c) { const x = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return x.length === 14 ? x.slice(0, 2) + '-' + x.slice(2, 6) + '-' + x.slice(6, 10) + '-' + x.slice(10) : x; }
 async function valeConsultar(row) {
   const ref = row.querySelector('.ref'); const cod = valeNorm(ref.value); delete row.dataset.vale; delete row.dataset.valeErr;
-  if (cod.length < 14) { pRender(); return; }
+  const esCard = /^\d{8}$/.test(cod);   // el código de 8 números de la card física
+  if (cod.length < 14 && !esCard) { pRender(); return; }
   ref.value = cod;
   const { data, error } = await sb.rpc('pos_vale_consultar', { p_codigo: cod });
   if (error) { row.dataset.valeErr = error.message.replace(/^.*?: /, ''); pRender(); return; }
-  if (!data.ok) { row.dataset.valeErr = data.motivo || 'No existe ese código'; sonar('menos'); pRender(); return; }
+  if (!data.ok) { row.dataset.valeErr = esCard ? 'Esa card física no está asociada a ninguna gift card vigente' : (data.motivo || 'No existe ese código'); sonar('menos'); pRender(); return; }
+  if (esCard) { ref.value = data.codigo; return valeConsultar(row); }   // sigue con el código de la gift card
   if (data.estado === 'anulado') { row.dataset.valeErr = `${cod} está anulado${data.anulado_motivo ? ' (' + data.anulado_motivo + ')' : ''}`; sonar('menos'); pRender(); return; }
-  if (data.estado === 'usado' || Number(data.saldo) <= 0) { const u = data.ultimo_uso; row.dataset.valeErr = `${cod} ya se usó entero${u ? ' el ' + fechaAR(u.fecha) + ' en ' + (LOCALES[u.local] || u.local) + ' (Factura ' + u.letra + ' ' + u.numero + ')' : ''}`; sonar('menos'); pRender(); return; }
+  if ((data.estado === 'usado' || Number(data.saldo) <= 0) && !data.card_pendiente) { const u = data.ultimo_uso; row.dataset.valeErr = `${cod} ya se usó entero${u ? ' el ' + fechaAR(u.fecha) + ' en ' + (LOCALES[u.local] || u.local) + ' (Factura ' + u.letra + ' ' + u.numero + ')' : ''}`; sonar('menos'); pRender(); return; }
   // ya hay otro renglón con el mismo código → no se usa dos veces en el mismo ticket
   if ([...document.querySelectorAll('#v-pagos .medio')].some(r => r !== row && r.dataset.m === 'vale' && valeNorm(r.querySelector('.ref').value) === cod)) { row.dataset.valeErr = 'Ese código ya está en otro renglón'; pRender(); return; }
   row.dataset.vale = JSON.stringify(data);
@@ -2972,12 +2992,18 @@ function valeZonas() {
     }
     const imp = r.querySelector('.imp');
     if (r.dataset.valeErr) { z.innerHTML = `<span class="chip red">✖ ${esc(r.dataset.valeErr)}</span>`; continue; }
-    if (!r.dataset.vale) { z.innerHTML = valeNorm(r.querySelector('.ref').value).length >= 14 ? '<span class="mini">consultando…</span>' : '<span class="mini">Tipeá o escaneá el código de la gift card o del vale</span>'; continue; }
+    if (!r.dataset.vale) { z.innerHTML = (c => c.length >= 14 || /^\d{8}$/.test(c))(valeNorm(r.querySelector('.ref').value)) ? '<span class="mini">consultando…</span>' : '<span class="mini">Tipeá o escaneá el código de la gift card o del vale, o el de la card física</span>'; continue; }
     const d = JSON.parse(r.dataset.vale); const v = r2(num(imp.value));
     if (v > Number(d.saldo) + 0.01) { imp.value = plata(Number(d.saldo)); toast('El vale tiene saldo ' + plata(d.saldo), 'error'); }
     const queda = r2(Number(d.saldo) - r2(num(imp.value)));
-    z.innerHTML = `<span class="chip green">✔ ${d.tipo === 'gift' ? 'Gift card' : 'Vale de cambio'} vigente · saldo ${plata(d.saldo)}</span><span class="mini">${d.para ? 'para ' + esc(d.para) + (d.de_parte ? ' de parte de ' + esc(d.de_parte) : '') + ' · ' : ''}${fechaAR(d.fecha)} · ${esc(LOCALES[d.local] || d.local)}${queda > 0 ? ' · quedan <b>' + plata(queda) + '</b> en el mismo código' : ' · se usa entero'}</span>`;
+    z.innerHTML = `${d.card_pendiente ? `<button type="button" class="btn chico" onclick="valeCardDev(this)" title="Si entrega la card física ${esc(d.card)}, se le suman ${plata(d.card_deposito)} al saldo">Devuelve la card física · suma ${plata(d.card_deposito)}</button>` : ''}<span class="chip green">✔ ${d.tipo === 'gift' ? 'Gift card' : 'Vale de cambio'} vigente · saldo ${plata(d.saldo)}</span><span class="mini">${d.para ? 'para ' + esc(d.para) + (d.de_parte ? ' de parte de ' + esc(d.de_parte) : '') + ' · ' : ''}${fechaAR(d.fecha)} · ${esc(LOCALES[d.local] || d.local)}${queda > 0 ? ' · quedan <b>' + plata(queda) + '</b> en el mismo código' : ' · se usa entero'}</span>`;
   }
+}
+async function valeCardDev(btn) {
+  const row = btn.closest('.medio'); const d = JSON.parse(row.dataset.vale || '{}'); if (!d.codigo) return;
+  if (!await confirmar('¿Te entregó la card física ' + d.card + '? Se le suman ' + plata(d.card_deposito) + ' al saldo de la gift card y la card queda libre para otra venta.')) return;
+  const { data, error } = await sb.rpc('pos_vale_card_devolver', { p_codigo: d.codigo }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  toast('Card física devuelta: se sumaron ' + plata(data.sumado) + '. Saldo ' + plata(data.saldo), 'success'); delete row.querySelector('.imp').dataset.tocado; valeConsultar(row);
 }
 // QR escaneado con el cursor en el buscador → va a un renglón de pago "Vale / Gift card"
 function valeDesdeEscaneo(cod) {
@@ -3224,7 +3250,8 @@ async function emitir(esNC) {
   if (pag > t.tot + 1) { const ef = pagos.find(p => p.medio === 'efectivo') || pagos.find(p => p.medio === 'efectivo_usd'); if (ef) ef.importe = r2(ef.importe - (pag - t.tot)); }
   const valeWaN = esNC ? ((document.querySelector('#v-pagos .vale-wa') || {}).value || '').trim() : '';   // el WhatsApp va aparte: el mail lo manda el servicio y el chat se abre acá
   const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
-  if (T.gift && !(t.tot > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
+  if (T.gift && T.gift.card_on && !T.gift.card) { toast('Cargá el código de la card física, o destildá «Se lleva la card física»', 'error'); btn.disabled = false; const i = document.getElementById('gift-card'); if (i) i.focus(); return; }
+  if (T.gift && !(t.tot - (T.gift.card ? CARD_PRECIO : 0) > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
   const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, emitio_empleado_id: qe.id || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? ['Bultos: ' + parseInt(document.getElementById('v-re-bultos').value, 10), document.getElementById('v-obs').value.trim()].filter(Boolean).join(' · ') : undefined,   // en el remito la observación de abajo es la nota de entrega
@@ -3237,7 +3264,7 @@ async function emitir(esNC) {
   if (esNC) await mpDevolverNC(data.id, pagos);
   toast((esNC ? 'Nota de crédito ' : T.tipo === 'RE' ? (T.re_destino ? 'Remito de traslado ' : 'Remito ') : T.tipo === 'PR' ? 'Presupuesto ' : (T.tipo === 'MA' ? 'Comprobante ' : 'Factura ' + T.letra + ' ')) + data.numero_fmt + (T.tipo === 'PR' || T.tipo === 'MA' || T.tipo === 'RE' ? ' emitido' : ' emitida'), 'success');
   const eraRE = T.tipo === 'RE'; stockAplicarTicket(esNC);
-  const giftInfo = T.gift ? { ...T.gift } : null; const ncPara = esNC && T.cliente ? T.cliente.nombre : null; const valeImp = esNC ? (pagos.find(x => x.medio === 'vale') || {}).importe : t.tot;
+  const giftInfo = T.gift ? { ...T.gift } : null; const ncPara = esNC && T.cliente ? T.cliente.nombre : null; const valeImp = esNC ? (pagos.find(x => x.medio === 'vale') || {}).importe : r2(t.tot - (giftInfo && giftInfo.card ? CARD_PRECIO : 0));
   vVaciar(); if (eraRE) cargarRemitos();
   if (data.vale_codigo) valeModal(data.vale_codigo, valeCont, { id: data.id, importe: valeImp, para: giftInfo ? giftInfo.para : ncPara, de_parte: giftInfo ? giftInfo.de_parte : null }, esNC, valeWaN); else verComprobante(data.id, true);
 }
@@ -3656,6 +3683,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=135"></script>
+<script src="manual.js?v=136"></script>
 </body>
 </html>
