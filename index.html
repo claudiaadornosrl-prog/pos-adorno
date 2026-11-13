@@ -1051,7 +1051,7 @@ async function init() {
   document.getElementById('v-q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); vEscanear(); } });
   document.getElementById('v-q').focus();
 }
-const HUB_FN = { nc: 'pos.nc_x_remito', re: 'pos.nc_x_remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo' };
+const HUB_FN = { nc: 'pos.nota_credito', re: 'pos.remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo' };
 const HUB_TAB = { vender: 'pos.vender', vales: 'pos.vales', etiquetas: 'pos.etiquetas', caja: 'pos.caja' };
 // estado de una función del Hub para quien está logueado; null si el Hub no respondió (ahí vale la regla de antes)
 const hubF = f => { if (!PERFIL) return null; if (PERFIL.es_admin) return 'h'; const m = PERFIL.hub; return m && Object.keys(m).length ? (m[f] || 'o') : null; };
@@ -3656,6 +3656,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=134"></script>
+<script src="manual.js?v=135"></script>
 </body>
 </html>
