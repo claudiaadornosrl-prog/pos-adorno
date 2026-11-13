@@ -2774,7 +2774,7 @@ window.ADORNO_ACCIONES = [{
 // ═══ Cobros por Mercado Pago que no pasan por el Point integrado (JP 10-nov) ═══
 // Transferencia, Point y QR «No integrado» y link de pago: antes de emitir se busca el cobro en la cuenta de Mercado Pago
 // (misma consulta que «Verificar ahora» de Tesorería: Edge sync-mp-on-demand + RPC pos_mp_buscar). Cuando aparece, la factura se emite sola.
-const COBRO_V = { transferencia: 'la transferencia', mp_point_ni: 'el cobro del Point', mp_qr_ni: 'el cobro por QR', link: 'el pago del link' };
+const COBRO_V = { transferencia: 'la transferencia', mp_point_ni: 'el cobro del Point', mp_qr_ni: 'el cobro por QR', mp_qr: 'el cobro por QR', link: 'el pago del link' };
 const cobroAplica = () => T.tipo !== 'NC' && T.tipo !== 'PR' && T.tipo !== 'RE';
 function cobroOlvidar(row) { delete row.dataset.mov; delete row.dataset.buscando; delete row.dataset.noesta; delete row.dataset.sinverif; const i = row.querySelector('.imp'); if (i && row.dataset.m !== 'efectivo_usd') i.readOnly = false; }
 function cobroZonas() {
@@ -3165,7 +3165,7 @@ async function emitir(esNC) {
   const t = vTotales(); let pagos = pPagos();
   const qe = await quienEmite(); if (!qe) { btn.disabled = false; return; }
   let cobroAut;   // cobros de Mercado Pago que no se pudieron verificar: con autorización
-  if (!esNC && cobroAplica() && [...document.querySelectorAll('#v-pagos .medio')].some(r => COBRO_V[r.dataset.m] && r.dataset.sinverif && !r.dataset.mov)) {
+  if (!esNC && cobroAplica() && [...document.querySelectorAll('#v-pagos .medio')].some(r => (COBRO_V[r.dataset.m] && r.dataset.sinverif && !r.dataset.mov) || (r.dataset.m === 'mp_point' && !r.dataset.mp && r2(num(r.querySelector('.imp').value)) > 0))) {
     const aid = await autorizar('cobro', 'Emitir sin verificar el cobro en Mercado Pago · ' + plata(t.tot) + (T.cliente ? ' · ' + tit(T.cliente.nombre) : ''), !PERFIL.empleado_id); if (aid === null) { btn.disabled = false; return; } cobroAut = aid || undefined; }   // quién está en la caja (cámara o a mano)
   { const accion = esNC ? 'nc' : T.tipo === 'RE' ? 're' : (T.tipo === 'MA' && !T.gift) ? 'ma' : null; T.autorizacion_id = undefined;
     if (accion) { const aid = await autorizar(accion, (esNC ? 'Nota de crédito ' + (T.letra === 'X' ? 'manual' : T.letra) : T.tipo === 'RE' ? (T.re_destino ? 'Remito de traslado a ' + LOCALES[T.re_destino] : T.re_modo === 'prov' ? 'Remito a proveedor ' + document.getElementById('v-re-prov').value.trim() : 'Remito') : 'Comprobante X') + ' · ' + (T.re_destino ? T.items.reduce((s, i) => s + i.cantidad, 0) + ' unidades' : plata(t.tot)) + (T.cliente && !T.re_destino && T.re_modo !== 'prov' ? ' · ' + tit(T.cliente.nombre) : ''));
@@ -3609,6 +3609,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=131"></script>
+<script src="manual.js?v=132"></script>
 </body>
 </html>
