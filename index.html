@@ -1025,12 +1025,13 @@ async function init() {
   const { data: p, error } = await sb.rpc('pos_mi_perfil');
   if (error || !p || !p.ok) { toast((p && p.motivo) || 'Sin acceso', 'error'); return; }
   PERFIL = p;
-  LOCAL = p.local || localStorage.getItem('pos_local') || 'alcorta';
+  { const { data: h } = await sb.rpc('pos_mi_hub'); PERFIL.hub = (h && h.hub) || {}; if (h && Array.isArray(h.locales) && !p.es_admin) PERFIL.locales = h.locales; }
+  { const ult = localStorage.getItem('pos_local'); LOCAL = !p.es_admin && misLocales().includes(ult) ? ult : (p.local || ult || 'alcorta'); }   // con varios locales, vuelve al último que eligió
   document.getElementById('user-info').textContent = p.nombre;
-  if (!p.es_admin && !p.ve_todo) document.getElementById('tab-ajustes').style.display = 'none';
-  if (Array.isArray(p.tabs)) { document.querySelectorAll('#tabs button[id^="tab-"]').forEach(b => { if (!tabOk(b.id.slice(4))) b.style.display = 'none'; }); }
+  { const ea = hubF('pos.ajustes'); if (!p.es_admin && (ea === null ? !p.ve_todo : ea === 'o')) document.getElementById('tab-ajustes').style.display = 'none'; }
+  document.querySelectorAll('#tabs button[id^="tab-"]').forEach(b => { if (!tabOk(b.id.slice(4))) b.style.display = 'none'; });
   pintarLocal();
-  if (Array.isArray(p.tabs) && !tabOk('vender')) switchTab(p.tabs.find(k => document.getElementById('tab-' + k)) || 'etiquetas');
+  if (!tabOk('vender')) switchTab((Array.isArray(p.tabs) ? p.tabs : ['comprobantes', 'remitos', 'pedidos', 'etiquetas']).find(k => tabOk(k) && document.getElementById('tab-' + k)) || 'comprobantes');
   await cargarModo();
   { const aid = new URLSearchParams(location.search).get('autorizar'); if (aid) { history.replaceState(null, '', location.pathname); setTimeout(() => autResponder(Number(aid)), 300); } }
   // la notificación del pedido (SW del Hub o de RRHH) le avisa a la ventana abierta aunque sea esta (iPhone: la PWA muestra el último módulo)
@@ -1050,9 +1051,15 @@ async function init() {
   document.getElementById('v-q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); vEscanear(); } });
   document.getElementById('v-q').focus();
 }
-const tabOk = k => !PERFIL || !Array.isArray(PERFIL.tabs) || PERFIL.tabs.includes(k);
-const soloVer = () => !!PERFIL && !PERFIL.es_admin && !!PERFIL.ve_todo && LOCAL !== PERFIL.local;   // la oficina mirando un local: no opera
-const prestado = () => !!PERFIL && !PERFIL.es_admin && LOCAL === 'oficina' && PERFIL.local !== 'oficina';
+const HUB_FN = { nc: 'pos.nc_x_remito', re: 'pos.nc_x_remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo' };
+const HUB_TAB = { vender: 'pos.vender', vales: 'pos.vales', etiquetas: 'pos.etiquetas', caja: 'pos.caja' };
+// estado de una función del Hub para quien está logueado; null si el Hub no respondió (ahí vale la regla de antes)
+const hubF = f => { if (!PERFIL) return null; if (PERFIL.es_admin) return 'h'; const m = PERFIL.hub; return m && Object.keys(m).length ? (m[f] || 'o') : null; };
+const hubE = accion => (HUB_FN[accion] && hubF(HUB_FN[accion])) || (PERFIL.autoriza ? 'h' : 'a');
+const misLocales = () => PERFIL && Array.isArray(PERFIL.locales) && PERFIL.locales.length ? PERFIL.locales : [PERFIL.local];
+const tabOk = k => (!PERFIL || !Array.isArray(PERFIL.tabs) || PERFIL.tabs.includes(k)) && !(PERFIL && HUB_TAB[k] && hubF(HUB_TAB[k]) === 'o');
+const soloVer = () => !!PERFIL && !PERFIL.es_admin && !PERFIL.opera_todo && !!PERFIL.ve_todo && !misLocales().includes(LOCAL);   // la oficina mirando un local: no opera
+const prestado = () => !!PERFIL && !PERFIL.es_admin && !PERFIL.opera_todo && LOCAL === 'oficina' && !misLocales().includes('oficina');
 function prestadoUI() {
   const pr = prestado(), sv = soloVer();
   ['remitos', 'pedidos', 'etiquetas', 'caja'].forEach(k => { const b = document.getElementById('tab-' + k); if (b) b.style.display = pr || !tabOk(k) ? 'none' : ''; });
@@ -1068,15 +1075,15 @@ function prestadoUI() {
 function pintarLocal() {
   const el = document.getElementById('h-local');
   // Admin: cualquier local. Vendedora/encargada: su local y, si su local está habilitado (pos_parametros.fc_oficina_locales), Oficina. Nunca el otro local.
-  const permitidos = PERFIL.es_admin ? Object.keys(LOCALES) : PERFIL.ve_todo ? [PERFIL.local, ...Object.keys(LOCALES).filter(k => k !== PERFIL.local)] : [...new Set(PERFIL.fc_oficina === false ? [PERFIL.local] : [PERFIL.local, 'oficina'])];
+  const permitidos = PERFIL.es_admin || PERFIL.opera_todo ? Object.keys(LOCALES) : PERFIL.ve_todo ? [...misLocales(), ...Object.keys(LOCALES).filter(k => !misLocales().includes(k))] : [...new Set(PERFIL.fc_oficina === false || hubF('pos.fc_oficina') === 'o' ? misLocales() : [...misLocales(), 'oficina'])];
   if (!permitidos.includes(LOCAL)) LOCAL = permitidos[0];
   // (JP 6-nov) Oficina no pide desde el POS: sus pedidos a proveedores van por Compras. Pedidos es para que el local le pida a Oficina (o a Familia García).
   pdOficina(); prestadoUI();
   el.innerHTML = permitidos.length > 1
-    ? `<select onchange="cambiarLocal(this.value)" title="Desde qué local facturás">${permitidos.map(k => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${LOCALES[k]}${PERFIL.ve_todo && !PERFIL.es_admin && k !== PERFIL.local ? ' · solo ver' : ''}</option>`).join('')}</select>`
+    ? `<select onchange="cambiarLocal(this.value)" title="Desde qué local facturás">${permitidos.map(k => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${LOCALES[k]}${PERFIL.ve_todo && !PERFIL.es_admin && !PERFIL.opera_todo && !misLocales().includes(k) ? ' · solo ver' : ''}</option>`).join('')}</select>`
     : `<span>${esc(LOCALES[LOCAL] || LOCAL)}</span>`;
 }
-async function cambiarLocal(l) { LOCAL = l; if (soloVer()) toast('Estás mirando ' + LOCALES[l] + ' en solo lectura: comprobantes, caja y pedidos. Para operar, volvé a ' + LOCALES[PERFIL.local], 'success'); _fStock = {}; FICHA = null; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); pdOficina(); prestadoUI(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
+async function cambiarLocal(l) { LOCAL = l; if (soloVer()) toast('Estás mirando ' + LOCALES[l] + ' en solo lectura: comprobantes, caja y pedidos. Para operar, volvé a ' + LOCALES[misLocales()[0]], 'success'); _fStock = {}; FICHA = null; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); pdOficina(); prestadoUI(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
 async function cargarArticulos() {
   // Catálogo del local en memoria (≈5.000 filas): búsqueda instantánea y escaneo sin ir a la base.
   const out = []; let desde = 0;
@@ -1485,7 +1492,7 @@ async function rmBadge() {
   const b = document.getElementById('rm-tr-n'); if (!b) return; b.textContent = nt || ''; b.style.display = nt ? '' : 'none';
   const { data: ped } = await sb.rpc('pos_pedidos_para_remito', { p_local: LOCAL }); const n = new Set((ped || []).filter(p => p.estado !== 'sin_stock').map(mpKey)).size;   // pedidos con algo para mandar const p = document.getElementById('pd-ped-n'); if (p) { p.textContent = n || ''; p.style.display = n ? '' : 'none'; }
 }
-const puedeRecibir = () => (PERFIL.rol === 'gerente' || PERFIL.es_admin) && !!PERFIL.empleado_id;
+const puedeRecibir = () => hubE('recibir') === 'h';
 // En tránsito: lo que viene a este local y lo que este local mandó
 async function cargarTransito(aceptados) {
   const { data, error } = await sb.from('pos_comprobantes').select('*').eq('tipo', 'RE').not('destino_local', 'is', null).or(`local.eq.${LOCAL},destino_local.eq.${LOCAL}`).order('id', { ascending: false }).limit(200);
@@ -1638,13 +1645,13 @@ async function cargarPedidosLocal() {
   pdRender();
 }
 // (JP 9-nov) pedidos y mínimos: solo encargada, cajera o admin, cada una con su usuario (el genérico del local solo mira)
-const puedeMinimos = () => (PERFIL.rol === 'gerente' || PERFIL.rol === 'cajero' || PERFIL.es_admin) && !!PERFIL.empleado_id;
-const puedePedir = puedeMinimos;
+const puedeMinimos = () => hubE('minimo') === 'h';
+const puedePedir = () => hubE('pedido') === 'h';
 // Autorización para pedidos y mínimos: vale 15 minutos y sirve para varias operaciones seguidas (se guarda 12 min acá).
 // Devuelve 0 si quien está logueada ya tiene rango, el id de la autorización, o null si se canceló / la rechazaron.
 const PD_AUT = {};
 async function pdAut(accion, resumen) {
-  if (puedePedir()) return 0;
+  if (hubE(accion) === 'h') return 0;
   const c = PD_AUT[accion + ':' + LOCAL]; if (c && Date.now() - c.t < 12 * 60000) return c.id;
   const aid = await autorizar(accion, resumen); if (!aid) return null;
   PD_AUT[accion + ':' + LOCAL] = { id: aid, t: Date.now() }; return aid;
@@ -3244,7 +3251,7 @@ async function cargarVales() {
   if (tipo) qq = qq.eq('tipo', tipo);
   if (q) qq = qq.or(`codigo.ilike.%${q.replace(/[%,]/g, '')}%,para_nombre.ilike.%${q.replace(/[%,]/g, '')}%,contacto.ilike.%${q.replace(/[%,]/g, '')}%,de_parte.ilike.%${q.replace(/[%,]/g, '')}%`);
   const { data, error } = await qq; if (error) { toast(error.message, 'error'); return; }
-  const lista = data || []; const puedeAnular = PERFIL.es_admin || PERFIL.rol === 'gerente';
+  const lista = data || []; const puedeAnular = hubF('pos.vale_anular') === null ? (PERFIL.es_admin || PERFIL.rol === 'gerente') : hubF('pos.vale_anular') === 'h';
   document.getElementById('vl-stat').textContent = lista.length + (lista.length === 1 ? ' vale' : ' vales') + ' · saldo vigente ' + plata(lista.filter(v => v.estado === 'vigente').reduce((s, v) => s + Number(v.saldo), 0));
   document.getElementById('vl-lista').innerHTML = lista.length ? `<table><thead><tr><th>Código</th><th>Para</th><th>Nace de</th><th class="num">Importe</th><th class="num">Saldo</th><th>Envío</th><th></th></tr></thead><tbody>` +
     lista.map(v => { const c = v.comprobante; return `<tr class="${v.estado === 'anulado' ? 'dim' : ''}">
@@ -3282,7 +3289,8 @@ const pila = n => n ? tit((String(n).split(',')[1] || n).trim()) : '';
 let AUT = null;
 const AUT_SOLO_ENC = ['mov', 'recibir'];
 function autorizar(accion, resumen, forzar) {
-  if (PERFIL.autoriza && !forzar) return Promise.resolve(0);   // 0 = no hace falta: la que emite ya tiene rango
+  { const e = hubE(accion); if (e === 'o') { toast('Tu perfil no tiene habilitado esto. Los permisos se manejan en el Hub → Permisos.', 'error'); return Promise.resolve(null); }
+    if (e === 'h' && !forzar) return Promise.resolve(0); }   // 0 = no hace falta: su perfil lo tiene habilitado
   return new Promise(async resolve => {
     AUT = { accion, resumen, resolve, id: null, poll: null, fin: false, desde: 0, lista: [] };
     if (await autCara()) return;   // 1) la cámara: si reconoce a la encargada o la cajera, queda autorizado (o se canceló)
@@ -3330,9 +3338,9 @@ function autVentana() {
       <div class="mini">${esc(resumen)} · pide ${esc(pila(PERFIL.nombre))}</div>
       <div class="aut-caja" id="aut-caja"><div class="mini"><span class="spin"></span>Buscando quién está en ${esc(LOCALES[LOCAL])}…</div></div>
       <div class="mini" style="margin-top:12px">¿No tienen el celu a mano? Que lo autorice acá con su clave:</div>
-      <div class="aut-clave"><input id="aut-mail" type="email" placeholder="Usuario (mail)" autocomplete="off"><input id="aut-pass" type="password" placeholder="Clave" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();autClave()}"></div>
+      <div class="aut-clave"><input id="aut-mail" type="email" data-adorno-superior placeholder="Usuario (mail)" autocomplete="off"><input id="aut-pass" type="password" data-adorno-superior placeholder="Clave" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();autClave()}"></div>
       <div class="m-foot"><span class="spacer"></span><button class="btn" onclick="autCancelar()">Cancelar</button><button class="btn primary" onclick="autClave()">Autorizar con clave</button></div>`);
-    sb.rpc('pos_presentes', { p_local: LOCAL }).then(({ data, error }) => { if (!AUT || AUT.fin) return; if (error) { toast(error.message, 'error'); } AUT.lista = (data || []).filter(p => !AUT_SOLO_ENC.includes(accion) || p.rol !== 'cajero'); autLista(); });   // los movimientos de stock los autoriza solo la encargada (o un admin)
+    sb.rpc('pos_presentes_aut', { p_local: LOCAL, p_accion: accion }).then(({ data, error }) => { if (!AUT || AUT.fin) return; if (error) { toast(error.message, 'error'); } AUT.lista = data || []; autLista(); });   // los movimientos de stock los autoriza solo la encargada (o un admin)
 }
 function autFin(v) { if (!AUT || AUT.fin) return; AUT.fin = true; clearInterval(AUT.poll); caraCamOff(); const r = AUT.resolve; AUT = null; cerrarModal(); r(v); }
 function autCancelar() { if (AUT && AUT.id) sb.rpc('pos_autorizacion_cancelar', { p_id: AUT.id }); autFin(null); }
@@ -3648,6 +3656,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=133"></script>
+<script src="manual.js?v=134"></script>
 </body>
 </html>
