@@ -2576,7 +2576,7 @@ async function cfPadron() {
   const { data: ya } = await sb.from('compras_arca_consultas').select('*').eq('cuit', cuit).maybeSingle();
   if (ya && ya.consultado_at && Date.now() - new Date(ya.consultado_at) < 30 * 864e5 && pinta(ya)) return;
   msg.textContent = 'Consultando el padrón de ARCA…';
-  await sb.from('compras_arca_cola').insert({ cuit, pedido_por: 'pos:' + (PERFIL.email || '') });
+  { const { error } = await sb.rpc('pos_arca_pedir', { p_cuit: cuit }); if (error) { msg.textContent = 'No pude consultar ARCA: ' + error.message.replace(/^.*?: /, '') + '. Cargalo a mano.'; return; } }
   let n = 0; const poll = async () => {
     if (!document.getElementById('cf-doc')) return;
     const { data } = await sb.from('compras_arca_consultas').select('*').eq('cuit', cuit).maybeSingle();
@@ -3170,13 +3170,16 @@ async function emitir(esNC) {
   { const accion = esNC ? 'nc' : T.tipo === 'RE' ? 're' : (T.tipo === 'MA' && !T.gift) ? 'ma' : null; T.autorizacion_id = undefined;
     if (accion) { const aid = await autorizar(accion, (esNC ? 'Nota de crédito ' + (T.letra === 'X' ? 'manual' : T.letra) : T.tipo === 'RE' ? (T.re_destino ? 'Remito de traslado a ' + LOCALES[T.re_destino] : T.re_modo === 'prov' ? 'Remito a proveedor ' + document.getElementById('v-re-prov').value.trim() : 'Remito') : 'Comprobante X') + ' · ' + (T.re_destino ? T.items.reduce((s, i) => s + i.cantidad, 0) + ' unidades' : plata(t.tot)) + (T.cliente && !T.re_destino && T.re_modo !== 'prov' ? ' · ' + tit(T.cliente.nombre) : ''));
       if (aid === null) { btn.disabled = false; return; } if (aid) T.autorizacion_id = aid; } }
+  let efAut;   // cobrar en efectivo: cajera, encargada o admin
+  if (!esNC && !['PR', 'RE'].includes(T.tipo) && !(T.tipo === 'MA' && !T.gift) && pagos.some(p => (p.medio === 'efectivo' || p.medio === 'efectivo_usd') && p.importe > 0)) {
+    const aid = await autorizar('efectivo', 'Cobrar en efectivo · ' + plata(t.tot) + (T.cliente ? ' · ' + tit(T.cliente.nombre) : '')); if (aid === null) { btn.disabled = false; return; } efAut = aid || undefined; }
   // Vuelto: si pagó de más en efectivo, el efectivo que queda es total - resto
   const pag = pagos.reduce((s, p) => s + p.importe, 0);
   if (pag > t.tot + 1) { const ef = pagos.find(p => p.medio === 'efectivo') || pagos.find(p => p.medio === 'efectivo_usd'); if (ef) ef.importe = r2(ef.importe - (pag - t.tot)); }
   const valeWaN = esNC ? ((document.querySelector('#v-pagos .vale-wa') || {}).value || '').trim() : '';   // el WhatsApp va aparte: el mail lo manda el servicio y el chat se abre acá
   const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && !(t.tot > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
-  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, emitio_empleado_id: qe.id || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
+  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, emitio_empleado_id: qe.id || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? ['Bultos: ' + parseInt(document.getElementById('v-re-bultos').value, 10), document.getElementById('v-obs').value.trim()].filter(Boolean).join(' · ') : undefined,   // en el remito la observación de abajo es la nota de entrega
    
@@ -3606,6 +3609,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=130"></script>
+<script src="manual.js?v=131"></script>
 </body>
 </html>
