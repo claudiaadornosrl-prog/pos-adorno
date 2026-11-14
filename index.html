@@ -2256,15 +2256,17 @@ window.addEventListener('resize', () => { if (document.getElementById('pv-if')) 
 function pvTab(n) {
   document.getElementById('pv-1').style.display = n === 1 ? '' : 'none'; document.getElementById('pv-2').style.display = n === 2 ? '' : 'none';
   document.getElementById('pv-t1').classList.toggle('on', n === 1); document.getElementById('pv-t2').classList.toggle('on', n === 2);
-  document.getElementById('pv-print').title = n === 1 ? 'Imprimir en la comandera' : 'Imprimir la hoja A4';
+  document.getElementById('pv-print').title = pvVaA4() ? 'Imprimir la hoja A4 (este comprobante no sale por la comandera)' : 'Imprimir en la comandera';
   window._pvTab = n;
   if (n === 2) { const f = document.getElementById('pv-if'); if (!f.dataset.ok) { f.srcdoc = a4HTML(window._pv); f.dataset.ok = 1; } pvEscala(); }
 }
 // El remito no va a la comandera: solo hoja A4 (se esconden las pestañas y abre directo en A4)
 function pvSoloA4(x) { if (!x || !x.c || x.c.tipo !== 'RE') return; const t = document.getElementById('pv-t1'); if (t) t.parentElement.style.display = 'none'; pvTab(2); }
+// (JP 14-nov) se mira en Hoja A4 (lo que le llega al cliente por mail), pero la impresora de esta ventana saca siempre por la comandera.
+// Lo que no sale por comandera (remitos, comprobantes X y presupuestos) se imprime en A4.
+const pvVaA4 = () => { const c = window._pv && window._pv.c; return !!c && (c.tipo === 'RE' || c.letra === 'X'); };
 function pvImprimir() {
-  if (window._pvTab === 2) { imprimirA4(window._pv); return; }
-  if (window._pv && !window._pv.c.preview && window._pv.c.letra === 'X') { toast('Los comprobantes manuales y presupuestos no se imprimen en la comandera: usá la pestaña Hoja A4', 'error'); return; }
+  if (pvVaA4()) { imprimirA4(window._pv); return; }
   document.getElementById('print-area').innerHTML = ticketHTML(window._pv); window.print();
 }
 // Imprime la hoja A4 en un iframe oculto (no pasa por el CSS de impresión del ticket)
@@ -3869,6 +3871,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=150"></script>
+<script src="manual.js?v=151"></script>
 </body>
 </html>
