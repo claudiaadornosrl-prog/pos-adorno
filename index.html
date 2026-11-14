@@ -516,6 +516,10 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .cli-mail { display: flex; align-items: center; gap: 8px; margin: -4px 0 10px; padding: 6px 10px; border: 1px solid #7dd3fc; border-radius: 999px; background: #e0f2fe; color: #0369a1; }
 .cli-mail input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 15px; font-family: inherit; color: var(--text); padding: 2px 0; }
 .cli-mail input, .cli-sin input, .buscador input { border-radius: 0 !important; padding-left: 4px !important; }   /* la punta redonda de la casilla le comía la primera letra */
+.cli-mail .cm-ico { display: inline-flex; } .cli-mail.wa { border-color: #86efac; background: #dcfce7; color: #15803d; }
+.cli-mail .cm-tog { flex: none; width: 34px; height: 34px; margin: -3px -6px -3px 0; padding: 0; border-radius: 999px; border: 1px solid #86efac; background: #dcfce7; color: #15803d; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.cli-mail.wa .cm-tog { border-color: #7dd3fc; background: #e0f2fe; color: #0369a1; } .cli-mail .cm-tog svg { width: 20px; height: 20px; }
+.btn.ico.cm-wa { color: #15803d; } .pv-wa { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; padding: 8px 14px; border: 1px solid #86efac; border-radius: 999px; background: #dcfce7; color: #15803d; font-size: 14px; } .pv-wa span { flex: 1; }
 .cli-mail.falta { border-color: var(--amber); background: #fffbeb; } .cli-mail.falta #v-mail-st { color: #b45309; font-weight: 600; white-space: nowrap; }
 #ov .box.ficha { max-width: 940px; padding: 0; overflow: hidden; }
 #ov .box.ficha-prod { max-width: 1100px; width: 96vw; padding: 10px 12px 12px; } .prod-if { width: 100%; height: 80vh; border: none; border-radius: 12px; background: #fff; margin-top: 8px; } .pf-link { color: var(--primary-dark); white-space: nowrap; }
@@ -555,7 +559,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
 .empty.chico { padding: 22px; }
 .totales { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
 .totales .fila { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 14px; } .totales .fila.total { font-size: 22px; font-weight: 700; color: var(--primary-dark); }
-.totales #v-arts-fila { font-size: 17px; font-weight: 700; color: var(--text, #111827); } .totales #v-arts-fila b { font-weight: 800; }
+.totales #v-arts-fila { font-size: 17px; font-weight: 700; color: var(--text, #111827); } .totales #v-arts-fila b { font-weight: 800; } .totales #v-arts-fila { -webkit-text-stroke: .7px currentColor; }   /* la tipografía no trae negrita real: se engrosa el trazo */
 .totales input { border: 1px solid var(--border); border-radius: 6px; padding: 3px 4px; font-family: inherit; }
 .acciones { display: flex; gap: 8px; align-items: center; margin-top: 10px; } .acciones input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-family: inherit; font-size: 14px; }
 .btn-cobrar { display: flex; align-items: center; gap: 8px; background: var(--primary); color: white; border: none; border-radius: 10px; padding: 12px 20px; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
@@ -688,7 +692,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
             <div id="v-cli-sug" class="cl-res sug" style="display:none"></div>
           </div>
           <div class="cli-mail" id="v-cli-nom" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-nom" placeholder="Nombre y apellido del cliente" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();nomGuardar(true)}" onblur="nomGuardar()"><span class="mini" id="v-nom-st"></span></div>
-          <div class="cli-mail" id="v-cli-mail" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="v-mail" type="email" placeholder="Mail del cliente (opcional) · acá se manda la factura" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();mailGuardar()}" onblur="mailGuardar()"><span class="mini" id="v-mail-st"></span></div>
+          <div class="cli-mail" id="v-cli-mail" style="display:none"><span id="v-mail-ico" class="cm-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span><input id="v-mail" type="email" placeholder="Mail del cliente (opcional) · acá se manda la factura" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();mailGuardar()}" onblur="mailGuardar()"><span class="mini" id="v-mail-st"></span><button type="button" class="cm-tog" id="v-mail-tog" onmousedown="event.preventDefault()" onclick="canalToggle()" title="Mandarlo por WhatsApp" aria-label="Cambiar entre mail y WhatsApp"></button></div>
           <div class="renglones" id="v-renglones"><div class="empty chico">Todavía no agregaste nada.</div></div>
           <div class="totales">
             <div class="fila" id="v-arts-fila" style="display:none"><span>Artículos</span><b id="v-arts"></b></div>
@@ -2331,7 +2335,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main">${(c.es_prueba || (c.preview && MODO === 'prueba')) ? `<div style="${FRANJA_PRUEBA}font-size:9.5pt;padding:2mm 4mm;margin-bottom:4mm">PRUEBA · SIN VALOR FISCAL</div>` : ''}<div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.items = []; T.pend = 0; vPend(); T.cliente = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -2535,8 +2539,8 @@ let _nomGuardando = false;
 async function nomGuardar(seguir) {
   const c = T.cliente; if (!c || _nomGuardando) return; const inp = document.getElementById('v-nom'); const v = inp.value.trim(); if (!v) return;
   const pn = c.partes || partirNombre(v); if (!pn.apellido) return;
-  const mailV = (document.getElementById('v-mail').value || c.email || '').trim().toLowerCase(); const f = c.ficha || {}, sc = c.scan || {};
-  const p = { globalid: c.globalid || null, local: LOCAL, doc_tipo: c.doc_tipo, doc: c.doc, cond_iva: c.cond_iva || 'CF', apellido: pn.apellido, nombre: pn.nombre, email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailV) ? mailV : '', celular: f.celular || c.celular,
+  const mailV = ((T.canal === 'wa' ? '' : document.getElementById('v-mail').value) || c.email || '').trim().toLowerCase(); const f = c.ficha || {}, sc = c.scan || {};
+  const p = { globalid: c.globalid || null, local: LOCAL, doc_tipo: c.doc_tipo, doc: c.doc, cond_iva: c.cond_iva || 'CF', apellido: pn.apellido, nombre: pn.nombre, email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailV) ? mailV : '', celular: c.celular || f.celular,
     fecha_nacimiento: f.fecha_nacimiento || sc.fecha_nacimiento || null, sexo: f.sexo || sc.sexo, direccion: f.direccion, localidad: f.localidad, provincia: f.provincia, codigo_postal: f.codigo_postal };
   _nomGuardando = true; const { data, error } = await sb.rpc('pos_cliente_guardar', { p }); _nomGuardando = false;
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
@@ -2695,10 +2699,61 @@ function mailRender() {
   nomRender();
   const c = T.cliente, box = document.getElementById('v-cli-mail'), inp = document.getElementById('v-mail'), st = document.getElementById('v-mail-st');
   box.style.display = c ? '' : 'none'; if (!c) return;
-  if (document.activeElement !== inp) inp.value = c.email || '';
-  box.classList.remove('falta'); st.textContent = c.email ? '' : 'opcional';
+  const wa = T.canal === 'wa', tog = document.getElementById('v-mail-tog');
+  box.classList.toggle('wa', wa); document.getElementById('v-mail-ico').innerHTML = wa ? WA_SVG : _i('mail');
+  tog.innerHTML = wa ? _i('mail') : WA_SVG; tog.title = wa ? 'Volver a mandarlo por mail' : 'Mandarlo por WhatsApp';
+  inp.type = wa ? 'tel' : 'email'; inp.inputMode = wa ? 'tel' : 'email'; inp.placeholder = wa ? 'WhatsApp del cliente: código de área y número · acá se manda el comprobante' : 'Mail del cliente (opcional) · acá se manda la factura';
+  if (document.activeElement !== inp) inp.value = (wa ? c.celular : c.email) || '';
+  box.classList.remove('falta'); st.textContent = (wa ? c.celular : c.email) ? '' : 'opcional';
+}
+const WA_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></svg>';
+async function canalToggle() {
+  if (!T.cliente) return; await mailGuardar();
+  T.canal = T.canal === 'wa' ? 'mail' : 'wa'; const inp = document.getElementById('v-mail'); inp.blur(); mailRender();
+  if (!inp.value) inp.focus();
+}
+// WhatsApp del cliente: se guarda en el celular de su ficha
+async function celGuardar() {
+  const c = T.cliente; if (!c) return; const inp = document.getElementById('v-mail'); const v = inp.value.replace(/[^0-9]/g, '');
+  if (!v || v === String(c.celular || '').replace(/[^0-9]/g, '')) { mailRender(); return; }
+  if (!pdWaNum(v)) { toast('Ese WhatsApp no parece válido: poné código de área y número (ej. 11 1234 5678)', 'error'); inp.focus(); return; }
+  if (c.nuevo) { c.celular = v; mailRender(); return; }
+  if (!c.ficha && c.globalid) { const { data: fc } = await sb.from('clientes').select('*').eq('globalid', c.globalid).maybeSingle(); if (fc) c.ficha = fc; }
+  const f = c.ficha; if (!f) { c.celular = v; mailRender(); toast('El cliente no tiene ficha: el WhatsApp queda solo para este ticket', 'error'); return; }
+  const p = { globalid: c.globalid || null, local: LOCAL, doc_tipo: c.doc_tipo, doc: c.doc, cond_iva: c.cond_iva, apellido: f.apellido || f.nombre_completo || c.nombre, nombre: f.apellido ? f.nombre : '', email: f.email, celular: v,
+    fecha_nacimiento: f.fecha_nacimiento || null, sexo: f.sexo, direccion: f.direccion, localidad: f.localidad, provincia: f.provincia, codigo_postal: f.codigo_postal };
+  const { data, error } = await sb.rpc('pos_cliente_guardar', { p });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  c.celular = v; if (data) { c.ficha = data; if (data.globalid) c.globalid = data.globalid; }
+  toast('WhatsApp guardado en la ficha', 'success'); vRender();
+}
+// Después de emitir (o desde el comprobante abierto): espera el PDF y abre el chat de WhatsApp con el mensaje y el link listos
+async function compWa(id, tel, nombre) {
+  const n = pdWaNum(tel); if (!n) { toast('Ese WhatsApp no parece válido', 'error'); return; }
+  const head = document.querySelector('#ov .m-head'); let bar = document.getElementById('pv-wa');
+  if (!bar && head) { bar = document.createElement('div'); bar.id = 'pv-wa'; bar.className = 'pv-wa'; head.after(bar); }
+  const pinta = h => { const b = document.getElementById('pv-wa'); if (b) b.innerHTML = WA_SVG + h; };
+  pinta('<span>Preparando el PDF para mandarlo por WhatsApp…</span>');
+  let c = null;
+  for (let k = 0; k < 30; k++) {
+    const { data } = await sb.from('pos_comprobantes').select('tipo,letra,punto_venta,numero,pdf_url').eq('id', id).maybeSingle();
+    if (data && data.pdf_url) { c = data; break; }
+    await _esp(3000); if (head && !document.getElementById('pv-wa')) return;   // cerraron la ventana
+  }
+  if (!c) { pinta('<span>El PDF todavía no está listo. Abrí el comprobante desde Comprobantes y mandalo con el botón de WhatsApp.</span>'); toast('El PDF todavía no está: mandalo después desde Comprobantes', 'error'); return; }
+  const que = c.tipo === 'PR' ? 'presupuesto' : c.tipo === 'NC' ? 'nota de crédito' : c.tipo === 'RE' ? 'remito' : c.tipo === 'MA' ? 'comprobante' : 'factura';
+  const link = 'https://wa.me/' + n + '?text=' + encodeURIComponent('Hola' + (nombre ? ' ' + pila(nombre) : '') + '! Te mandamos tu ' + que + ' de Claudia Adorno: ' + c.pdf_url + ' ¡Gracias por tu compra!');
+  pinta(`<span>Se abrió el chat de WhatsApp con el comprobante: falta tocar Enviar.</span><a class="btn" href="${esc(link)}" target="_blank" rel="noopener">Abrir de nuevo</a>`);
+  waAbrir(link);
+}
+async function compWaPedir(id) {
+  const x = window._pv; let cel = '';
+  if (x && x.c && x.c.cliente_globalid) { const { data } = await sb.from('clientes').select('celular').eq('globalid', x.c.cliente_globalid).maybeSingle(); cel = (data && data.celular) || ''; }
+  const v = await pedirTexto('¿A qué WhatsApp se lo mando? (código de área y número)', cel); if (v === null) return;
+  compWa(id, v, x && x.c ? (x.c.cliente_interno || x.c.cliente_nombre) : '');
 }
 async function mailGuardar() {
+  if (T.canal === 'wa') return celGuardar();
   const c = T.cliente; if (!c) return; const inp = document.getElementById('v-mail'); const v = inp.value.trim().toLowerCase();
   if (v === (c.email || '').toLowerCase() || !v) { mailRender(); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { toast('Ese mail no parece válido', 'error'); inp.focus(); return; }
@@ -3285,6 +3340,8 @@ async function emitir(esNC) {
   if (T.cliente && T.cliente.nuevo && document.getElementById('v-nom').value.trim()) await nomGuardar();
   if (!clienteListo()) return;
   const btn = document.getElementById('v-cobrar'); btn.disabled = true;
+  if (T.canal === 'wa' && document.activeElement === document.getElementById('v-mail')) await celGuardar();
+  const waEnv = T.canal === 'wa' && T.tipo !== 'RE' && T.cliente && pdWaNum(T.cliente.celular) ? { tel: T.cliente.celular, nombre: T.cliente.nombre } : null;
   const t = vTotales(); let pagos = pPagos();
   if (!await artsCartel(esNC)) { btn.disabled = false; return; }
   const ventaAt = !esNC && T.tipo !== 'RE';   // en las ventas: quién atendió (no en nota de crédito ni remito)
@@ -3308,7 +3365,7 @@ async function emitir(esNC) {
   const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && T.gift.card_on && !T.gift.card) { toast('Cargá el código de la card física, o destildá «Se lleva la card física»', 'error'); btn.disabled = false; const i = document.getElementById('gift-card'); if (i) i.focus(); return; }
   if (T.gift && !(t.tot - (T.gift.card ? CARD_PRECIO : 0) > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
-  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
+  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio, canal_envio: waEnv ? 'wa' : undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? ['Bultos: ' + parseInt(document.getElementById('v-re-bultos').value, 10), document.getElementById('v-obs').value.trim()].filter(Boolean).join(' · ') : undefined,   // en el remito la observación de abajo es la nota de entrega
    
@@ -3326,7 +3383,7 @@ async function emitir(esNC) {
   const eraRE = T.tipo === 'RE'; stockAplicarTicket(esNC);
   const giftInfo = T.gift ? { ...T.gift } : null; const ncPara = esNC && T.cliente ? T.cliente.nombre : null; const valeImp = esNC ? (pagos.find(x => x.medio === 'vale') || {}).importe : r2(t.tot - (giftInfo && giftInfo.card ? CARD_PRECIO : 0));
   vVaciar(); if (eraRE) cargarRemitos();
-  if (data.vale_codigo) valeModal(data.vale_codigo, valeCont, { id: data.id, importe: valeImp, para: giftInfo ? giftInfo.para : ncPara, de_parte: giftInfo ? giftInfo.de_parte : null }, esNC, valeWaN); else verComprobante(data.id, true);
+  if (data.vale_codigo) valeModal(data.vale_codigo, valeCont, { id: data.id, importe: valeImp, para: giftInfo ? giftInfo.para : ncPara, de_parte: giftInfo ? giftInfo.de_parte : null }, esNC, valeWaN); else { await verComprobante(data.id, true); if (waEnv) compWa(data.id, waEnv.tel, waEnv.nombre); }
 }
 
 // ═══ Vales y gift cards (pestaña) ═══
@@ -3622,6 +3679,7 @@ async function verComprobante(id, recien) {
   // (JP 9-nov) mismas pestañas que la vista previa al emitir: Comandera / Hoja A4 (y el PDF si ya está)
   modal(`<div class="m-head"><h3>${recien ? '✓ Emitido' : 'Comprobante'}</h3><span class="pils" style="margin-left:10px"><button class="pil on" id="pv-t1" onclick="pvTab(1)">Comandera</button><button class="pil" id="pv-t2" onclick="pvTab(2)">Hoja A4</button></span><span class="spacer"></span>
     ${x.c.pdf_url ? `<a class="btn ico primary-ico" href="${esc(x.c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF (hoja A4, el que va por mail)" aria-label="PDF">${_i('pdf')}</a>` : '<span class="mini" title="El PDF se arma solo apenas el comprobante tiene CAE">PDF en camino…</span>'}
+    ${x.c.estado === 'emitido' && !x.c.destino_local ? `<button class="btn ico cm-wa" onclick="compWaPedir(${x.c.id})" title="Mandar el comprobante por WhatsApp" aria-label="WhatsApp">${WA_SVG}</button>` : ''}
     <button class="btn ico primary-ico" id="pv-print" onclick="pvImprimir()" title="Imprimir lo que se ve" aria-label="Imprimir">${_i('print')}</button>
     <button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div id="pv-1" class="tk-wrap">${ticketHTML(x)}</div>
@@ -3766,6 +3824,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=144"></script>
+<script src="manual.js?v=145"></script>
 </body>
 </html>
