@@ -690,6 +690,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
           <div class="cli-mail" id="v-cli-mail" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="v-mail" type="email" placeholder="Mail del cliente (opcional) · acá se manda la factura" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();mailGuardar()}" onblur="mailGuardar()"><span class="mini" id="v-mail-st"></span></div>
           <div class="renglones" id="v-renglones"><div class="empty chico">Todavía no agregaste nada.</div></div>
           <div class="totales">
+            <div class="fila" id="v-arts-fila" style="display:none"><span>Artículos</span><b id="v-arts"></b></div>
             <div class="fila"><span>Subtotal</span><b id="v-subtotal">$ 0</b></div>
             <div id="v-descs"></div>
             <div class="fila" id="v-sena-fila" style="display:none"></div>
@@ -2386,6 +2387,15 @@ function dQuitar(btn) { btn.closest('.dsc').remove(); vRender(); }
 // "10%" = porcentaje; "1000" o "$ 1.000" = pesos (igual que la casilla Dto del renglón)
 function dVal(inp) { const row = inp.closest('.dsc'); const txt = inp.value.trim(); row.dataset.modo = txt.endsWith('%') ? 'pct' : 'imp'; row.dataset.v = String(Math.max(0, num(txt))); vRender(); }
 function dSet(pct) { dMontar(); const row = document.querySelector('#v-descs .dsc'); row.dataset.modo = 'pct'; row.dataset.v = String(pct || 0); vRender(); }
+// unidades del ticket (sin señas, gift cards ni conceptos): u = las que se lleva · c = las que trae para cambiar · r = renglones
+function vArts() { let u = 0, c = 0, r = 0; for (const it of T.items) { if (it.fijo) continue; const q = Number(it.cantidad) || 0; if (q > 0) { u += q; r++; } else if (q < 0) c -= q; } return { u: r2(u), c: r2(c), r }; }
+const _nArt = n => String(n).replace('.', ',') + (n === 1 ? ' artículo' : ' artículos');
+function artsCartel(esNC) {
+  const a = vArts(); if (!a.u && !a.c) return Promise.resolve(true);
+  const donde = esNC ? 'en la nota de crédito' : T.tipo === 'RE' ? 'en el remito' : (T.tipo === 'MA' && !T.gift) ? 'en el presupuesto' : 'por facturar';
+  return new Promise(res => { const d = _dlg(`<div class="dlg-msg" style="text-align:center"><div style="font-size:56px;font-weight:700;line-height:1.1">${String(a.u).replace('.', ',')}</div><div style="font-size:18px;font-weight:600">${a.u === 1 ? 'artículo' : 'artículos'} ${donde}</div>${a.c ? `<div style="margin-top:6px">y ${_nArt(a.c)} que ${a.c === 1 ? 'vuelve' : 'vuelven'} por cambio</div>` : ''}<div class="mini" style="margin-top:10px">Contá que en el mostrador haya la misma cantidad.</div></div><div class="m-foot"><button class="btn" id="dlg-no">Volver</button><span class="spacer"></span><button class="btn primary" id="dlg-si">Está bien, emitir</button></div>`);
+    const fin = v => { d.style.display = 'none'; d.innerHTML = ''; res(v); }; d.querySelector('#dlg-no').onclick = () => fin(false); d.querySelector('#dlg-si').onclick = () => fin(true); d.querySelector('#dlg-si').focus(); });
+}
 function vTotales() {
   let sub = 0; for (const it of T.items) sub += r2(lineaBruta(it));
   sub = r2(sub);
@@ -2422,6 +2432,7 @@ function vRender() {
   for (const f of t.filas) { const e = f.row.querySelector('.dval'); const v = num(f.row.dataset.v);
     if (document.activeElement !== e) e.value = !v ? '' : f.row.dataset.modo === 'imp' ? plata(v) : String(v).replace('.', ',') + '%';
     const dm = f.row.querySelector('.dmonto'); dm.textContent = f.d ? '- ' + plata(f.d) : '$ 0'; dm.className = 'dmonto ' + (f.d ? (f.row.dataset.modo === 'imp' ? 'dto-imp' : 'dto-pct') : ''); }
+  { const a = vArts(); document.getElementById('v-arts-fila').style.display = (a.u || a.c) ? '' : 'none'; document.getElementById('v-arts').textContent = _nArt(a.u) + (a.r > 1 || a.u !== a.r ? ' · ' + a.r + (a.r === 1 ? ' renglón' : ' renglones') : '') + (a.c ? ' · ' + String(a.c).replace('.', ',') + ' de cambio' : ''); }
   document.getElementById('v-subtotal').textContent = plata(t.sub);
   // Letra A: en pantalla se discrimina el IVA igual que en el comprobante (los precios son con IVA incluido; neto = total / 1,21)
   { const a = T.letra === 'A'; document.getElementById('v-iva').style.display = a ? '' : 'none';
@@ -3274,6 +3285,7 @@ async function emitir(esNC) {
   if (!clienteListo()) return;
   const btn = document.getElementById('v-cobrar'); btn.disabled = true;
   const t = vTotales(); let pagos = pPagos();
+  if (!await artsCartel(esNC)) { btn.disabled = false; return; }
   const ventaAt = !esNC && T.tipo !== 'RE';   // en las ventas: quién atendió (no en nota de crédito ni remito)
   const qe = await quienEmite(false, null, ventaAt); if (!qe) { btn.disabled = false; return; }
   let atendio;
@@ -3730,6 +3742,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=141"></script>
+<script src="manual.js?v=142"></script>
 </body>
 </html>
