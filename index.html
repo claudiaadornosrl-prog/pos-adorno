@@ -3112,12 +3112,13 @@ function caraDist(a, b) { let t = 0; for (let i = 0; i < 128; i++) { const x = a
 function caraMejor(d, lista) { let m = null; for (const e of lista) { const x = caraDist(d, e.descriptor); if (!m || x < m.dist) m = { e, dist: x }; } return m; }
 // Devuelve { id, modo } ('cara' | 'manual'), { id: null } si quien está logueada ya es una persona, o null si se canceló
 // true = seguir · false = no hacer la operación (canceló o falló). empId: la persona ya identificada (null = usuario personal); sin pasar, se pregunta
-async function hubReg(funcion, detalle, empId) {
+async function hubReg(funcion, detalle, empId, desc) {
   const { data, error } = await sb.rpc('hub_registra_quien', { p_funcion: funcion });
   if (error) { toast('No pude consultar el registro del Hub: ' + error.message.replace(/^.*?: /, ''), 'error'); return false; }
   if (!data || !data.registra) return true;
-  if (empId === undefined) { if (PERFIL.empleado_id) empId = null; else { const q = await quienEmite(false, '¿Quién lo está haciendo?'); if (!q) return false; empId = q.id; } }
-  const r = await sb.rpc('hub_registrar', { p_funcion: funcion, p_local: LOCAL, p_empleado_id: empId || null, p_detalle: detalle || null });
+  if (empId === undefined) { if (PERFIL.empleado_id) empId = null; else { const q = await quienEmite(false, '¿Quién lo está haciendo?'); if (!q) return false; empId = q.id; desc = q.desc; } }
+  const a = { p_funcion: funcion, p_local: LOCAL, p_empleado_id: empId || null, p_detalle: detalle || null }; if (desc && empId) a.p_descriptor = desc;
+  const r = await sb.rpc('hub_registrar', a);
   if (r.error) { toast('No pude registrar quién lo hace: ' + r.error.message.replace(/^.*?: /, ''), 'error'); return false; }
   return true;
 }
@@ -3148,7 +3149,7 @@ function quienEmite(probar, titulo) {
       if (d) { let m = null; try { m = (await sb.rpc('pos_cara_identificar', { p_local: LOCAL, p_descriptor: Array.from(d) })).data; } catch (e) {}
         if (fin) break;
         if (m) { seguidas = ult === m.empleado_id ? seguidas + 1 : 1; ult = m.empleado_id;
-          if (seguidas >= 2) { msg('✔ ' + pila(m.nombre), true); await _esp(650); cerrar({ id: m.empleado_id, modo: 'cara' }); break; } }
+          if (seguidas >= 2) { msg('✔ ' + pila(m.nombre), true); await _esp(650); cerrar({ id: m.empleado_id, modo: 'cara', desc: Array.from(d) }); break; } }
         else { seguidas = 0; msg('No te reconozco: acercate a la cámara o elegí tu nombre'); } }
       else msg('Mirá a la cámara…');
       await _esp(200);
@@ -3289,7 +3290,7 @@ async function emitir(esNC) {
   { const det = { tipo: p.tipo, letra: p.letra, importe: t.tot, cliente: (p.cliente && p.cliente.nombre) || null };
     const fns = [esNC ? 'pos.nota_credito' : T.tipo === 'RE' ? 'pos.remito' : T.gift ? 'pos.vales' : T.tipo === 'MA' ? 'pos.presupuesto' : 'pos.vender'];
     if (!esNC && pagos.some(x => (x.medio === 'efectivo' || x.medio === 'efectivo_usd') && x.importe > 0)) fns.push('pos.cobro_efectivo');
-    for (const f of fns) if (!await hubReg(f, det, qe.id || null)) { btn.disabled = false; return; } }
+    for (const f of fns) if (!await hubReg(f, det, qe.id || null, qe.desc)) { btn.disabled = false; return; } }
   const { data, error } = await sb.rpc('pos_emitir', { p });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); btn.disabled = false; return; }
   for (const pg of pagos) if (pg.detalle && pg.detalle.order_id) mpLlamar('vincular', { order_id: pg.detalle.order_id, comprobante_id: data.id }).catch(() => {});
