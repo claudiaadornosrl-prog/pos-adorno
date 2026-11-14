@@ -1601,11 +1601,13 @@ function mpAbrir(k) {
 }
 async function mpMarcar(id, est) {
   const p = PED.find(x => x.id === id); if (!p) return; const nuevo = p.estado === est ? 'pendiente' : est;   // tocar de nuevo la misma pastilla la desmarca
+  if (hubOc('pos.me_piden') || !await hubReg('pos.me_piden', { renglon: id, estado: nuevo })) return;
   const { error } = await sb.rpc('pos_traslado_marcar', { p_id: id, p_estado: nuevo }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
   p.estado = nuevo; if (MP_K) mpAbrir(MP_K); mpPinta(); rmBadge();
 }
 async function mpTodos() {
   const x = mpGrupos().find(g => g.k === MP_K); if (!x) return; const pen = x.items.filter(i => i.estado !== 'apartado' && i.estado !== 'sin_stock');
+  if (hubOc('pos.me_piden') || !await hubReg('pos.me_piden', { renglones: pen.length, estado: 'apartado' })) return;
   for (const p of pen) { const { error } = await sb.rpc('pos_traslado_marcar', { p_id: p.id, p_estado: 'apartado' }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); break; } p.estado = 'apartado'; }
   mpAbrir(MP_K); mpPinta(); rmBadge();
 }
@@ -3003,6 +3005,7 @@ function valeZonas() {
 async function valeCardDev(btn) {
   const row = btn.closest('.medio'); const d = JSON.parse(row.dataset.vale || '{}'); if (!d.codigo) return;
   if (!await confirmar('¿Te entregó la card física ' + d.card + '? Se le suman ' + plata(d.card_deposito) + ' al saldo de la gift card y la card queda libre para otra venta.')) return;
+  if (hubOc('pos.vale_card_devolver') || !await hubReg('pos.vale_card_devolver', { codigo: d.codigo, card: d.card, suma: d.card_deposito })) return;
   const { data, error } = await sb.rpc('pos_vale_card_devolver', { p_codigo: d.codigo }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
   toast('Card física devuelta: se sumaron ' + plata(data.sumado) + '. Saldo ' + plata(data.saldo), 'success'); delete row.querySelector('.imp').dataset.tocado; valeConsultar(row);
 }
@@ -3113,6 +3116,7 @@ function caraDist(a, b) { let t = 0; for (let i = 0; i < 128; i++) { const x = a
 function caraMejor(d, lista) { let m = null; for (const e of lista) { const x = caraDist(d, e.descriptor); if (!m || x < m.dist) m = { e, dist: x }; } return m; }
 // Devuelve { id, modo } ('cara' | 'manual'), { id: null } si quien está logueada ya es una persona, o null si se canceló
 // true = seguir · false = no hacer la operación (canceló o falló). empId: la persona ya identificada (null = usuario personal); sin pasar, se pregunta
+const hubOc = f => hubF(f) === 'o' && (toast('Tu perfil no tiene habilitado esto. Los permisos se manejan en el Hub → Permisos.', 'error'), true);
 async function hubReg(funcion, detalle, empId, desc) {
   const { data, error } = await sb.rpc('hub_registra_quien', { p_funcion: funcion });
   if (error) { toast('No pude consultar el registro del Hub: ' + error.message.replace(/^.*?: /, ''), 'error'); return false; }
@@ -3726,6 +3730,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=140"></script>
+<script src="manual.js?v=141"></script>
 </body>
 </html>
