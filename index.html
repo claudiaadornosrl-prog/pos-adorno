@@ -2894,14 +2894,17 @@ function mpZonas() {
   }
 }
 // ═══ Acciones que Clodi puede dejar preparadas (JP 10-nov): arma el ticket; la persona revisa y recién ahí se emite ═══
+const clodiDoc = p => String(p.cliente_doc || '').replace(/\D/g, '');
+async function clodiCliente(doc) { if (doc.length < 7) return ''; await cliBuscar(doc); const c = T.cliente; return !c ? ' · no pude cargar el cliente ' + doc + ': cargalo a mano' : c.nombre ? ' · cliente ' + tit(c.nombre) : ' · cliente nuevo con ' + c.doc_tipo + ' ' + c.doc + ': falta escribirle el nombre'; }
 const CLODI_MEDIOS = { efectivo: 'efectivo', dolares: 'efectivo_usd', point: 'mp_point', qr: 'mp_qr', link: 'link', transferencia: 'transferencia', vale: 'vale' };
 window.ADORNO_ACCIONES = [{
   nombre: 'armar_venta',
-  descripcion: 'Deja cargado un ticket en la pestaña Vender (factura o presupuesto) con los artículos y, si se dijo, la forma de pago. No emite: la persona revisa y emite. Usar cuando piden "haceme / armame / cargame una factura (o presupuesto) con tal código por tal cantidad".',
+  descripcion: 'Deja cargado un ticket en la pestaña Vender (factura o presupuesto) con los artículos y, si se dijo, la forma de pago y el cliente (por DNI o CUIT). No emite: la persona revisa y emite. Usar cuando piden "haceme / armame / cargame una factura (o presupuesto) con tal código por tal cantidad"; si dicen el DNI o el CUIT del cliente, pasarlo en cliente_doc.',
   parametros: { type: 'object', required: ['items'], properties: {
     comprobante: { type: 'string', enum: ['factura', 'presupuesto'], description: 'Qué se arma; por defecto factura' },
     items: { type: 'array', description: 'Artículos por código (SKU) y cantidad', items: { type: 'object', required: ['sku'], properties: { sku: { type: 'string', description: 'Código del artículo tal como lo dijo la persona' }, cantidad: { type: 'number', description: 'Unidades; por defecto 1' } } } },
-    medio_pago: { type: 'string', enum: Object.keys(CLODI_MEDIOS), description: 'Forma de pago si la dijo (un solo medio por el total)' } } },
+    medio_pago: { type: 'string', enum: Object.keys(CLODI_MEDIOS), description: 'Forma de pago si la dijo (un solo medio por el total)' },
+    cliente_doc: { type: 'string', description: 'DNI (7 u 8 dígitos) o CUIT (11 dígitos) del cliente, si lo dijo. Solo los números.' } } },
   disponible: () => !!(typeof ARTS !== 'undefined' && ARTS.length),
   preparar: async (p) => {
     const pedidos = (p.items || []).map(i => ({ q: String(i.sku || '').toUpperCase().replace(/\s+/g, ''), n: Math.max(1, Math.round(Number(i.cantidad) || 1)) })).filter(i => i.q);
@@ -2912,10 +2915,11 @@ window.ADORNO_ACCIONES = [{
     if (T.items.length && !await confirmar('Hay un ticket empezado. ¿Lo vacío para armar el nuevo?')) return { ok: false, error: 'quedó el ticket que ya estaba' };
     switchTab('vender'); vVaciar(); if (p.comprobante === 'presupuesto') vTipo('PR', 'X');
     for (const e of enc) { T.pend = e.n; vAgregar(e.a.sku); }
+    const cliTxt = await clodiCliente(clodiDoc(p));
     const t = vTotales(); const medio = p.comprobante === 'presupuesto' ? null : CLODI_MEDIOS[p.medio_pago];
     if (medio && pMedios().some(m => m.clave === medio)) { const row = document.querySelector('#v-pagos .medio'); const sel = row.querySelector('.med'); sel.value = medio; pMedio(sel); if (medio !== 'efectivo_usd') row.querySelector('.imp').value = plata(t.tot); pRender(); }
     const sinStock = enc.filter(e => Number(e.a.stock) < e.n).map(e => e.a.sku);
-    return { ok: true, resumen: (p.comprobante === 'presupuesto' ? 'Presupuesto' : 'Factura') + ' con ' + enc.map(e => e.n + ' × ' + e.a.sku).join(', ') + ' · total ' + plata(t.tot) + (medio ? ' · ' + ((MEDIOS.find(m => m.clave === medio) || {}).nombre || medio) : '') + (sinStock.length ? ' · ojo, sin stock suficiente: ' + sinStock.join(', ') : '') };
+    return { ok: true, resumen: (p.comprobante === 'presupuesto' ? 'Presupuesto' : 'Factura') + ' con ' + enc.map(e => e.n + ' × ' + e.a.sku).join(', ') + ' · total ' + plata(t.tot) + (medio ? ' · ' + ((MEDIOS.find(m => m.clave === medio) || {}).nombre || medio) : '') + (sinStock.length ? ' · ojo, sin stock suficiente: ' + sinStock.join(', ') : '') + cliTxt };
   },
   confirmar: async () => { if (!T.items.length) return { ok: false, error: 'el ticket está vacío' }; emitirTicket(); return { ok: true, mensaje: 'Le di a Emitir: seguí en la pantalla, que te pide el cliente y quién emite.' }; }
 }, {
@@ -2926,16 +2930,18 @@ window.ADORNO_ACCIONES = [{
     para: { type: 'string', description: 'Nombre de quien la recibe, si lo dijo' },
     de_parte: { type: 'string', description: 'Nombre de quien la regala, si lo dijo' },
     mensaje: { type: 'string', description: 'Dedicatoria, si la dijo' },
-    contacto: { type: 'string', description: 'Mail o WhatsApp de quien la recibe, si lo dijo' } } },
+    contacto: { type: 'string', description: 'Mail o WhatsApp de quien la recibe, si lo dijo' },
+    cliente_doc: { type: 'string', description: 'DNI (7 u 8 dígitos) o CUIT (11 dígitos) de quien la compra, si lo dijo. Solo los números.' } } },
   disponible: () => typeof T !== 'undefined' && typeof vGiftIniciar === 'function',
   preparar: async (p) => {
     const imp = r2(Number(p.importe) || 0); if (!(imp > 0)) return { ok: false, error: 'decime de cuánta plata es la gift card' };
     if (T.items.length && !await confirmar('Hay un ticket empezado. ¿Lo vacío para armar la gift card?')) return { ok: false, error: 'quedó el ticket que ya estaba' };
     const cli = T.cliente; switchTab('vender'); vVaciar(); if (cli) T.cliente = cli;
+    const cliTxt = await clodiCliente(clodiDoc(p));
     await vGiftIniciar(imp); if (!T.gift) return { ok: false, error: 'no pude abrir la gift card en el ticket' };
     for (const k of ['para', 'de_parte', 'mensaje', 'contacto']) if (p[k] && String(p[k]).trim()) T.gift[k] = String(p[k]).trim();
     vRender();
-    return { ok: true, resumen: 'Gift card de ' + plata(imp) + (T.gift.para ? ' para ' + T.gift.para : '') + (T.gift.de_parte ? ' · de parte de ' + T.gift.de_parte : '') + (T.gift.contacto ? ' · se manda a ' + T.gift.contacto : '') + '. Falta revisar, cargar el cliente y la forma de pago.' };
+    return { ok: true, resumen: 'Gift card de ' + plata(imp) + (T.gift.para ? ' para ' + T.gift.para : '') + (T.gift.de_parte ? ' · de parte de ' + T.gift.de_parte : '') + (T.gift.contacto ? ' · se manda a ' + T.gift.contacto : '') + cliTxt + '. Falta revisar' + (T.cliente ? '' : ', cargar el cliente') + ' y poner la forma de pago.' };
   },
   confirmar: async () => { if (!T.gift) return { ok: false, error: 'no hay una gift card en el ticket' }; emitirTicket(); return { ok: true, mensaje: 'Le di a Emitir: seguí en la pantalla, que te pide el cliente y quién emite.' }; }
 }];
@@ -3863,6 +3869,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=148"></script>
+<script src="manual.js?v=149"></script>
 </body>
 </html>
