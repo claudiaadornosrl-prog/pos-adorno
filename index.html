@@ -520,6 +520,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .cli-mail .cm-tog { flex: none; width: 34px; height: 34px; margin: -3px -6px -3px 0; padding: 0; border-radius: 999px; border: 1px solid #86efac; background: #dcfce7; color: #15803d; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .cli-mail.wa .cm-tog { border-color: #7dd3fc; background: #e0f2fe; color: #0369a1; } .cli-mail .cm-tog svg { width: 20px; height: 20px; }
 .btn.ico.cm-wa { color: #15803d; } .pv-wa { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; padding: 8px 14px; border: 1px solid #86efac; border-radius: 999px; background: #dcfce7; color: #15803d; font-size: 14px; } .pv-wa span { flex: 1; }
+#v-dias.falta { border-color: var(--amber) !important; background: #fffbeb !important; }
 .cli-mail.falta { border-color: var(--amber); background: #fffbeb; } .cli-mail.falta #v-mail-st { color: #b45309; font-weight: 600; white-space: nowrap; }
 #ov .box.ficha { max-width: 940px; padding: 0; overflow: hidden; }
 #ov .box.ficha-prod { max-width: 1100px; width: 96vw; padding: 10px 12px 12px; } .prod-if { width: 100%; height: 80vh; border: none; border-radius: 12px; background: #fff; margin-top: 8px; } .pf-link { color: var(--primary-dark); white-space: nowrap; }
@@ -709,7 +710,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
             <button class="btn ico" onclick="vVaciar()" title="Vaciar el ticket" aria-label="Vaciar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
             <input id="v-obs" placeholder="Observación (opcional)">
             <label class="mini cli-chk" id="v-chk-pr" style="display:none" title="Tildado es un presupuesto; sin tildar, comprobante manual"><input type="checkbox" id="v-chk-pr-in" onchange="vTipo(this.checked ? 'PR' : 'MA','X')"> Presupuesto</label>
-            <label class="mini cli-chk" id="v-dias-lb" style="display:none" title="Cuántos días corridos se le respeta el precio al cliente. Sale escrito en el comprobante.">Respetar el precio <input id="v-dias" inputmode="numeric" autocomplete="off" value="14" style="width:46px;text-align:center;border-radius:999px;padding:3px 4px"> días</label>
+            <label class="mini cli-chk" id="v-dias-lb" style="display:none" title="Cuántos días corridos se le respeta el precio al cliente. Sale escrito en el comprobante.">Respetar el precio <input id="v-dias" inputmode="numeric" autocomplete="off" value="" placeholder="¿?" oninput="this.classList.remove('falta')" style="width:52px;text-align:center;border-radius:999px;padding:3px 4px;border:1px solid #7dd3fc;background:#e0f2fe;color:#0369a1;font-weight:700"> días</label>
             <button class="btn-cobrar" id="v-cobrar" onclick="emitirTicket()" title="Emitir el comprobante"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span id="v-cobrar-lb">Emitir</span></button>
           </div>
         </div>
@@ -2227,7 +2228,7 @@ function vPreviewDatos() {
     cliente_nombre: T.cliente ? T.cliente.nombre : 'Consumidor Final', cliente_doc_tipo: T.cliente && T.cliente.doc_tipo, cliente_doc: T.cliente && T.cliente.doc, cliente_cond_iva: T.cliente ? T.cliente.cond_iva : 'CF',
     subtotal: t.sub, descuento_pct: t.imp == null ? t.pct : r2(t.pct), descuento_monto: t.desc, total: t.tot, neto: A || T.letra === 'B' ? r2(t.tot / 1.21) : t.tot, iva: A || T.letra === 'B' ? r2(t.tot - t.tot / 1.21) : 0, cae_estado: T.letra === 'X' ? 'no_aplica' : 'preview' };
   if (T.sena_usar) { c.sena_monto = t.sena; }
-  c.precio_dias = (T.tipo === 'PR' || T.sena) ? diasVal() : null;
+  c.precio_dias = (T.tipo === 'PR' || T.sena) && /^\d+$/.test(document.getElementById('v-dias').value.trim()) ? diasVal() : null;
   return { c, det, pagos: T.tipo === 'PR' ? [] : pPagos(), rel: null, email: T.cliente && T.cliente.email, sena_items: T.sena ? T.sena.items : null, sena_de: T.sena_usar ? T.sena_usar.letra + ' ' + T.sena_usar.factura : null };
 }
 // Vista previa: pestañas Comandera / Hoja A4. Imprimir: la comandera por defecto; la A4 desde su pestaña.
@@ -2449,7 +2450,7 @@ function vRender() {
   for (const f of t.filas) { const e = f.row.querySelector('.dval'); const v = num(f.row.dataset.v);
     if (document.activeElement !== e) e.value = !v ? '' : f.row.dataset.modo === 'imp' ? plata(v) : String(v).replace('.', ',') + '%';
     const dm = f.row.querySelector('.dmonto'); dm.textContent = f.d ? '- ' + plata(f.d) : '$ 0'; dm.className = 'dmonto ' + (f.d ? (f.row.dataset.modo === 'imp' ? 'dto-imp' : 'dto-pct') : ''); }
-  { const l = document.getElementById('v-dias-lb'), on = T.tipo === 'PR' || !!T.sena; if (on && l.style.display === 'none') document.getElementById('v-dias').value = T.sena ? 30 : 14; l.style.display = on ? '' : 'none'; }
+  { const l = document.getElementById('v-dias-lb'), on = T.tipo === 'PR' || !!T.sena; if (on && l.style.display === 'none') document.getElementById('v-dias').value = ''; l.style.display = on ? '' : 'none'; }
   { const a = vArts(); document.getElementById('v-arts-fila').style.display = (a.u || a.c) ? '' : 'none'; document.getElementById('v-arts').textContent = _nArt(a.u) + (a.c ? ' · ' + String(a.c).replace('.', ',') + ' de cambio' : ''); }
   document.getElementById('v-subtotal').textContent = plata(t.sub);
   // Letra A: en pantalla se discrimina el IVA igual que en el comprobante (los precios son con IVA incluido; neto = total / 1,21)
@@ -3372,6 +3373,7 @@ async function emitir(esNC) {
   if (!esNC) { const f = cobroFaltan(); if (f.length) { if (!f[0].dataset.buscando) { toast('Primero verifico ' + COBRO_V[f[0].dataset.m] + ' en Mercado Pago: cuando aparece, se emite sola', 'success'); cobroVerificar(f[0]); } return; } }
   if (T.cliente && T.cliente.nuevo && document.getElementById('v-nom').value.trim()) await nomGuardar();
   if (!clienteListo()) return;
+  if (!esNC && (T.tipo === 'PR' || T.sena)) { const di = document.getElementById('v-dias'); if (!/^\d+$/.test(di.value.trim())) { di.classList.add('falta'); toast('Poné cuántos días se le respeta el precio (abajo, en la casilla celeste). Con 0 no se congela.', 'error'); di.focus(); return; } }
   const btn = document.getElementById('v-cobrar'); btn.disabled = true;
   if (T.canal === 'wa' && document.activeElement === document.getElementById('v-mail')) await celGuardar();
   const waEnv = T.canal === 'wa' && T.tipo !== 'RE' && T.cliente && pdWaNum(T.cliente.celular) ? { tel: T.cliente.celular, nombre: T.cliente.nombre } : null;
@@ -3861,6 +3863,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=147"></script>
+<script src="manual.js?v=148"></script>
 </body>
 </html>
