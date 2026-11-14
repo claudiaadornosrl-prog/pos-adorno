@@ -3525,6 +3525,7 @@ async function cargarComprobantes() {
       <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button>
         ${c.tipo === 'RE' && c.estado === 'emitido' && !c.facturado_en && !c.destino_local ? `<button class="btn ico" onclick="rmFacturar(${c.id})" title="Facturar este remito" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo === 'PR' && c.estado === 'emitido' ? `<button class="btn ico" onclick="prFacturar(${c.id})" title="Facturar este presupuesto" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo !== 'NC' && c.tipo !== 'RE' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && c.cae_estado === 'error' ? `<button class="btn ico" onclick="reintentarCAE(${c.id})" title="Pedir el CAE de nuevo a ARCA" aria-label="Reintentar CAE">${_i('nc')}</button>` : ''}
+        ${(c.tipo === 'PR' || c.tipo === 'MA') && c.estado === 'emitido' && !c.es_sena && !c.gift_codigos && !c.remito_id ? `<button class="btn ico" onclick="modificar(${c.id})" title="${c.tipo === 'PR' ? 'Modificar el presupuesto' : 'Modificar el comprobante X (pide autorización de la encargada)'}" aria-label="Modificar">${_i('edit')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && c.cae_estado !== 'ok' && c.cae_estado !== 'pendiente' ? `<button class="btn ico peligro" onclick="anular(${c.id})" title="Anular" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty">No hay comprobantes en ese rango.</div>';
 }
@@ -3682,6 +3683,28 @@ async function iniciarNC(id) {
   const { data: c } = await sb.from('pos_comprobantes').select('letra').eq('id', id).single(); if (!c) return;
   switchTab('vender'); vTipo('NC', c.letra); ncElegir(id);
 }
+// Modificar un presupuesto (PR, cualquiera) o un comprobante X rojo (MA, con autorización): se anula y queda cargado en el ticket para emitirlo de nuevo
+async function modificar(id) {
+  const x = await traerComprobante(id); if (!x.c) return; const c = x.c;
+  if (!['PR', 'MA'].includes(c.tipo)) { toast('Los comprobantes electrónicos no se modifican: se corrigen con una nota de crédito', 'error'); return; }
+  if (c.estado !== 'emitido') { toast('Ese comprobante ya no se puede modificar', 'error'); return; }
+  const rojo = c.tipo === 'MA', nom = (rojo ? 'comprobante X ' : 'presupuesto ') + fmtNum(c.punto_venta, c.numero);
+  if (T.items.length && !await confirmar('Hay artículos en el ticket. ¿Los saco y cargo el ' + nom + ' para modificarlo?')) return;
+  if (!await confirmar('Para modificarlo se anula el ' + nom + (rojo ? ' (la mercadería vuelve al stock)' : '') + ' y queda cargado en el ticket con lo mismo, para que cambies lo que haga falta y lo emitas de nuevo. Va a salir con un número nuevo. ¿Sigo?')) return;
+  let aid = 0;
+  if (rojo) { aid = await autorizar('anular', 'Modificar el ' + nom + ' · ' + plata(c.total)); if (aid === null) return; }
+  if (!await hubReg('pos.anular', { comprobante: id, motivo: 'Modificación', modifica: true })) return;
+  const { error } = await sb.rpc('pos_anular', { p_id: id, p_motivo: 'Modificación', p_autorizacion_id: aid || null, p_modifica: true });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  if (rojo) await cargarArticulos();
+  switchTab('vender'); vVaciar(); vTipo(c.tipo, 'X');
+  T.items = x.det.map(d => { const a = ARTS.find(z => z.sku === d.sku); return { sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), descuento_monto: Number(d.descuento_monto) || 0, stock: a ? Number(a.stock) : 1 }; });
+  T.cliente = (c.cliente_globalid || c.cliente_doc) ? { nombre: c.cliente_interno || c.cliente_nombre, doc_tipo: c.cliente_doc_tipo, doc: c.cliente_doc, cond_iva: c.cliente_cond_iva, globalid: c.cliente_globalid, facturar_a_nombre: false } : null;
+  dSet(Number(c.descuento_pct) || 0);
+  document.getElementById('v-obs').value = c.obs || '';
+  vRender(); cargarComprobantes();
+  toast('Anulé el ' + nom + ' y lo dejé cargado en el ticket: cambiá lo que haga falta y emitilo' + (rojo ? ' (cargá de nuevo la forma de pago)' : ''), 'success');
+}
 async function anular(id) {
   const motivo = await pedirTexto('Motivo de la anulación (queda registrado):'); if (motivo === null) return;
   const c = COMPS.find(x => x.id === id);
@@ -3742,6 +3765,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=142"></script>
+<script src="manual.js?v=143"></script>
 </body>
 </html>
