@@ -709,6 +709,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
             <button class="btn ico" onclick="vVaciar()" title="Vaciar el ticket" aria-label="Vaciar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
             <input id="v-obs" placeholder="Observación (opcional)">
             <label class="mini cli-chk" id="v-chk-pr" style="display:none" title="Tildado es un presupuesto; sin tildar, comprobante manual"><input type="checkbox" id="v-chk-pr-in" onchange="vTipo(this.checked ? 'PR' : 'MA','X')"> Presupuesto</label>
+            <label class="mini cli-chk" id="v-dias-lb" style="display:none" title="Cuántos días corridos se le respeta el precio al cliente. Sale escrito en el comprobante.">Respetar el precio <input id="v-dias" inputmode="numeric" autocomplete="off" value="14" style="width:46px;text-align:center;border-radius:999px;padding:3px 4px"> días</label>
             <button class="btn-cobrar" id="v-cobrar" onclick="emitirTicket()" title="Emitir el comprobante"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span id="v-cobrar-lb">Emitir</span></button>
           </div>
         </div>
@@ -1345,12 +1346,22 @@ async function vSenasOfrecer(c) {
     ${ss.map(x => `<div class="sena-card"><div><b>${plata(x.importe)}</b> · ${fechaAR(x.fecha)} · Factura ${esc(x.letra)} ${esc(x.factura)}<div class="mini">${x.items.map(i => Number(i.cantidad) + ' × ' + esc(i.descripcion)).join(' · ')}</div></div><button class="btn primary" onclick='vSenaUsar(${JSON.stringify(x).replace(/'/g, "&#39;")})'>Usar esta seña</button></div>`).join('')}
     <div class="m-foot"><button class="btn" onclick="cerrarModal()">Ahora no</button></div>`);
 }
+// Días corridos que se respeta el precio (presupuesto y seña). Los viejos, sin el dato: presupuesto 14 días, seña sin vencimiento.
+const diasVal = () => Math.max(0, Math.min(365, Math.round(num(document.getElementById('v-dias').value)) || 0));
+const diasDesde = f => Math.floor((new Date(new Date().toDateString()) - new Date(String(f).slice(0, 10) + 'T00:00:00')) / 864e5);
+function hastaFecha(f, n) { const v = new Date(String(f).slice(0, 10) + 'T12:00:00'); v.setDate(v.getDate() + n); return fechaAR(v.toISOString().slice(0, 10)); }
+function prValidez(c) { const n = c.precio_dias == null ? 14 : Number(c.precio_dias); return n > 0 ? 'Los precios de este presupuesto se mantienen por ' + n + (n === 1 ? ' día corrido' : ' días corridos') + (c.fecha ? ', hasta el ' + hastaFecha(c.fecha, n) : '') + '.' : 'Precios sujetos a cambio sin previo aviso.'; }
+function senaValidez(c) { const n = c && c.precio_dias; if (n == null) return 'Esta seña se descuenta cuando retirás los artículos. No vence.';
+  return 'Esta seña se descuenta cuando retirás los artículos; la plata no vence. ' + (Number(n) > 0 ? 'Los precios de lo señado se respetan por ' + Number(n) + (Number(n) === 1 ? ' día corrido' : ' días corridos') + (c.fecha ? ', hasta el ' + hastaFecha(c.fecha, Number(n)) : '') + '; después se toman los precios vigentes.' : 'Los artículos se cobran al precio vigente el día que los retirás.'); }
 function vSenaUsar(x) {
   cerrarModal(); T.sena_usar = { id: x.id, importe: Number(x.importe), factura: x.factura, letra: x.letra };
-  for (const i of x.items) { const a = ARTS.find(z => z.sku === i.sku); const it = T.items.find(z => z.sku === i.sku);
+  const venc = x.precio_dias != null && diasDesde(x.fecha) > Number(x.precio_dias); let cambio = 0;   // pasado el plazo, lo señado va al precio de hoy
+  for (const i of x.items) { const a = ARTS.find(z => z.sku === i.sku); const it = T.items.find(z => z.sku === i.sku); const px = venc && a && Number(a.precio) > 0 ? Number(a.precio) : Number(i.precio_unit); if (px !== Number(i.precio_unit)) cambio++;
     // el precio de lo señado queda congelado al momento de la seña: no lo toca un aumento posterior
-    if (it) { it.cantidad += Number(i.cantidad); it.precio_unit = Number(i.precio_unit); } else T.items.push({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad), precio_unit: Number(i.precio_unit), descuento_pct: 0, descuento_monto: 0, stock: a ? Number(a.stock_fisico || a.stock) : 1 }); }
-  sonar('mas'); vRender(); toast('Seña aplicada: el cliente paga el saldo', 'success');
+    if (it) { it.cantidad += Number(i.cantidad); it.precio_unit = px; } else T.items.push({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad), precio_unit: px, descuento_pct: 0, descuento_monto: 0, stock: a ? Number(a.stock_fisico || a.stock) : 1 }); }
+  sonar('mas'); vRender();
+  if (venc) toast('Seña aplicada, pero el precio congelado venció el ' + hastaFecha(x.fecha, Number(x.precio_dias)) + ': cargué los precios de hoy' + (cambio ? ' (' + cambio + (cambio === 1 ? ' artículo cambió' : ' artículos cambiaron') + ')' : ' (no cambiaron)') + '. Si corresponde respetarlos, corregí el precio a mano.', 'error');
+  else toast('Seña aplicada' + (x.precio_dias != null ? ' con los precios congelados (valen hasta el ' + hastaFecha(x.fecha, Number(x.precio_dias)) + ')' : '') + ': el cliente paga el saldo', 'success');
 }
 function vSenaNoUsar() { T.sena_usar = null; vRender(); }
 // ═══ Remitos de venta ═══
@@ -2216,6 +2227,7 @@ function vPreviewDatos() {
     cliente_nombre: T.cliente ? T.cliente.nombre : 'Consumidor Final', cliente_doc_tipo: T.cliente && T.cliente.doc_tipo, cliente_doc: T.cliente && T.cliente.doc, cliente_cond_iva: T.cliente ? T.cliente.cond_iva : 'CF',
     subtotal: t.sub, descuento_pct: t.imp == null ? t.pct : r2(t.pct), descuento_monto: t.desc, total: t.tot, neto: A || T.letra === 'B' ? r2(t.tot / 1.21) : t.tot, iva: A || T.letra === 'B' ? r2(t.tot - t.tot / 1.21) : 0, cae_estado: T.letra === 'X' ? 'no_aplica' : 'preview' };
   if (T.sena_usar) { c.sena_monto = t.sena; }
+  c.precio_dias = (T.tipo === 'PR' || T.sena) ? diasVal() : null;
   return { c, det, pagos: T.tipo === 'PR' ? [] : pPagos(), rel: null, email: T.cliente && T.cliente.email, sena_items: T.sena ? T.sena.items : null, sena_de: T.sena_usar ? T.sena_usar.letra + ' ' + T.sena_usar.factura : null };
 }
 // Vista previa: pestañas Comandera / Hoja A4. Imprimir: la comandera por defecto; la A4 desde su pestaña.
@@ -2305,7 +2317,7 @@ function a4HTML(x) {
   if (re && c.transporte) side += `<div class="et">Transporta</div>${esc(c.transporte)}`;
   if (re) side += '<div class="aviso">Remito · no válido como factura</div>';
   if (pagosH) side += `<div class="et">${nc ? 'Devolución' : 'Pagos'}</div>${pagosH}`;
-  if (pr) { const v = new Date(d); v.setDate(v.getDate() + 14); side += `<div class="et">Validez</div>Los precios de este presupuesto se mantienen por 14 días corridos, hasta el ${fechaAR(v.toISOString().slice(0, 10))}.<div class="aviso">Presupuesto · no válido como factura</div>`; }
+  if (pr) side += `<div class="et">Validez</div>${prValidez(c)}<div class="aviso">Presupuesto · no válido como factura</div>`;
   if (ma) side += '<div class="aviso">Documento no válido como factura</div>';
   if (fiscal && c.cae_estado === 'ok') side += `<img class="qr" data-qr="${esc(qrArca(c))}" alt="QR ARCA"><div class="cae"><b>CAE ${esc(c.cae)}</b><br>Vencimiento ${fechaAR(c.cae_vto)}<br>Comprobante autorizado por ARCA</div>`;
   if (fiscal && c.preview) side += '<div class="aviso" style="margin-top:auto">Sin CAE · vista previa</div>';
@@ -2321,7 +2333,7 @@ function a4HTML(x) {
   if (pr) tot += '<div class="fila imp"><span>Precios finales con IVA incluido</span><span></span></div>';
   if (Number(c.sena_monto) > 0) tot = `<div class="fila"><span>Seña a cuenta${x.sena_de ? ' · Factura ' + esc(x.sena_de) : ''}</span><span>- ${plata2(c.sena_monto)}</span></div>` + tot;
   if (Number(c.gift_desc) > 0) tot = `<div class="fila"><span>Gift card ya facturada${c.gift_codigos ? ' · ' + esc(c.gift_codigos) : ''}</span><span>- ${plata2(c.gift_desc)}</span></div>` + tot;
-  if (x.sena_items && x.sena_items.length) tot += `<div class="et2" style="margin-top:5mm">Artículos señados</div>${x.sena_items.map(d => `<div class="fila"><span>${Number(d.cantidad)} × ${esc(d.descripcion)}</span><span>${plata2(Number(d.cantidad) * Number(d.precio_unit))}</span></div>`).join('')}<div class="mini">Esta seña se descuenta cuando retirás los artículos. No vence.</div>`;
+  if (x.sena_items && x.sena_items.length) tot += `<div class="et2" style="margin-top:5mm">Artículos señados</div>${x.sena_items.map(d => `<div class="fila"><span>${Number(d.cantidad)} × ${esc(d.descripcion)}</span><span>${plata2(Number(d.cantidad) * Number(d.precio_unit))}</span></div>`).join('')}<div class="mini">${senaValidez(x.c)}</div>`;
   if (re) { const mb = /^Bultos: (\d+)/.exec(c.entrega_nota || ''); const un = det.reduce((t, d) => t + Number(d.cantidad), 0); tot = (mb ? `<div class="fila total"><span>Cantidad de bultos</span><span>${mb[1]}</span></div>` : '') + `<div class="fila"><span>Unidades</span><span>${un}</span></div>` + tot; }
   if (c.obs) tot += `<div class="mini" style="margin-top:3mm">${esc(c.obs)}</div>`;
   const frase = nc ? 'Gracias por tu confianza.' : EMPRESA.frase + (pr ? ' Te esperamos para concretarlo.' : '');
@@ -2335,7 +2347,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main">${(c.es_prueba || (c.preview && MODO === 'prueba')) ? `<div style="${FRANJA_PRUEBA}font-size:9.5pt;padding:2mm 4mm;margin-bottom:4mm">PRUEBA · SIN VALOR FISCAL</div>` : ''}<div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -2437,6 +2449,7 @@ function vRender() {
   for (const f of t.filas) { const e = f.row.querySelector('.dval'); const v = num(f.row.dataset.v);
     if (document.activeElement !== e) e.value = !v ? '' : f.row.dataset.modo === 'imp' ? plata(v) : String(v).replace('.', ',') + '%';
     const dm = f.row.querySelector('.dmonto'); dm.textContent = f.d ? '- ' + plata(f.d) : '$ 0'; dm.className = 'dmonto ' + (f.d ? (f.row.dataset.modo === 'imp' ? 'dto-imp' : 'dto-pct') : ''); }
+  { const l = document.getElementById('v-dias-lb'), on = T.tipo === 'PR' || !!T.sena; if (on && l.style.display === 'none') document.getElementById('v-dias').value = T.sena ? 30 : 14; l.style.display = on ? '' : 'none'; }
   { const a = vArts(); document.getElementById('v-arts-fila').style.display = (a.u || a.c) ? '' : 'none'; document.getElementById('v-arts').textContent = _nArt(a.u) + (a.c ? ' · ' + String(a.c).replace('.', ',') + ' de cambio' : ''); }
   document.getElementById('v-subtotal').textContent = plata(t.sub);
   // Letra A: en pantalla se discrimina el IVA igual que en el comprobante (los precios son con IVA incluido; neto = total / 1,21)
@@ -2904,6 +2917,26 @@ window.ADORNO_ACCIONES = [{
     return { ok: true, resumen: (p.comprobante === 'presupuesto' ? 'Presupuesto' : 'Factura') + ' con ' + enc.map(e => e.n + ' × ' + e.a.sku).join(', ') + ' · total ' + plata(t.tot) + (medio ? ' · ' + ((MEDIOS.find(m => m.clave === medio) || {}).nombre || medio) : '') + (sinStock.length ? ' · ojo, sin stock suficiente: ' + sinStock.join(', ') : '') };
   },
   confirmar: async () => { if (!T.items.length) return { ok: false, error: 'el ticket está vacío' }; emitirTicket(); return { ok: true, mensaje: 'Le di a Emitir: seguí en la pantalla, que te pide el cliente y quién emite.' }; }
+}, {
+  nombre: 'armar_gift_card',
+  descripcion: 'Deja cargada una gift card en la pestaña Vender con el importe y, si se dijeron, para quién es, de parte de quién, la dedicatoria y el mail o WhatsApp de quien la recibe. No emite: la persona revisa, cobra y emite. Usar cuando piden "armame / haceme / cargame una gift card (o tarjeta de regalo) de tanta plata".',
+  parametros: { type: 'object', required: ['importe'], properties: {
+    importe: { type: 'number', description: 'Importe de la gift card en pesos' },
+    para: { type: 'string', description: 'Nombre de quien la recibe, si lo dijo' },
+    de_parte: { type: 'string', description: 'Nombre de quien la regala, si lo dijo' },
+    mensaje: { type: 'string', description: 'Dedicatoria, si la dijo' },
+    contacto: { type: 'string', description: 'Mail o WhatsApp de quien la recibe, si lo dijo' } } },
+  disponible: () => typeof T !== 'undefined' && typeof vGiftIniciar === 'function',
+  preparar: async (p) => {
+    const imp = r2(Number(p.importe) || 0); if (!(imp > 0)) return { ok: false, error: 'decime de cuánta plata es la gift card' };
+    if (T.items.length && !await confirmar('Hay un ticket empezado. ¿Lo vacío para armar la gift card?')) return { ok: false, error: 'quedó el ticket que ya estaba' };
+    const cli = T.cliente; switchTab('vender'); vVaciar(); if (cli) T.cliente = cli;
+    await vGiftIniciar(imp); if (!T.gift) return { ok: false, error: 'no pude abrir la gift card en el ticket' };
+    for (const k of ['para', 'de_parte', 'mensaje', 'contacto']) if (p[k] && String(p[k]).trim()) T.gift[k] = String(p[k]).trim();
+    vRender();
+    return { ok: true, resumen: 'Gift card de ' + plata(imp) + (T.gift.para ? ' para ' + T.gift.para : '') + (T.gift.de_parte ? ' · de parte de ' + T.gift.de_parte : '') + (T.gift.contacto ? ' · se manda a ' + T.gift.contacto : '') + '. Falta revisar, cargar el cliente y la forma de pago.' };
+  },
+  confirmar: async () => { if (!T.gift) return { ok: false, error: 'no hay una gift card en el ticket' }; emitirTicket(); return { ok: true, mensaje: 'Le di a Emitir: seguí en la pantalla, que te pide el cliente y quién emite.' }; }
 }];
 // ═══ Cobros por Mercado Pago que no pasan por el Point integrado (JP 10-nov) ═══
 // Transferencia, Point y QR «No integrado» y link de pago: antes de emitir se busca el cobro en la cuenta de Mercado Pago
@@ -3365,7 +3398,7 @@ async function emitir(esNC) {
   const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && T.gift.card_on && !T.gift.card) { toast('Cargá el código de la card física, o destildá «Se lleva la card física»', 'error'); btn.disabled = false; const i = document.getElementById('gift-card'); if (i) i.focus(); return; }
   if (T.gift && !(t.tot - (T.gift.card ? CARD_PRECIO : 0) > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
-  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio, canal_envio: waEnv ? 'wa' : undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
+  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio, canal_envio: waEnv ? 'wa' : undefined, precio_dias: (T.tipo === 'PR' || T.sena) ? diasVal() : undefined, presupuesto_id: (!esNC && T.presu_id) || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? ['Bultos: ' + parseInt(document.getElementById('v-re-bultos').value, 10), document.getElementById('v-obs').value.trim()].filter(Boolean).join(' · ') : undefined,   // en el remito la observación de abajo es la nota de entrega
    
@@ -3609,7 +3642,7 @@ function ticketHTML(x) {
   const trasl = c.tipo === 'RE' && !!c.destino_local;
   const titulo = esGift ? 'Gift card' : trasl ? 'Remito de traslado' : c.tipo === 'RE' ? 'Remito de venta' : c.tipo === 'MA' ? 'Factura manual' : c.tipo === 'PR' ? 'Presupuesto' : TIPO_NOM[c.tipo] + ' ' + c.letra;
   const valesDet = (x.vales || []).map(v => `<div class="sep"></div><div class="mini" style="text-align:center"><b>${v.tipo === 'gift' ? 'Gift card' : 'Vale de cambio'}</b>${v.para_nombre ? ' para ' + esc(v.para_nombre) : ''}${v.de_parte ? ' de parte de ' + esc(v.de_parte) : ''}<br><span class="code">${esc(v.codigo)}</span><br>${plata(v.importe)} · sin vencimiento${v.estado !== 'vigente' ? ' · ' + v.estado : Number(v.saldo) < Number(v.importe) ? ' · saldo ' + plata(v.saldo) : ''}<br>${esc(GIFT_URL + v.codigo)}</div>`).join('');
-  const senaDet = x.sena_items && x.sena_items.length ? `<div class="sep"></div><div class="mini" style="text-align:center"><b>Artículos señados</b></div><table class="tk-det">${x.sena_items.map(d => `<tr><td>${Number(d.cantidad)} × ${esc(d.descripcion)}</td><td class="num">${plata(Number(d.cantidad) * Number(d.precio_unit))}</td></tr>`).join('')}</table><div class="mini" style="text-align:center">Esta seña se descuenta cuando retirás los artículos. No vence.</div>` : '';
+  const senaDet = x.sena_items && x.sena_items.length ? `<div class="sep"></div><div class="mini" style="text-align:center"><b>Artículos señados</b></div><table class="tk-det">${x.sena_items.map(d => `<tr><td>${Number(d.cantidad)} × ${esc(d.descripcion)}</td><td class="num">${plata(Number(d.cantidad) * Number(d.precio_unit))}</td></tr>`).join('')}</table><div class="mini" style="text-align:center">${senaValidez(x.c)}</div>` : '';
   const senaUso = (Number(c.sena_monto) > 0 ? `<div class="fila"><span>Seña a cuenta${x.sena_de ? ' · Factura ' + esc(x.sena_de) : ''}</span><span>- ${plata(c.sena_monto)}</span></div>` : '') + (Number(c.gift_desc) > 0 ? `<div class="fila"><span>Gift card ya facturada${c.gift_codigos ? ' · ' + esc(c.gift_codigos) : ''}</span><span>- ${plata(c.gift_desc)}</span></div>` : '');
   const devuelve = nc && rel ? `Devuelve la ${rel.tipo === 'MA' ? 'Factura manual' : TIPO_NOM[rel.tipo] + ' ' + rel.letra} ${fmtNum(rel.punto_venta, rel.numero)}` : nc && c.relacionado_id ? 'Devuelve el comprobante #' + c.relacionado_id : '';
   const entrega = trasl ? `<b>${esc(LOCALES[c.local])} → ${esc(LOCALES[c.destino_local])}</b>${c.entrega_nota ? '<div class="mini">' + esc(c.entrega_nota) + '</div>' : ''}${c.transito_estado === 'recibido' || c.transito_estado === 'con_diferencia' ? '<div class="mini">Recibido por ' + esc(c.recibido_por || '') + (c.transito_estado === 'con_diferencia' ? ' · con diferencia' : '') + '</div>' : ''}` : c.tipo === 'RE' && (c.entrega_dir || c.entrega_nota) ? `<div class="mini">Entrega: ${esc(c.entrega_dir || '')}${c.entrega_nota ? ' · ' + esc(c.entrega_nota) : ''}</div>` : x.remito ? `<div class="mini">Sobre el remito ${esc(x.remito)}</div>` : '';
@@ -3617,7 +3650,7 @@ function ticketHTML(x) {
   const pru = !!c.es_prueba || (!!c.preview && MODO === 'prueba');
   const cae = c.preview ? '<div class="mini" style="text-align:center">VISTA PREVIA · sin emitir</div><div class="sep"></div>' : !fiscal ? '' : c.cae_estado === 'prueba' ? '<div class="mini" style="text-align:center">Sin CAE · comprobante de prueba, no informado a ARCA</div><div class="sep"></div>' : c.cae_estado === 'ok' ? `<div class="tk-qr"><img class="qr" data-qr="${esc(qrArca(c))}" alt="QR ARCA"><div class="mini">CAE ${esc(c.cae)} · vto ${fechaAR(c.cae_vto)}</div></div><div class="sep"></div>`
     : c.cae_estado === 'error' ? `<div class="mini tk-err">CAE rechazado: ${esc(c.cae_error || '')}</div><div class="sep"></div>` : `<div class="mini" style="text-align:center">${String(c.cae_error || '').startsWith('En espera') ? esc(c.cae_error) : 'CAE pendiente…'}</div><div class="sep"></div>`;
-  const cierre = trasl ? 'Remito de traslado entre locales · sin valor comercial' : c.tipo === 'RE' ? 'Remito · no válido como factura · precios de referencia' : c.tipo === 'PR' ? 'Presupuesto · no válido como factura. Los precios de este presupuesto se mantienen por 14 días corridos' + (c.fecha ? ', hasta el ' + (() => { const v = new Date(String(c.fecha).slice(0, 10) + 'T12:00:00'); v.setDate(v.getDate() + 14); return fechaAR(v.toISOString().slice(0, 10)); })() : '') + '.' : c.tipo === 'MA' ? 'Documento no válido como factura' : nc ? 'Gracias por tu confianza.' : EMPRESA.frase;
+  const cierre = trasl ? 'Remito de traslado entre locales · sin valor comercial' : c.tipo === 'RE' ? 'Remito · no válido como factura · precios de referencia' : c.tipo === 'PR' ? 'Presupuesto · no válido como factura. ' + prValidez(c) : c.tipo === 'MA' ? 'Documento no válido como factura' : nc ? 'Gracias por tu confianza.' : EMPRESA.frase;
   return `<div class="ticket">${pru ? `<div style="${FRANJA_PRUEBA}font-size:11px;padding:4px 8px;margin-bottom:6px">PRUEBA · SIN VALOR FISCAL</div>` : ''}
     <div class="tk-h"><img class="tk-logo${li.logo === 'atelier-logo-der.png' ? ' atelier' : ''}" src="${esc(li.logo || 'logo-ca.png')}" alt="Claudia Adorno"><div class="tk-local">${esc(LOCALES[c.local] || c.local)}</div><div class="mini">${esc(li.domicilio || '')}</div></div>
     <div class="sep"></div>
@@ -3731,12 +3764,16 @@ async function ncElegir(id) {
 async function prFacturar(id) {
   const x = await traerComprobante(id); if (!x.c) return;
   switchTab('vender'); vTipo('FC', 'B');
-  T.items = x.det.map(d => { const a = ARTS.find(z => z.sku === d.sku); return { sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), precio_unit: Number(d.precio_unit), descuento_pct: Number(d.descuento_pct), descuento_monto: Number(d.descuento_monto) || 0, stock: a ? Number(a.stock) : 1 }; });
+  const dias = x.c.precio_dias == null ? 14 : Number(x.c.precio_dias), venc = diasDesde(x.c.fecha) > dias; let cambio = 0;
+  T.items = x.det.map(d => { const a = ARTS.find(z => z.sku === d.sku); const px = venc && a && Number(a.precio) > 0 ? Number(a.precio) : Number(d.precio_unit); if (px !== Number(d.precio_unit)) cambio++; return { sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), precio_unit: px, descuento_pct: Number(d.descuento_pct), descuento_monto: px === Number(d.precio_unit) ? (Number(d.descuento_monto) || 0) : 0, stock: a ? Number(a.stock) : 1 }; });
+  T.presu_id = id;
   T.cliente = (x.c.cliente_globalid || x.c.cliente_doc) ? { nombre: x.c.cliente_nombre, doc_tipo: x.c.cliente_doc_tipo, doc: x.c.cliente_doc, cond_iva: x.c.cliente_cond_iva, globalid: x.c.cliente_globalid, facturar_a_nombre: false } : null;
   if (T.cliente && T.cliente.cond_iva !== 'CF') vTipo('FC', LETRA_COND[T.cliente.cond_iva]);
   dSet(Number(x.c.descuento_pct) || 0);
   document.getElementById('v-obs').value = 'Según presupuesto ' + fmtNum(x.c.punto_venta, x.c.numero);
-  vRender(); toast('Presupuesto cargado en el ticket: revisá precios y cobrá', 'success');
+  vRender();
+  if (venc) toast('El presupuesto venció el ' + hastaFecha(x.c.fecha, dias) + ': cargué los precios de hoy' + (cambio ? ' (' + cambio + (cambio === 1 ? ' artículo cambió' : ' artículos cambiaron') + ')' : ' (no cambiaron)') + '. Si corresponde respetarlos, corregí el precio a mano.', 'error');
+  else toast('Presupuesto cargado con sus precios, que se respetan hasta el ' + hastaFecha(x.c.fecha, dias) + ': revisá y cobrá', 'success');
 }
 async function iniciarNC(id) {
   const { data: c } = await sb.from('pos_comprobantes').select('letra').eq('id', id).single(); if (!c) return;
@@ -3824,6 +3861,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=146"></script>
+<script src="manual.js?v=147"></script>
 </body>
 </html>
