@@ -620,8 +620,12 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
 .btn-cobrar:disabled { opacity: .4; cursor: default; } .btn-cobrar .ico { width: 22px; height: 22px; }
 .m-head { display: flex; align-items: center; gap: 8px; } .m-head h3 { margin: 0; } .spacer { flex: 1; }
 .m-foot { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
-.aut-caja { background: var(--primary-bg); border-radius: 12px; padding: 10px 12px; margin-top: 8px; } .aut-caja.sin { background: #fee2e2; } .aut-caja.ok { background: #dcfce7; }
-.aut-p { display: flex; align-items: center; gap: 8px; padding: 5px 0; } .aut-p .nom { flex: 1; } .aut-p .nom .mini { display: block; } .aut-clave { display: flex; gap: 8px; margin-top: 6px; } .aut-clave input { flex: 1; border: 1.5px solid var(--border); border-radius: 999px; padding: 8px 12px; font-family: inherit; font-size: 14px; }
+.aut-caja { margin-top: 12px; }
+.aut-pils { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.aut-pil { border: 1.5px solid var(--primary); background: #fff; color: var(--primary); border-radius: 999px; padding: 11px 14px; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aut-pil.esta { background: var(--primary); color: #fff; }
+.aut-pil:disabled { opacity: .45; cursor: not-allowed; } .aut-caja.sin { background: #fee2e2; } .aut-caja.ok { background: #dcfce7; }
+.aut-p { display: flex; align-items: center; gap: 8px; padding: 5px 0; } .aut-p .nom { flex: 1; } .aut-p .nom .mini { display: block; } .aut-clave { display: flex; gap: 8px; margin-top: 12px; } .aut-clave input { flex: 1; border: 1.5px solid var(--border); border-radius: 999px; padding: 8px 12px; font-family: inherit; font-size: 14px; }
 .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid #cbd5e1; border-top-color: var(--primary); border-radius: 50%; animation: gir 1s linear infinite; vertical-align: middle; margin-right: 6px; } @keyframes gir { to { transform: rotate(360deg); } }
 .cl-res { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow: auto; } .cl-res.sug { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 50; background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.14); } .cli { position: relative; }
 .cl-it { display: flex; gap: 10px; align-items: center; text-align: left; background: #f8fafc; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; font: inherit; color: inherit; cursor: pointer; } .cl-it:hover { border-color: var(--primary); } .cl-it .ico { color: var(--muted); }
@@ -3672,28 +3676,26 @@ async function autCara() {
 }
 function autVentana() {
     const accion = AUT.accion, resumen = AUT.resumen;
-    modal(`<div class="m-head"><h3>Esta operación necesita autorización</h3><span class="spacer"></span><button class="btn ico" onclick="autCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
-      <div class="mini">${esc(resumen)} · pide ${esc(pila(PERFIL.nombre))}</div>
-      <div class="aut-caja" id="aut-caja"><div class="mini"><span class="spin"></span>Buscando quién está en ${esc(LOCALES[LOCAL])}…</div></div>
-      <div class="mini" style="margin-top:12px">¿No tienen el celu a mano? Que lo autorice acá con su clave:</div>
+    modal(`<div class="m-head"><h3>Pedir autorización</h3><span class="spacer"></span><button class="btn ico" onclick="autCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
+      <div class="mini">${esc(resumen)}</div>
+      <div class="aut-caja" id="aut-caja"><div class="mini"><span class="spin"></span>Buscando…</div></div>
       <div class="aut-clave"><input id="aut-mail" type="email" data-adorno-superior placeholder="Usuario (mail)" autocomplete="off"><input id="aut-pass" type="password" data-adorno-superior placeholder="Clave" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();autClave()}"></div>
       <div class="m-foot"><span class="spacer"></span><button class="btn" onclick="autCancelar()">Cancelar</button><button class="btn primary" onclick="autClave()">Autorizar con clave</button></div>`);
     sb.rpc('pos_presentes_aut', { p_local: LOCAL, p_accion: accion }).then(({ data, error }) => { if (!AUT || AUT.fin) return; if (error) { toast(error.message, 'error'); } AUT.lista = data || []; autLista(); });   // los movimientos de stock los autoriza solo la encargada (o un admin)
 }
 function autFin(v) { if (!AUT || AUT.fin) return; AUT.fin = true; clearInterval(AUT.poll); caraCamOff(); const r = AUT.resolve; AUT = null; cerrarModal(); r(v); }
 function autCancelar() { if (AUT && AUT.id) sb.rpc('pos_autorizacion_cancelar', { p_id: AUT.id }); autFin(null); }
-function autPersona(p, boton) {
-  return `<div class="aut-p"><span class="nom"><b>${esc(pila(p.nombre))}</b> <span class="chip ${p.rol === 'admin' ? 'gray' : 'amber'}">${p.rol === 'gerente' ? 'encargada' : p.rol === 'cajero' ? 'cajera' : p.rol}</span><span class="mini">${p.fuente === 'reloj' ? 'fichó ' + p.hora : p.fuente === 'turno' ? 'turno desde ' + p.hora : p.rol === 'admin' ? 'fuera del local' : 'no está'}${p.push ? '' : ' · sin notificaciones en el celu'}</span></span>
-    ${boton ? `<button class="btn primary chico" ${p.push ? '' : 'disabled title="No tiene las notificaciones activadas en el celu"'} onclick="autPedir(${p.empleado_id})">Pedir a ${esc(pila(p.nombre).split(' ')[0])}</button>` : ''}</div>`;
+function autPersona(p, lista) {
+  const pn = pila(p.nombre).split(' ')[0], rep = lista.filter(x => pila(x.nombre).split(' ')[0] === pn).length > 1;
+  const donde = p.fuente === 'reloj' ? 'En el local · fichó ' + p.hora : p.fuente === 'turno' ? 'En el local · turno desde ' + p.hora : 'Fuera del local: puede autorizar desde donde esté';
+  return `<button class="aut-pil${p.presente ? ' esta' : ''}" ${p.push ? '' : 'disabled'} title="${esc(p.push ? donde : 'No tiene las notificaciones activadas en el celu')}" onclick="autPedir(${p.empleado_id})">Pedir a ${esc(rep ? pila(p.nombre) : pn)}</button>`;
 }
 function autLista(msg) {
   if (!AUT) return; const caja = document.getElementById('aut-caja'); if (!caja) return;
-  const pres = AUT.lista.filter(p => p.presente), fuera = AUT.lista.filter(p => !p.presente);
-  caja.className = 'aut-caja' + (pres.length ? '' : ' sin');
-  caja.innerHTML = (msg ? `<div class="mini" style="color:var(--red);margin-bottom:4px">${esc(msg)}</div>` : '')
-    + (pres.length ? `<b>Están en ${esc(LOCALES[LOCAL])} ahora</b>${pres.map(p => autPersona(p, true)).join('')}`
-                   : `<b>No hay ${AUT_SOLO_ENC.includes(AUT.accion) ? 'encargada' : 'encargada ni cajera'} en ${esc(LOCALES[LOCAL])} ahora</b><div class="mini">Según el reloj hoy no fichó entrada ninguna y ninguna tiene turno a esta hora.</div>`)
-    + (fuera.length ? `<b style="display:block;margin-top:10px">No están en el local (pueden autorizar desde donde estén)</b>${fuera.map(p => autPersona(p, true)).join('')}` : '');
+  const orden = AUT.lista.filter(p => p.presente).concat(AUT.lista.filter(p => !p.presente));
+  caja.className = 'aut-caja';
+  caja.innerHTML = (msg ? `<div class="mini" style="color:var(--red);margin-bottom:6px">${esc(msg)}</div>` : '')
+    + (orden.length ? `<div class="aut-pils">${orden.map(p => autPersona(p, orden)).join('')}</div>` : '<div class="mini">No hay a quién pedirle al celu: autorizá con la clave.</div>');
 }
 async function autPedir(empId) {
   if (verComo()) { const q = (AUT && AUT.lista || []).find(x => x.empleado_id === empId); toast('Modo «Ver como»: acá se le mandaría el pedido al celu' + (q ? ' de ' + pila(q.nombre) : '') + '. No se manda nada.', 'success'); return; }
@@ -4048,6 +4050,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=161"></script>
+<script src="manual.js?v=162"></script>
 </body>
 </html>
