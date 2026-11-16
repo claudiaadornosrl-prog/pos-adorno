@@ -3047,7 +3047,7 @@ function qrAjustes() {
     : '<div class="mini">Este local no tiene QR dados de alta.</div>';
 }
 function qrElegir(id) { if (id) localStorage.setItem('pos_qr_' + LOCAL, id); else localStorage.removeItem('pos_qr_' + LOCAL); qrAjustes(); pRender(); const q = miQr(); toast(q ? 'El QR con importe va al QR ' + q.nombre : 'Esta caja queda sin QR', 'success'); }
-// Ventana «Point y QR de esta caja»: el admin entra directo; el genérico del local, con autorización de un admin
+// Ventana «Point y QR de esta caja»: la abre cualquiera (permiso «Elegir el Point y el QR de la caja» del Hub en 'h'; si se pasa a 'a', pide un admin)
 async function cajaElegir() {
   await cargarTerminales();
   if (!TERMS.some(t => t.local === LOCAL)) { toast('Este local no tiene terminales Point ni QR dados de alta', 'error'); return; }
@@ -4141,6 +4141,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=170"></script>
+<script src="manual.js?v=171"></script>
 </body>
 </html>
