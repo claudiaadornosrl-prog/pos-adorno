@@ -2437,7 +2437,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main">${(c.es_prueba || (c.preview && MODO === 'prueba')) ? `<div style="${FRANJA_PRUEBA}font-size:9.5pt;padding:2mm 4mm;margin-bottom:4mm">PRUEBA · SIN VALOR FISCAL</div>` : ''}<div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.sinMail = false; T.dtoE = false; T.precioAut = undefined; T.envioAut = undefined; T.envioAutP = 0; T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.modif = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.sinMail = false; T.ncMp = null; T.dtoE = false; T.precioAut = undefined; T.envioAut = undefined; T.envioAutP = 0; T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.modif = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -2462,7 +2462,7 @@ function vTipo(tipo, letra) {
   if (tipo !== 'FC' && tipo !== 'MA') { T.remito = null; T.items.forEach(i => delete i.entregado); }
   const tk = document.querySelector('.pos-ticket'); tk.classList.toggle('es-nc', nc); tk.classList.toggle('es-pr', tipo === 'PR'); tk.classList.toggle('es-ma', tipo === 'MA'); tk.classList.toggle('es-re', tipo === 'RE');
   // Cambiar de pastilla NO borra los artículos (JP): solo se limpia lo propio de la nota de crédito
-  if (nc !== eraNC) { T.nc_de = null; T.sin_cliente = nc; T.items.forEach(i => delete i.max); document.getElementById('v-nc-sel').textContent = ''; document.getElementById('v-nc-res').innerHTML = ''; }
+  if (nc !== eraNC) { T.nc_de = null; T.ncMp = null; T.sin_cliente = nc; T.items.forEach(i => delete i.max); document.getElementById('v-nc-sel').textContent = ''; document.getElementById('v-nc-res').innerHTML = ''; }
   if (nc && !T.nc_de) setTimeout(() => document.getElementById('v-nc-q').focus(), 30);
   vRender();
 }
@@ -3336,7 +3336,20 @@ async function mpCobrar(btn) {
   _mpPoll = setTimeout(paso, 1500);
 }
 // Devolución por Mercado Pago cuando la NC devuelve una venta cobrada con Point integrado
+const MP_DEV = ['link', 'mp_qr', 'mp_qr_ni', 'mp_point_ni', 'transferencia'];
+// chip en el renglón de pago de la nota de crédito cuando la devolución sale sola por Mercado Pago
+function ncDevZonas() {
+  if (T.tipo !== 'NC' || !T.nc_de || !T.ncMp) return;
+  for (const r of document.querySelectorAll('#v-pagos .medio')) { const z = r.querySelector('.mp-zona'); if (!z || !T.ncMp.includes(r.dataset.m)) continue;
+    z.classList.remove('cz'); z.innerHTML = '<span class="chip green" title="Al emitir la nota de crédito, el POS le pide la devolución a Mercado Pago">↩ se devuelve por Mercado Pago al emitir</span>'; r.querySelector('.ref').style.display = 'none'; }
+}
 async function mpDevolverNC(ncId, pagosNC) {
+  { const otros = pagosNC.filter(p => T.ncMp && T.ncMp.includes(p.medio) && p.importe > 0);   // link, QR, Point no integrado, transferencia
+    if (otros.length && T.nc_de) { const imp = r2(otros.reduce((a, p) => a + p.importe, 0));
+      try { const r = await mpLlamar('devolver_pago', { comprobante_id: T.nc_de, nc_id: ncId, importe: imp });
+        if (r.falta > 0.009) toast('Mercado Pago devolvió ' + plata(r.devuelto) + ' y faltan ' + plata(r.falta) + (r.aviso ? ' (' + r.aviso + ')' : '') + ': devolvelos desde Mercado Pago', 'error');
+        else toast('Devolución de ' + plata(r.devuelto) + ' hecha por Mercado Pago', 'success'); }
+      catch (e) { toast('La nota de crédito salió, pero la plata NO se devolvió: ' + e.message, 'error'); } } }
   const dev = pagosNC.filter(p => p.medio === 'mp_point' && p.importe > 0); if (!dev.length) return;
   if (!T.nc_de) { toast('Nota de crédito sin factura asociada: la devolución a la tarjeta hacela desde la terminal', 'error'); return; }
   const { data: orig } = await sb.from('pos_pagos').select('importe,detalle').eq('comprobante_id', T.nc_de).eq('medio', 'mp_point');
@@ -3351,7 +3364,7 @@ function pRender() {
   const t = vTotales();
   // un solo renglón sin importe → se le sugiere el total (la vendedora lo puede cambiar)
   const rows = document.querySelectorAll('#v-pagos .medio'); if (rows.length === 1 && T.items.length) { const imp = rows[0].querySelector('.imp'); if (document.activeElement !== imp && !imp.dataset.tocado) imp.value = t.tot ? plata(t.tot) : ''; imp.oninput = () => { imp.dataset.tocado = 1; pRender(); }; }
-  mpZonas(); valeZonas(); usdZonas(); cobroZonas();
+  mpZonas(); valeZonas(); usdZonas(); cobroZonas(); ncDevZonas();
   const pag = r2(pPagos().reduce((s, p) => s + p.importe, 0)); const falta = r2(t.tot - pag);
   const pointSinCobrar = !sinPago() && T.tipo !== 'NC' && [...rows].some(r => r.dataset.m === 'mp_point' && num(r.querySelector('.imp').value) > 0 && !r.dataset.mp);
   const valeSinOk = !sinPago() && T.tipo !== 'NC' && [...rows].some(r => r.dataset.m === 'vale' && num(r.querySelector('.imp').value) > 0 && !r.dataset.vale);
@@ -3965,9 +3978,15 @@ async function ncElegir(id) {
   document.getElementById('v-nc-q').value = ''; document.getElementById('v-nc-res').innerHTML = '';
   document.getElementById('v-nc-sel').innerHTML = `Devuelve <b>${TIPO_NOM[x.c.tipo]} ${x.c.letra} ${fmtNum(x.c.punto_venta, x.c.numero)}</b> del ${fechaAR(x.c.fecha)} por ${plata(x.c.total)}${devuelto ? ' (ya se devolvieron ' + plata(devuelto) + ')' : ''}. Sacá o bajá la cantidad de lo que no vuelve.`;
   pLimpiar(); vRender();
-  { const { data: pg0 } = await sb.from('pos_pagos').select('medio,detalle').eq('comprobante_id', id);   // se cobró con Point integrado → la plata vuelve por ahí
-    if (T.nc_de === id && (pg0 || []).some(p => p.medio === 'mp_point' && p.detalle && p.detalle.order_id)) { const sel = document.querySelector('#v-pagos .medio .med');
-      if (sel && !sel.value) { sel.value = 'mp_point'; pMedio(sel); pRender(); toast('Esta venta se cobró con Point: al emitir la nota de crédito, la plata vuelve sola por Mercado Pago', 'success'); } } }
+  { const { data: pg0 } = await sb.from('pos_pagos').select('medio,detalle').eq('comprobante_id', id);   // se cobró por Mercado Pago → la plata vuelve por ahí
+    if (T.nc_de !== id) return;
+    const sel = document.querySelector('#v-pagos .medio .med'), row = sel && sel.closest('.medio');
+    const otros = (pg0 || []).filter(p => MP_DEV.includes(p.medio) && p.detalle && p.detalle.mov_id).map(p => p.medio); T.ncMp = otros.length ? otros : null;
+    if ((pg0 || []).some(p => p.medio === 'mp_point' && p.detalle && p.detalle.order_id)) {
+      if (sel && !sel.value) { sel.value = 'mp_point'; pMedio(sel); pRender(); toast('Esta venta se cobró con Point: al emitir la nota de crédito, la plata vuelve sola por Mercado Pago', 'success'); } }
+    else if (otros.length && sel && !sel.value) { const m = otros[0], ni = m.endsWith('_ni');
+      sel.value = ni ? m.slice(0, -3) : m; if (ni) row.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.v === '_ni'));
+      pMedio(sel); pRender(); toast('Esta venta se cobró por Mercado Pago (' + (COBRO_V[m] || m).replace(/^(el|la) /, '') + '): al emitir la nota de crédito, la plata vuelve sola', 'success'); } }
 }
 // Presupuesto → factura: sus renglones y su cliente entran al ticket como Factura B (se puede cambiar la pastilla)
 async function prFacturar(id) {
@@ -4094,6 +4113,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=166"></script>
+<script src="manual.js?v=167"></script>
 </body>
 </html>
