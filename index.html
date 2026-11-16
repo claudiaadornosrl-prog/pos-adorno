@@ -860,6 +860,9 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <div class="card"><h3>Mi Point en esta caja</h3>
         <div class="mini" style="margin-bottom:8px">Elegí la terminal Mercado Pago Point que está en esta caja. Queda guardado en esta computadora o tablet; cada caja elige la suya.</div>
         <div id="a-point" class="pils"></div></div>
+      <div class="card"><h3>Mi QR en esta caja</h3>
+        <div class="mini" style="margin-bottom:8px">Elegí a qué QR del local se manda el importe cuando se cobra con Mercado Pago QR integrado: tiene que ser el del cartel que el cliente tiene delante en esta caja. Queda guardado en esta computadora o tablet. Si no se elige, usa el de la Point de esta caja.</div>
+        <div id="a-qr" class="pils"></div></div>
       <div class="card" id="a-reg-card" style="display:none"><h3>Registro · quién hizo y quién autorizó</h3>
         <div class="mini" style="margin-bottom:8px">Todo lo que se emite, se anula, se mueve de stock o se pide autorizar: quién lo hizo (y si el POS lo supo por la cámara, porque eligió su nombre o por su usuario) y quién lo autorizó (cámara, celular o usuario y clave). Con la hora exacta, para cruzarlo con las cámaras del local. Solo lo ven los admin.</div>
         <div class="filters" style="margin-bottom:8px"><label>Desde <input type="date" id="reg-d" onchange="regCargar()"></label><label>Hasta <input type="date" id="reg-h" onchange="regCargar()"></label>
@@ -3036,12 +3039,20 @@ async function mpLlamar(accion, body) {
 }
 async function cargarTerminales() { if (!TERMS.length) { const { data } = await sb.from('pos_terminales').select('*').eq('activo', true).order('nombre'); TERMS = data || []; } return TERMS; }
 function miPoint() { const id = localStorage.getItem('pos_point_' + LOCAL); return TERMS.find(t => t.terminal_id === id && t.local === LOCAL) || null; }
+// QR de esta caja: el elegido en Ajustes; si no hay, el de la Point de esta caja
+function miQr() { const id = localStorage.getItem('pos_qr_' + LOCAL); const q = TERMS.find(t => t.terminal_id === id && t.local === LOCAL && t.external_pos_id); if (q) return q; const p = miPoint(); return p && p.external_pos_id ? p : null; }
+function qrAjustes() {
+  const box = document.getElementById('a-qr'); if (!box) return; const mios = TERMS.filter(t => t.local === LOCAL && t.external_pos_id); const id = localStorage.getItem('pos_qr_' + LOCAL), propio = mios.find(t => t.terminal_id === id), pt = miPoint();
+  box.innerHTML = mios.length ? mios.map(t => `<button class="pil ${propio && propio.terminal_id === t.terminal_id ? 'on' : ''}" onclick="qrElegir('${t.terminal_id}')" title="QR ${esc(t.external_pos_id)}">QR ${esc(t.nombre)}</button>`).join('') + `<button class="pil ${propio ? '' : 'on'}" onclick="qrElegir('')">${pt && pt.external_pos_id ? 'El de mi Point (' + esc(pt.nombre) + ')' : 'Sin QR'}</button>`
+    : '<div class="mini">Este local no tiene QR dados de alta.</div>';
+}
+function qrElegir(id) { if (id) localStorage.setItem('pos_qr_' + LOCAL, id); else localStorage.removeItem('pos_qr_' + LOCAL); qrAjustes(); pRender(); const q = miQr(); toast(q ? 'El QR con importe va al QR ' + q.nombre : 'Esta caja queda sin QR', 'success'); }
 async function pointAjustes() {
-  await cargarTerminales(); const box = document.getElementById('a-point'); const mios = TERMS.filter(t => t.local === LOCAL); const sel = miPoint();
+  await cargarTerminales(); qrAjustes(); const box = document.getElementById('a-point'); const mios = TERMS.filter(t => t.local === LOCAL); const sel = miPoint();
   box.innerHTML = mios.length ? mios.map(t => `<button class="pil ${sel && sel.terminal_id === t.terminal_id ? 'on' : ''}" onclick="pointElegir('${t.terminal_id}')" title="${esc(t.terminal_id)}">📱 ${esc(t.nombre)}</button>`).join('') + `<button class="pil ${sel ? '' : 'on'}" onclick="pointElegir('')">Sin Point</button>`
     : '<div class="mini">Este local no tiene terminales Point dadas de alta.</div>';
 }
-function pointElegir(id) { if (id) localStorage.setItem('pos_point_' + LOCAL, id); else localStorage.removeItem('pos_point_' + LOCAL); pointAjustes(); pRender(); toast(id ? 'Point de esta caja guardado' : 'Esta caja queda sin Point', 'success'); }
+function pointElegir(id) { if (id) localStorage.setItem('pos_point_' + LOCAL, id); else localStorage.removeItem('pos_point_' + LOCAL); pointAjustes(); qrAjustes(); pRender(); toast(id ? 'Point de esta caja guardado' : 'Esta caja queda sin Point', 'success'); }
 // Zona del Point en cada renglón de pago: botón de cobrar, o chip "pagado" cuando Mercado Pago aprobó
 function mpZonas() {
   for (const r of document.querySelectorAll('#v-pagos .medio')) {
@@ -3123,7 +3134,7 @@ function cobroZonas() {
     if (r.dataset.buscando) { z.innerHTML = `<span class="mini" title="Buscando ${COBRO_V[r.dataset.m]} de ${plata(v)} en Mercado Pago"><span class="spin"></span>Buscando…</span><button type="button" class="btn ico chico" onclick="cobroCancelar(this)" title="Dejar de buscar" aria-label="Cancelar">${_i('x')}</button>`; continue; }
     if (r.dataset.sinverif) { z.innerHTML = `<span class="chip amber" title="Al emitir pide autorización">sin verificar</span><button type="button" class="btn chico" onclick="cobroVerificar(this)">Verificar</button>`; continue; }
     if (r.dataset.m === 'link' && r.dataset.link) { imp.readOnly = true; z.innerHTML = `<button type="button" class="btn chico" onclick="linkVer(this)" title="Link generado por ${plata(JSON.parse(r.dataset.link).importe)}: verlo o mandarlo de nuevo">Link</button><button type="button" class="btn primary chico" onclick="cobroVerificar(this)" title="Le pregunta a Mercado Pago si el cliente ya pagó este link">¿Pagó?</button><button type="button" class="btn ico chico" onclick="linkSoltar(this)" title="Descartar este link (por ejemplo para cambiar el importe)" aria-label="Descartar">${_i('x')}</button>` + (r.dataset.noesta ? `<button type="button" class="btn chico" onclick="cobroSinVerificar(this)" title="Todavía no pagó. Emitir igual: pide autorización" style="color:var(--red)">Sin verificar</button>` : ''); continue; }
-    const qrPt = r.dataset.m === 'mp_qr' ? miPoint() : null;
+    const qrPt = r.dataset.m === 'mp_qr' ? miQr() : null;
     z.innerHTML = (qrPt ? `<button type="button" class="btn primary chico mp-btn" onclick="mpCobrar(this, true)"${v > 0 ? '' : ' disabled'} title="Manda ${v ? plata(v) : 'el importe'} al QR de la caja ${esc(qrPt.nombre)}: el cliente lo escanea y le aparece el monto">QR con importe · ${esc(qrPt.nombre)}</button>` : '') + (r.dataset.m === 'link' ? `<button type="button" class="btn primary chico" onclick="linkCrear(this)"${v >= 15 ? '' : ' disabled'} title="Arma el link de Mercado Pago por este importe para mandárselo al cliente">Generar link</button>` : '') + `<button type="button" class="btn ${r.dataset.m === 'link' || qrPt ? '' : 'primary '}chico" onclick="cobroVerificar(this)"${v > 0 ? '' : ' disabled'} title="Busca ${COBRO_V[r.dataset.m]} en la cuenta de Mercado Pago; cuando aparece, se emite sola">Verificar</button>`
       + (r.dataset.noesta ? `<button type="button" class="btn chico" onclick="cobroSinVerificar(this)" title="No aparece todavía. Emitir igual: pide la autorización de la encargada o la cajera" style="color:var(--red)">Sin verificar</button>` : '');
   }
@@ -3311,7 +3322,7 @@ function valeWa() {
 }
 let _mpPoll = null;
 async function mpCobrar(btn, qr) {
-  const row = btn.closest('.medio'); const imp = row.querySelector('.imp'); const importe = r2(num(imp.value)); const pt = miPoint();
+  const row = btn.closest('.medio'); const imp = row.querySelector('.imp'); const importe = r2(num(imp.value)); const pt = qr ? miQr() : miPoint();
   if (!pt) { switchTab('ajustes'); return; }
   if (!qr && importe < 15) { toast('El Point cobra desde $ 15', 'error'); return; }
   if (qr && !(importe > 0)) { toast('Poné el importe a cobrar', 'error'); return; }
@@ -4118,6 +4129,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=168"></script>
+<script src="manual.js?v=169"></script>
 </body>
 </html>
