@@ -592,6 +592,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
 .gf-der { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .gf-f { flex: 1 1 100%; display: flex; gap: 8px; align-items: center; } .gf-f input { flex: 1; min-width: 0; font-size: 17px; text-align: right; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: #fff; } .gf-f .btn { flex: none; }
 .prod.sena { border: 2px dashed #1d4ed8; background: #eff6ff; } .prod.gift, .gift-box { border: 2px dashed #0e7490; background: #ecfeff; } .gift-box { margin: 8px 0 4px; padding: 10px 12px; border-radius: 12px; } .gift-box .sena-h b { color: #0e7490; } .gift-f { display: flex; gap: 8px; margin: 6px 0; align-items: center; } .gift-f input:not([type=checkbox]) { flex: 1; min-width: 0; text-align: left; } .code { font-family: ui-monospace, Consolas, monospace; font-weight: 700; letter-spacing: 1px; } .vale-cod { text-align: center; padding: 10px; } .vale-cod .code { font-size: 22px; } .vale-cod img.qr { width: 120px; height: 120px; margin-top: 8px; } .vale-cont { flex: 1; min-width: 180px; } .pd-provs { display: inline-flex; gap: 4px; padding: 3px 6px; margin: 0 6px 0 2px; border-radius: 999px; background: #e0f2fe; vertical-align: middle; } input, select, textarea, button { font-family: inherit; } table td input { font-size: 14px; } #dlg { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 700; display: none; align-items: center; justify-content: center; padding: 16px; } #dlg .box { background: white; border-radius: 16px; padding: 18px; max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.3); } .dlg-msg { font-size: 15px; line-height: 1.4; margin-bottom: 14px; white-space: pre-wrap; color: var(--text); } #dlg-in { width: 100%; box-sizing: border-box; padding: 9px 16px; border: 1px solid #7dd3fc; border-radius: 999px; background: #e0f2fe; font: inherit; color: var(--text); } #dlg .m-foot { display: flex; align-items: center; gap: 8px; } tr.tr-fila { cursor: pointer; } tr.tr-det > td { background: #f0f9ff; padding: 10px 14px; } .tr-det-in table { background: white; border-radius: 12px; max-width: 620px; } #v-pagos .medio:has(.mp-zona.cz) .med { flex: 1 1 110px; min-width: 110px; } #v-pagos .medio:has(.mp-zona.cz) .ref { flex: 0 1 110px; min-width: 70px; } .medio .mp-zona.cz { gap: 4px; } .medio .mp-zona.cz .btn.chico { padding-left: 10px; padding-right: 10px; } #a-pl td.num, #a-pl th.num { white-space: nowrap; } #a-pl { overflow-x: auto; } .cai-f { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 12px; margin-top: 10px; } .cai-l { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted, #64748b); } .cai-l input, .cai-l select { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 999px; padding: 8px 14px; font: inherit; color: var(--text); background: white; } @media (max-width: 640px) { .cai-f { grid-template-columns: 1fr; } } #qe-box { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 6px; } #qe-video { width: 280px; max-width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 18px; background: #1C1612; transform: scaleX(-1); } #qe-msg { font-size: 14px; text-align: center; min-height: 20px; } #qe-msg.ok { color: #15803d; font-weight: 700; font-size: 18px; }
 #qe-msg:empty { display: none; }
+#v-cli-mail.mal { border-color: #dc2626 !important; background: #fef2f2 !important; } #v-cli-mail.mal #v-mail-st { color: #b91c1c; font-weight: 700; }
 #cara-past { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9999; background: #e0f2fe; border: 1px solid #7dd3fc; color: #075985; border-radius: 999px; padding: 14px 26px; font-size: 16px; box-shadow: 0 12px 40px rgba(15, 23, 42, .28); display: flex; align-items: center; gap: 10px; } .qe-pils { display: flex; flex-wrap: wrap; gap: 6px; }
 #ov .box.pastilla, #dlg .box.pastilla { background: transparent; padding: 0; box-shadow: none; border: none; width: auto; max-width: 96vw; overflow: visible; }
 .cartel-pil { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 999px; padding: 12px 14px 12px 26px; color: #075985; box-shadow: 0 12px 40px rgba(15, 23, 42, .28); }
@@ -745,7 +746,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
             <div id="v-cli-sug" class="cl-res sug" style="display:none"></div>
           </div>
           <div class="cli-mail" id="v-cli-nom" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-nom" placeholder="Nombre y apellido del cliente" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();nomGuardar(true)}" onblur="nomGuardar()"><span class="mini" id="v-nom-st"></span></div>
-          <div class="cli-mail" id="v-cli-mail" style="display:none"><span id="v-mail-ico" class="cm-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span><input id="v-mail" type="email" placeholder="Mail del cliente (opcional) · acá se manda la factura" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();mailGuardar()}" onblur="mailGuardar()"><span class="mini" id="v-mail-st"></span><button type="button" class="cm-tog" id="v-mail-tog" onmousedown="event.preventDefault()" onclick="canalToggle()" title="Mandarlo por WhatsApp" aria-label="Cambiar entre mail y WhatsApp"></button></div>
+          <div class="cli-mail" id="v-cli-mail" style="display:none"><span id="v-mail-ico" class="cm-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span><input id="v-mail" type="email" placeholder="Mail del cliente (opcional) · acá se manda la factura" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();mailGuardar()}" oninput="this.dataset.toco='1'" onblur="mailGuardar()"><span class="mini" id="v-mail-st"></span><button type="button" class="cm-tog" id="v-mail-tog" onmousedown="event.preventDefault()" onclick="canalToggle()" title="Mandarlo por WhatsApp" aria-label="Cambiar entre mail y WhatsApp"></button></div>
           <div class="renglones" id="v-renglones"><div class="empty chico">Todavía no agregaste nada.</div></div>
           <div class="totales">
             <div class="fila" id="v-arts-fila" style="display:none"><span>Artículos</span><b id="v-arts"></b></div>
@@ -1091,7 +1092,7 @@ async function init() {
   const { data: p, error } = await sb.rpc('pos_mi_perfil');
   if (error || !p || !p.ok) { toast((p && p.motivo) || 'Sin acceso', 'error'); return; }
   PERFIL = p;
-  { const { data: h } = await sb.rpc('pos_mi_hub'); PERFIL.hub = (h && h.hub) || {}; if (h && Array.isArray(h.locales) && !p.es_admin) PERFIL.locales = h.locales; }
+  { const { data: h } = await sb.rpc('pos_mi_hub'); PERFIL.hub = (h && h.hub) || {}; PERFIL.ocultos = (h && Array.isArray(h.ocultos)) ? h.ocultos : []; if (h && Array.isArray(h.locales) && !p.es_admin) PERFIL.locales = h.locales; }
   { const ult = localStorage.getItem('pos_local'); LOCAL = !p.es_admin && misLocales().includes(ult) ? ult : (p.local || ult || 'alcorta'); }   // con varios locales, vuelve al último que eligió
   document.getElementById('user-info').textContent = p.nombre;
   { const ea = hubF('pos.ajustes'); if (!p.es_admin && (ea === null ? !p.ve_todo : ea === 'o')) document.getElementById('tab-ajustes').style.display = 'none'; }
@@ -1123,7 +1124,9 @@ const HUB_TAB = { vender: 'pos.vender', vales: 'pos.vales', etiquetas: 'pos.etiq
 const hubF = f => { if (!PERFIL) return null; if (PERFIL.es_admin) return 'h'; const m = PERFIL.hub; return m && Object.keys(m).length ? (m[f] || 'o') : null; };
 const hubE = accion => (HUB_FN[accion] && hubF(HUB_FN[accion])) || (PERFIL.autoriza ? 'h' : 'a');
 const misLocales = () => PERFIL && Array.isArray(PERFIL.locales) && PERFIL.locales.length ? PERFIL.locales : [PERFIL.local];
-const tabOk = k => (!PERFIL || !Array.isArray(PERFIL.tabs) || PERFIL.tabs.includes(k)) && !(PERFIL && HUB_TAB[k] && hubF(HUB_TAB[k]) === 'o');
+const TAB_AP = { vender: 'Vender', comprobantes: 'Vender', remitos: 'Mercadería', pedidos: 'Mercadería', etiquetas: 'Mercadería', vales: 'Vales', caja: 'Caja y ajustes', ajustes: 'Caja y ajustes' };
+const apOculto = k => !!PERFIL && Array.isArray(PERFIL.ocultos) && PERFIL.ocultos.includes(TAB_AP[k]);
+const tabOk = k => (!PERFIL || !Array.isArray(PERFIL.tabs) || PERFIL.tabs.includes(k)) && !(PERFIL && HUB_TAB[k] && hubF(HUB_TAB[k]) === 'o') && !apOculto(k);
 const soloVer = () => !!PERFIL && !PERFIL.es_admin && !PERFIL.opera_todo && !!PERFIL.ve_todo && !misLocales().includes(LOCAL);   // la oficina mirando un local: no opera
 const prestado = () => !!PERFIL && !PERFIL.es_admin && !PERFIL.opera_todo && LOCAL === 'oficina' && !misLocales().includes('oficina');
 function prestadoUI() {
@@ -2415,7 +2418,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main">${(c.es_prueba || (c.preview && MODO === 'prueba')) ? `<div style="${FRANJA_PRUEBA}font-size:9.5pt;padding:2mm 4mm;margin-bottom:4mm">PRUEBA · SIN VALOR FISCAL</div>` : ''}<div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.envioAut = undefined; T.envioAutP = 0; T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.modif = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.sinMail = false; T.envioAut = undefined; T.envioAutP = 0; T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.modif = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -2790,7 +2793,8 @@ function mailRender() {
   tog.innerHTML = wa ? _i('mail') : WA_SVG; tog.title = wa ? 'Volver a mandarlo por mail' : 'Mandarlo por WhatsApp';
   inp.type = wa ? 'tel' : 'email'; inp.inputMode = wa ? 'tel' : 'email'; inp.placeholder = wa ? 'WhatsApp del cliente: código de área y número · acá se manda el comprobante' : 'Mail del cliente (opcional) · acá se manda la factura';
   if (document.activeElement !== inp) inp.value = (wa ? c.celular : c.email) || '';
-  box.classList.remove('falta'); st.textContent = (wa ? c.celular : c.email) ? '' : 'opcional';
+  if (!wa && T.sinMail && document.activeElement !== inp) inp.value = '';
+  box.classList.remove('falta'); box.classList.remove('mal'); st.textContent = !wa && T.sinMail ? 'sale sin mail' : (wa ? c.celular : c.email) ? '' : 'opcional';
 }
 const WA_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></svg>';
 async function canalToggle() {
@@ -2800,9 +2804,9 @@ async function canalToggle() {
 }
 // WhatsApp del cliente: se guarda en el celular de su ficha
 async function celGuardar() {
-  const c = T.cliente; if (!c) return; const inp = document.getElementById('v-mail'); const v = inp.value.replace(/[^0-9]/g, '');
+  const c = T.cliente; if (!c) return; const inp = document.getElementById('v-mail'); let v = inp.value.replace(/[^0-9]/g, '');
   if (!v || v === String(c.celular || '').replace(/[^0-9]/g, '')) { mailRender(); return; }
-  if (!pdWaNum(v)) { toast('Ese WhatsApp no parece válido: poné código de área y número (ej. 11 1234 5678)', 'error'); inp.focus(); return; }
+  { const vr = waVerif(inp.value); if (!vr.ok) { contactoMal(vr); return; } v = vr.num; }
   if (c.nuevo) { c.celular = v; mailRender(); return; }
   if (!c.ficha && c.globalid) { const { data: fc } = await sb.from('clientes').select('*').eq('globalid', c.globalid).maybeSingle(); if (fc) c.ficha = fc; }
   const f = c.ficha; if (!f) { c.celular = v; mailRender(); toast('El cliente no tiene ficha: el WhatsApp queda solo para este ticket', 'error'); return; }
@@ -2838,11 +2842,58 @@ async function compWaPedir(id) {
   const v = await pedirTexto('¿A qué WhatsApp se lo mando? (código de área y número)', cel); if (v === null) return;
   compWa(id, v, x && x.c ? (x.c.cliente_interno || x.c.cliente_nombre) : '');
 }
+const MAIL_TYPO = { 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmal.com': 'gmail.com', 'gmil.com': 'gmail.com', 'gmail.con': 'gmail.com', 'gmail.co': 'gmail.com', 'gmail.cm': 'gmail.com', 'gmail.om': 'gmail.com', 'gmail.comm': 'gmail.com', 'gmaill.com': 'gmail.com', 'gnail.com': 'gmail.com', 'gamil.com': 'gmail.com', 'gmail.com.ar': 'gmail.com', 'gmail.es': 'gmail.com',
+  'hotmial.com': 'hotmail.com', 'hotmal.com': 'hotmail.com', 'hotmai.com': 'hotmail.com', 'hotmil.com': 'hotmail.com', 'hotmail.con': 'hotmail.com', 'hotmail.co': 'hotmail.com', 'hotmail.cm': 'hotmail.com', 'hotnail.com': 'hotmail.com', 'homail.com': 'hotmail.com', 'hotmaill.com': 'hotmail.com', 'hormail.com': 'hotmail.com',
+  'outlok.com': 'outlook.com', 'outloo.com': 'outlook.com', 'outlook.con': 'outlook.com', 'outlook.co': 'outlook.com', 'oulook.com': 'outlook.com',
+  'yaho.com': 'yahoo.com', 'yahooo.com': 'yahoo.com', 'yahoo.con': 'yahoo.com', 'yahoo.co': 'yahoo.com', 'yahoo.com.a': 'yahoo.com.ar', 'yaho.com.ar': 'yahoo.com.ar',
+  'iclud.com': 'icloud.com', 'icloud.con': 'icloud.com', 'icoud.com': 'icloud.com', 'live.con': 'live.com', 'hotmail.com.a': 'hotmail.com.ar', 'live.com.a': 'live.com.ar' };
+const MAIL_OK = new Set(['gmail.com', 'hotmail.com', 'hotmail.com.ar', 'hotmail.es', 'outlook.com', 'outlook.com.ar', 'outlook.es', 'yahoo.com', 'yahoo.com.ar', 'live.com', 'live.com.ar', 'icloud.com', 'me.com', 'msn.com', 'fibertel.com.ar']);
+const _mailDom = {};
+async function _dns(d, tipo) { const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 4000); try { const r = await fetch('https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(d) + '&type=' + tipo, { headers: { accept: 'application/dns-json' }, signal: ctl.signal }); return await r.json(); } finally { clearTimeout(tm); } }
+// → { ok: true } o { ok: false, msg, sug }. Si no se puede consultar el dominio (sin internet), no traba.
+async function mailVerif(v) {
+  v = String(v || '').trim().toLowerCase();
+  if (!/^[a-z0-9_%+-]+(\.[a-z0-9_%+-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(v) || !/\.[a-z]{2,}$/.test(v)) return { ok: false, msg: 'Ese mail no está bien escrito: revisalo con el cliente' };
+  const [u, d] = v.split('@');
+  if (MAIL_TYPO[d]) return { ok: false, msg: 'El mail parece mal escrito («' + d + '»)', sug: u + '@' + MAIL_TYPO[d] };
+  if (MAIL_OK.has(d)) return { ok: true };
+  if (_mailDom[d] === undefined) { try {
+    const j = await _dns(d, 'MX');
+    if (j.Status === 3) _mailDom[d] = false;
+    else if (j.Status === 0) { const mx = (j.Answer || []).filter(a => a.type === 15);
+      if (mx.length) _mailDom[d] = !mx.every(a => /^\d+\s+\.?$/.test(String(a.data).trim()));
+      else { const a = await _dns(d, 'A'); if (a.Status === 0 || a.Status === 3) _mailDom[d] = (a.Answer || []).some(x => x.type === 1); } }
+  } catch (e) {} }
+  if (_mailDom[d] === false) return { ok: false, msg: 'El dominio «' + d + '» no existe o no recibe mails: revisalo con el cliente' };
+  return { ok: true };
+}
+// celular argentino: código de área + número = 10 dígitos, sin 0 ni 15. De otro país: con + y el código del país.
+function waVerif(v) {
+  const cr = String(v || '').trim(); let n = cr.replace(/\D/g, '');
+  if (/^(\+|00)/.test(cr) && !/^(\+|00)\s*54/.test(cr)) { n = n.replace(/^00/, ''); return n.length >= 8 && n.length <= 15 ? { ok: true, num: n } : { ok: false, msg: 'Ese WhatsApp no parece válido' }; }
+  n = n.replace(/^00/, '').replace(/^549?/, m => n.length > 10 ? '' : m).replace(/^0+/, '');
+  if (n.length === 12) { for (const k of [2, 3, 4]) if (n.substr(k, 2) === '15') { n = n.slice(0, k) + n.slice(k + 2); break; } }
+  if (n.length !== 10) return { ok: false, msg: 'Ese WhatsApp no está completo: va el código de área y el número, 10 números en total, sin 0 ni 15 (ej. 11 1234 5678). Tiene ' + n.length + '.' };
+  return { ok: true, num: n };
+}
+function contactoMal(vr, sinFoco) { const box = document.getElementById('v-cli-mail'), inp = document.getElementById('v-mail'), st = document.getElementById('v-mail-st'); if (box) box.classList.add('mal'); if (st) st.textContent = 'revisar'; toast(vr.msg + (vr.sug ? ': ¿es ' + vr.sug + '?' : ''), 'error'); if (inp && !sinFoco) inp.focus(); }
+async function contactoVerif() {
+  const c = T.cliente, inp = document.getElementById('v-mail'); if (!c) return { ok: true };
+  if (T.canal === 'wa') { const v = (inp.value || c.celular || '').trim(); return v ? waVerif(v) : { ok: true }; }
+  const v = (inp.value || c.email || '').trim(); if (!v || T.sinMail) return { ok: true };
+  const vr = await mailVerif(v); if (!vr.ok && !vr.sug) vr.msg += '. Corregilo, o borralo para que este comprobante salga sin mail';
+  return vr;
+}
 async function mailGuardar() {
   if (T.canal === 'wa') return celGuardar();
   const c = T.cliente; if (!c) return; const inp = document.getElementById('v-mail'); const v = inp.value.trim().toLowerCase();
-  if (v === (c.email || '').toLowerCase() || !v) { mailRender(); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { toast('Ese mail no parece válido', 'error'); inp.focus(); return; }
+  if (!v) { if (c.email && !T.sinMail && document.activeElement !== inp && inp.dataset.toco) { T.sinMail = true; toast('Este comprobante sale sin mail (la ficha del cliente no se toca)', 'success'); } inp.dataset.toco = ''; mailRender(); return; }
+  inp.dataset.toco = '';
+  if (v === (c.email || '').toLowerCase() && !T.sinMail) { const vr0 = await mailVerif(v); if (!vr0.ok) { contactoMal(vr0, true); return; } mailRender(); return; }
+  { const vr = await mailVerif(v);
+    if (!vr.ok && vr.sug && await confirmar(vr.msg + '. ¿Lo corrijo a ' + vr.sug + '?')) { inp.value = vr.sug; return mailGuardar(); }
+    if (!vr.ok) { contactoMal(vr); return; } }
+  T.sinMail = false;
   if (c.nuevo) { c.email = v; mailRender(); return; }   // cliente nuevo: el mail se guarda junto con el nombre
   // cliente que vino de una factura anterior (NC / presupuesto): no trae la ficha → se busca por su código para guardar igual
   if (!c.ficha && c.globalid) { const { data: fc } = await sb.from('clientes').select('*').eq('globalid', c.globalid).maybeSingle(); if (fc) c.ficha = fc; }
@@ -3474,6 +3525,7 @@ async function emitir(esNC) {
   if (!esNC && (T.tipo === 'PR' || T.sena)) { const di = document.getElementById('v-dias'); if (!/^\d+$/.test(di.value.trim())) { di.classList.add('falta'); toast('Poné cuántos días se le respeta el precio (abajo, en la casilla celeste). Con 0 no se congela.', 'error'); di.focus(); return; } }
   const btn = document.getElementById('v-cobrar'); btn.disabled = true;
   if (T.canal === 'wa' && document.activeElement === document.getElementById('v-mail')) await celGuardar();
+  { const vr = await contactoVerif(); if (!vr.ok) { btn.disabled = false; contactoMal(vr); return; } }
   const waEnv = T.canal === 'wa' && T.tipo !== 'RE' && T.cliente && pdWaNum(T.cliente.celular) ? { tel: T.cliente.celular, nombre: T.cliente.nombre } : null;
   const t = vTotales(); let pagos = pPagos();
   const esMod = !esNC && !!T.modif && T.tipo === 'FC' && !T.sena && !T.gift && !T.sena_usar && !T.remito, modNom = esMod ? T.modif.nom : '';
@@ -3504,7 +3556,7 @@ async function emitir(esNC) {
   const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && T.gift.card_on && !T.gift.card) { toast('Cargá el código de la card física, o destildá «Se lleva la card física»', 'error'); btn.disabled = false; const i = document.getElementById('gift-card'); if (i) i.focus(); return; }
   if (T.gift && !(t.tot - (T.gift.card ? CARD_PRECIO : 0) > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
-  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, envio_autorizacion_id: T.envioAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio, canal_envio: waEnv ? 'wa' : undefined, modifica_id: esMod ? T.modif.id : undefined, devolver: esMod && t.dev > 0 ? t.dev : undefined, precio_dias: (T.tipo === 'PR' || T.sena) ? diasVal() : undefined, presupuesto_id: (!esNC && T.presu_id) || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
+  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, envio_autorizacion_id: T.envioAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio, canal_envio: waEnv ? 'wa' : (T.sinMail && T.canal !== 'wa') ? 'no' : undefined, modifica_id: esMod ? T.modif.id : undefined, devolver: esMod && t.dev > 0 ? t.dev : undefined, precio_dias: (T.tipo === 'PR' || T.sena) ? diasVal() : undefined, presupuesto_id: (!esNC && T.presu_id) || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? ['Bultos: ' + parseInt(document.getElementById('v-re-bultos').value, 10), document.getElementById('v-obs').value.trim()].filter(Boolean).join(' · ') : undefined,   // en el remito la observación de abajo es la nota de entrega
    
@@ -3972,6 +4024,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=157"></script>
+<script src="manual.js?v=158"></script>
 </body>
 </html>
