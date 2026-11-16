@@ -698,7 +698,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <button class="hbtn ab-fijo" onclick="doLogout()" title="Salir" aria-label="Salir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span class="lb">Salir</span></button>
     </div>
   </header>
-  <script src="/hub/banner.js?v=4"></script>
+  <script src="/hub/banner.js?v=7"></script>
   <main>
 
     <section id="content-vender" class="tab-content active">
@@ -3384,7 +3384,11 @@ function caraMejor(d, lista) { let m = null; for (const e of lista) { const x = 
 // Devuelve { id, modo } ('cara' | 'manual'), { id: null } si quien está logueada ya es una persona, o null si se canceló
 // true = seguir · false = no hacer la operación (canceló o falló). empId: la persona ya identificada (null = usuario personal); sin pasar, se pregunta
 const hubOc = f => hubF(f) === 'o' && (toast('Tu perfil no tiene habilitado esto. Los permisos se manejan en el Hub → Permisos.', 'error'), true);
+const verComo = () => window.ADORNO_VERCOMO || null;
+const VC_MSG = 'Modo «Ver como»: es solo para mirar, no se modifica nada.';
+{ const _toast = toast; toast = (m, k) => _toast(/read-only transaction|VC00/i.test(String(m)) ? VC_MSG : m, k); }
 async function hubReg(funcion, detalle, empId, desc) {
+  if (verComo()) return true;   // «registra quién» es una escritura
   const { data, error } = await sb.rpc('hub_registra_quien', { p_funcion: funcion });
   if (error) { toast('No pude consultar el registro del Hub: ' + error.message.replace(/^.*?: /, ''), 'error'); return false; }
   if (!data || !data.registra) return true;
@@ -3395,6 +3399,7 @@ async function hubReg(funcion, detalle, empId, desc) {
   return true;
 }
 function quienEmite(probar, titulo, at) {
+  if (verComo() && !probar) return Promise.resolve({ id: null });
   // usuario personal de una empleada: ya se sabe quién es (se avisa). El genérico del local y los admin pasan por la cámara.
   if (PERFIL.empleado_id && !PERFIL.es_admin && !probar) { if (!titulo) toast('Emite ' + pila(PERFIL.nombre), 'success'); return Promise.resolve({ id: null }); }
   return new Promise(async resolve => {
@@ -3582,6 +3587,7 @@ async function emitir(esNC) {
     if (!esNC && pagos.some(x => (x.medio === 'efectivo' || x.medio === 'efectivo_usd') && x.importe > 0)) fns.push('pos.cobro_efectivo');
     if (esMod) fns.push('pos.nota_credito');
     for (const f of fns) if (!await hubReg(f, det, qe.id || null, qe.desc)) { btn.disabled = false; return; } }
+  if (verComo()) { btn.disabled = false; toast('Modo «Ver como»: hasta acá llegaría ' + pila(verComo().nombre) + '. El comprobante no se emite.', 'success'); return; }
   const { data, error } = await sb.rpc(esMod ? 'pos_modificar_factura' : 'pos_emitir', { p });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); btn.disabled = false; return; }
   if (esMod) toast('Listo: nota de crédito ' + data.nc.numero_fmt + ' por la ' + modNom + (t.dev > 0 ? ' · devolvele ' + plata(t.dev) + ' en efectivo al cliente' : ''), 'success');
@@ -3645,6 +3651,7 @@ function autorizar(accion, resumen, forzar) {
     if (e === 'h' && !forzar) return Promise.resolve(0); }   // 0 = no hace falta: su perfil lo tiene habilitado
   return new Promise(async resolve => {
     AUT = { accion, resumen, resolve, id: null, poll: null, fin: false, desde: 0, lista: [] };
+    if (verComo()) { autVentana(); return; }   // «Ver como»: se muestra a quién le pediría permiso, sin leer la cara ni mandar nada
     if (await autCara()) return;   // 1) la cámara: si reconoce a la encargada o la cajera, queda autorizado (o se canceló)
     autVentana();                  // 2) pedir al celu y 3) usuario y clave
   });
@@ -3689,6 +3696,7 @@ function autLista(msg) {
     + (fuera.length ? `<b style="display:block;margin-top:10px">No están en el local (pueden autorizar desde donde estén)</b>${fuera.map(p => autPersona(p, true)).join('')}` : '');
 }
 async function autPedir(empId) {
+  if (verComo()) { const q = (AUT && AUT.lista || []).find(x => x.empleado_id === empId); toast('Modo «Ver como»: acá se le mandaría el pedido al celu' + (q ? ' de ' + pila(q.nombre) : '') + '. No se manda nada.', 'success'); return; }
   if (!AUT) return; const p = AUT.lista.find(x => x.empleado_id === empId); if (!p) return;
   const { data, error } = await sb.rpc('pos_autorizacion_pedir', { p_local: LOCAL, p_accion: AUT.accion, p_detalle: { resumen: AUT.resumen, pedido_por: PERFIL.nombre, pedido_por_email: PERFIL.email }, p_empleado_id: empId });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
@@ -3711,6 +3719,7 @@ async function autPedir(empId) {
 function autOtra() { if (!AUT) return; clearInterval(AUT.poll); if (AUT.id) sb.rpc('pos_autorizacion_cancelar', { p_id: AUT.id }); AUT.id = null; autLista(); }
 // Respaldo: la autorizadora se loguea en un cliente aparte (no toca la sesión del genérico) y crea la autorización ya aceptada
 async function autClave() {
+  if (verComo()) { toast('Modo «Ver como»: acá se autorizaría con usuario y clave. No se manda nada.', 'success'); return; }
   if (!AUT) return; const mail = document.getElementById('aut-mail').value.trim(), pass = document.getElementById('aut-pass').value;
   if (!mail || !pass) { toast('Cargá el usuario y la clave de quien autoriza', 'error'); return; }
   const sb2 = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -4039,6 +4048,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=160"></script>
+<script src="manual.js?v=161"></script>
 </body>
 </html>
