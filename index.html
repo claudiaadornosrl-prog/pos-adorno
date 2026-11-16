@@ -131,11 +131,11 @@ window.ADORNO_ASISTENTE = (function () {
   .asist-err{align-self:flex-start;color:#991b1b;background:#fee2e2;border-radius:10px;padding:7px 10px;font-size:12.5px}
   .asist-vacio{color:var(--muted,#5f5e5a);font-size:12.5px;line-height:1.45}
   .asist-in{display:flex;align-items:flex-end;gap:4px;padding:8px 10px 10px;border-top:0.5px solid var(--border,#d3d1c7)}
-  .asist-in textarea{flex:1;resize:none;border:0.5px solid var(--border,#d3d1c7);border-radius:10px;padding:8px 10px;font:inherit;background:var(--bg,#fafaf9);color:inherit;min-height:38px;max-height:110px;outline:none}
+  .asist-in textarea{flex:1;resize:none;border:0.5px solid var(--border,#d3d1c7);border-radius:19px;padding:8px 14px;font:inherit;background:var(--bg,#fafaf9);color:inherit;min-height:38px;max-height:110px;outline:none}
   .asist-in textarea:focus{border-color:var(--accent,#d97757)}
   .asist-in .asist-env{color:var(--accent,#d97757)} .asist-in .asist-env:hover{background:rgba(217,119,87,.12)}
   .asist-card{align-self:stretch;border:1px solid var(--accent,#d97757);border-radius:12px;padding:9px 11px;background:var(--surface,#fff);line-height:1.4}
-  .asist-bts{display:flex;gap:8px;margin-top:9px} .asist-bt{border:0;border-radius:9px;padding:7px 14px;font:inherit;font-weight:600;cursor:pointer}
+  .asist-bts{display:flex;gap:8px;margin-top:9px} .asist-bt{border:0;border-radius:999px;padding:7px 16px;font:inherit;font-weight:600;cursor:pointer}
   .asist-bt.si{background:var(--accent,#d97757);color:#fff} .asist-bt.no{background:transparent;color:var(--muted,#5f5e5a);border:0.5px solid var(--border,#d3d1c7)}
   .asist-bt:disabled{opacity:.6;cursor:default} .asist-fin{margin-top:8px;font-size:13px} .asist-fin.ok{color:#166534} .asist-fin.mal{color:#991b1b}
   .asist-resalta{outline:3px solid var(--accent,#d97757)!important;outline-offset:2px;border-radius:8px;transition:outline-color 1.2s}
@@ -154,36 +154,74 @@ window.ADORNO_ASISTENTE = (function () {
     panel.innerHTML = `
       <div class="asist-head"><span class="asist-av">${CLODI('cara')}</span><span class="asist-tit"><b>Clodi</b><span class="asist-sub">${esc(modulo())} · preguntame cómo hacer algo</span></span>
         <button class="asist-ib" title="Cerrar (Esc)" data-a="cerrar">${ICO.cerrar}</button></div>
-      <div class="asist-log"><div class="asist-vacio">¡Hola! Soy <b>Clodi</b>. Escribime o dictame tu pregunta, por ejemplo: <b>"¿cómo cargo un pedido?"</b> o <b>"¿dónde veo mis vacaciones?"</b>.<br>Te explico los pasos con el manual de este módulo${SR ? '' : '<br><br>(este navegador no tiene dictado por voz: escribí la pregunta)'}.</div></div>
+      <div class="asist-log"><div class="asist-vacio">¡Hola! Soy <b>Clodi</b>. Escribime tu pregunta, o mantené apretado el micrófono mientras hablás y soltalo para mandarla, por ejemplo: <b>"¿cómo cargo un pedido?"</b> o <b>"¿dónde veo mis vacaciones?"</b>.<br>Te explico los pasos con el manual de este módulo${SR ? '' : '<br><br>(este navegador no tiene dictado por voz: escribí la pregunta)'}.</div></div>
       <div class="asist-in">
         <textarea rows="1" placeholder="Preguntale a Clodi…" aria-label="Pregunta para Clodi"></textarea>
-        ${SR ? `<button class="asist-ib asist-mic" title="Dictar por voz" data-a="mic">${ICO.mic}</button>` : ''}
+        ${SR ? `<button class="asist-ib asist-mic" title="Mantené apretado para hablar; al soltar, se manda" aria-label="Mantené apretado para hablar" style="touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none">${ICO.mic}</button>` : ''}
         <button class="asist-ib asist-env" title="Enviar (Enter)" data-a="enviar">${ICO.enviar}</button>
       </div>`;
     document.body.appendChild(fab); document.body.appendChild(panel); vivir();
     const ta = panel.querySelector('textarea');
     panel.addEventListener('click', (e) => { const b = e.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a;
-      if (a === 'cerrar') cerrar(); else if (a === 'enviar') enviar(false); else if (a === 'mic') dictar(); else if (a === 'leer') leer(b.dataset.t);
+      if (a === 'cerrar') cerrar(); else if (a === 'enviar') enviar(false); else if (a === 'leer') leer(b.dataset.t);
       });
     panel.addEventListener('pointerdown', despertarVoz);
+    const mic = panel.querySelector('.asist-mic');
+    if (mic) { mic.addEventListener('pointerdown', micDown); mic.addEventListener('pointerup', micUp); mic.addEventListener('pointercancel', micUp); mic.addEventListener('lostpointercapture', micUp);
+      mic.addEventListener('contextmenu', (e) => e.preventDefault());
+      mic.addEventListener('keydown', (e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) micDown(e); }); mic.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') micUp(e); }); }
     ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(false); } });
     ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(110, ta.scrollHeight) + 'px'; });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel && !panel.hidden) cerrar(); });
   }
   function abrir() { armar(); panel.hidden = false; panel.querySelector('.asist-head .asist-sub').textContent = modulo() + ' · preguntame cómo hacer algo'; setTimeout(() => panel.querySelector('textarea').focus(), 50); }
-  function cerrar() { if (!panel) return; panel.hidden = true; if (grabando && rec) { try { rec.stop(); } catch (_) {} } try { speechSynthesis.cancel(); } catch (_) {} hablar(false); }
+  function cerrar() { if (!panel) return; panel.hidden = true; micHeld = false; if (grabando && rec) { try { rec.stop(); } catch (_) {} } try { speechSynthesis.cancel(); } catch (_) {} hablar(false); }
 
-  function dictar() {
-    if (!SR) return;
+  // (15-nov-2026, JP: "tocás el botón, le hablás y se corta en cualquier momento… que tengas que dejar el dedo apoyado y
+  // cuando levantes el dedo se corte el mensaje y le llegue al asistente") MANTENER APRETADO PARA HABLAR: mientras el
+  // micrófono está apretado (dedo, mouse o barra espaciadora) escucha sin cortarse en las pausas; al soltar, se manda.
+  let micHeld = false, micTxt = '', micT0 = 0, micCorto = false;
+  function micDown(e) {
+    if (!SR || micHeld) return;
+    e.preventDefault();
+    try { if (e.pointerId != null) e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+    micHeld = true; micTxt = ''; micT0 = Date.now(); micCorto = false;
+    try { speechSynthesis.cancel(); } catch (_) {} hablar(false);
+    const ta = panel.querySelector('textarea'); ta.value = '';
+    escuchar();
+  }
+  function micUp() {
+    if (!micHeld) return;
+    micHeld = false; micCorto = Date.now() - micT0 < 350;
+    if (grabando && rec) { try { micCorto ? rec.abort() : rec.stop(); } catch (_) {} } else finDictado();
+    setTimeout(() => { if (!micHeld && grabando) finDictado(); }, 1500);   // por si el navegador no avisa que terminó
+  }
+  function finDictado() {
     const btn = panel.querySelector('.asist-mic'), ta = panel.querySelector('textarea');
-    if (grabando && rec) { try { rec.stop(); } catch (_) {} return; }
+    grabando = false; if (btn) btn.classList.remove('on');
+    if (micCorto) { ta.value = ''; ta.placeholder = 'Mantené apretado el micrófono mientras hablás'; setTimeout(() => { if (!grabando) ta.placeholder = 'Preguntale a Clodi…'; }, 3000); return; }
+    ta.placeholder = 'Preguntale a Clodi…';
+    if (ta.value.trim()) enviar(true);
+  }
+  function escuchar() {
+    const btn = panel.querySelector('.asist-mic'), ta = panel.querySelector('textarea');
     rec = new SR(); rec.lang = 'es-AR'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
-    let final = '';
-    rec.onstart = () => { grabando = true; btn.classList.add('on'); ta.placeholder = 'Escuchando… hablá y hacé una pausa'; };
-    rec.onresult = (ev) => { let interim = ''; for (let i = ev.resultIndex; i < ev.results.length; i++) { const r = ev.results[i]; if (r.isFinal) final += r[0].transcript; else interim += r[0].transcript; } ta.value = (final + interim).trim(); };
-    rec.onerror = (ev) => { grabando = false; btn.classList.remove('on'); ta.placeholder = 'Preguntale a Clodi…'; if (ev.error !== 'aborted' && ev.error !== 'no-speech') log('err', ev.error === 'not-allowed' ? 'El navegador no dio permiso para usar el micrófono.' : 'No pude escuchar (' + ev.error + '). Escribí la pregunta.'); };
-    rec.onend = () => { grabando = false; btn.classList.remove('on'); ta.placeholder = 'Preguntale a Clodi…'; if ((final || ta.value).trim()) enviar(true); };
-    try { rec.start(); } catch (_) { grabando = false; }
+    const mio = rec; let final = '';
+    rec.onstart = () => { grabando = true; btn.classList.add('on'); ta.placeholder = 'Escuchando… soltá para mandar'; };
+    rec.onresult = (ev) => { let interim = ''; for (let i = ev.resultIndex; i < ev.results.length; i++) { const r = ev.results[i]; if (r.isFinal) final += r[0].transcript; else interim += r[0].transcript; } ta.value = (micTxt + ' ' + final + interim).trim(); };
+    rec.onerror = (ev) => {
+      if (ev.error === 'aborted' || ev.error === 'no-speech') return;   // sigue: onend decide
+      micHeld = false; micCorto = false; ta.value = (micTxt + ' ' + final).trim();
+      log('err', ev.error === 'not-allowed' ? 'El navegador no dio permiso para usar el micrófono.' : 'No pude escuchar (' + ev.error + '). Escribí la pregunta.');
+    };
+    // el navegador corta solo en cada pausa: si el botón sigue apretado, vuelve a escuchar y junta lo dicho
+    rec.onend = () => {
+      if (rec !== mio) return;
+      micTxt = (micTxt + ' ' + final).trim();
+      if (micHeld) { try { escuchar(); return; } catch (_) { micHeld = false; } }
+      finDictado();
+    };
+    try { rec.start(); } catch (_) { grabando = false; micHeld = false; }
   }
   // (28-oct, JP: "una voz que sea la más parecida a la de Claudia") mujer, argentina primero. Cada equipo tiene voces distintas:
   // se usa la primera de esta lista que exista; la persona puede elegir otra en el panel (queda guardada en ese equipo).
@@ -1079,7 +1117,7 @@ async function init() {
   document.getElementById('v-q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); vEscanear(); } });
   document.getElementById('v-q').focus();
 }
-const HUB_FN = { nc: 'pos.nota_credito', re: 'pos.remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo' };
+const HUB_FN = { nc: 'pos.nota_credito', re: 'pos.remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo', envio: 'pos.precio_envio' };
 const HUB_TAB = { vender: 'pos.vender', vales: 'pos.vales', etiquetas: 'pos.etiquetas', caja: 'pos.caja' };
 // estado de una función del Hub para quien está logueado; null si el Hub no respondió (ahí vale la regla de antes)
 const hubF = f => { if (!PERFIL) return null; if (PERFIL.es_admin) return 'h'; const m = PERFIL.hub; return m && Object.keys(m).length ? (m[f] || 'o') : null; };
@@ -1308,12 +1346,23 @@ function vTarjetaRegalo() {
   sonar('mas'); vRender(); document.getElementById('v-q').value = ''; vBuscar();
   setTimeout(() => { const f = [...document.querySelectorAll('#v-renglones input.din')].pop(); if (f) f.focus(); }, 60);
 }
+const ENVIO_SKU = 'ENVIO';
+async function vEnvio(i, v) {
+  const it = T.items[i]; if (!it) return; const p = Math.max(0, r2(num(v)));
+  if (p > 0) { const aid = await autorizar('envio', 'Precio del envío · ' + plata(p) + (T.cliente ? ' · ' + tit(T.cliente.nombre) : '')); if (aid === null) { vRender(); return; } T.envioAut = aid || undefined; T.envioAutP = p; }
+  if (T.items[i] !== it) return;
+  it.precio_unit = p; it.descuento_monto = Math.min(p, it.descuento_monto || 0); it.descuento_pct = p ? it.descuento_monto / p * 100 : 0; vRender();
+}
 function vAgregar(sku) {
   const a = ARTS.find(x => x.sku === sku); if (!a) return;
   if (T.gift) { toast('Terminá la gift card primero (o sacala con la ✕)', 'error'); return; }
   const n = T.pend || 1; T.pend = 0; vPend();
   if (T.sena) { const si = T.sena.items.find(x => x.sku === sku); if (si) si.cantidad += n; else T.sena.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: n, precio_unit: Number(a.precio) || 0 }); sonar('mas'); vRender(); vFicha(a.sku); document.getElementById('v-q').focus(); return; }
   const it = T.items.find(x => x.sku === sku);
+  if (sku === ENVIO_SKU && !it) {   // precio variable: entra sin importe y el importe pide autorización
+    T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: 0, descuento_pct: 0, descuento_monto: 0, stock: 1, fijo: true, placeholder: 'Importe del envío' });
+    sonar('mas'); vRender(); document.getElementById('v-q').value = ''; vBuscar();
+    setTimeout(() => { const f = [...document.querySelectorAll('#v-renglones input.din')].pop(); if (f) f.focus(); }, 60); return; }
   if (it) it.cantidad += n; else T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: n, precio_unit: Number(a.precio) || 0, descuento_pct: 0, descuento_monto: 0, stock: Number(a.stock) });
   if (it && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; }
   sonar('mas'); vRender(); vFicha(a.sku); document.getElementById('v-q').focus();
@@ -2366,7 +2415,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main">${(c.es_prueba || (c.preview && MODO === 'prueba')) ? `<div style="${FRANJA_PRUEBA}font-size:9.5pt;padding:2mm 4mm;margin-bottom:4mm">PRUEBA · SIN VALOR FISCAL</div>` : ''}<div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.modif = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.envioAut = undefined; T.envioAutP = 0; T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.modif = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -2408,7 +2457,8 @@ function vDto(i, v) {
   else { it.descuento_monto = Math.min(it.precio_unit, Math.max(0, r2(num(txt)))); it.descuento_pct = it.descuento_monto && it.precio_unit ? it.descuento_monto / it.precio_unit * 100 : 0; }
   vRender();
 }
-function vSet(i, campo, v) { const it = T.items[i]; if (it && it.sku === 'CARDFISICA') { vRender(); return; }   // el cargo de la card física no se edita
+function vSet(i, campo, v) { const it = T.items[i]; if (it && it.sku === 'CARDFISICA') { vRender(); return; }
+  if (it && it.sku === ENVIO_SKU && campo === 'precio_unit') { vEnvio(i, v); return; }   // el cargo de la card física no se edita
   if (campo === 'precio_unit' && it.descuento_monto > 0) { const p = Math.max(0, num(v)); it.descuento_monto = Math.min(p, it.descuento_monto); it.descuento_pct = p ? it.descuento_monto / p * 100 : 0; } if (campo === 'cantidad') { const neg = !it.fijo && (T.tipo === 'FC' || T.tipo === 'MA' || T.tipo === 'NC') && !T.sena && !T.gift; const nv = neg ? num(v) : Math.max(0, num(v)); if (nv !== it.cantidad) sonar(nv > it.cantidad ? 'mas' : 'menos'); it.cantidad = nv; } else it[campo] = Math.max(0, num(v)); if (campo === 'cantidad' && it.cantidad < 0 && it.max) { toast('En una devolución la cantidad negativa quita stock: solo si el cliente se lleva ese artículo', 'error'); } if (campo === 'cantidad' && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; } if (campo === 'cantidad' && !it.cantidad) T.items.splice(i, 1); vRender(); }
 // Descuentos generales: uno o más renglones, cada uno por % o por importe en pesos (la última casilla tocada manda y la otra
 // se muestra calculada). Se aplican en cascada: cada uno sobre lo que queda. El "+" del primer renglón agrega otro.
@@ -2459,7 +2509,7 @@ function vRender() {
       <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? (it.placeholder || 'Importe de la seña') : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:114px" title="Precio unitario (IVA incluido)"${it.sku === 'CARDFISICA' ? ' readonly' : ''}></td>
       <td class="num">${it.fijo ? '' : `<input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:80px;text-align:right">`}</td>
       <td class="num"><b class="${it.descuento_monto > 0 ? 'dto-imp' : it.descuento_pct > 0 ? 'dto-pct' : ''}" title="${it.descuento_monto > 0 ? 'Con descuento en pesos' : it.descuento_pct > 0 ? 'Con descuento en %' : ''}">${plata(lineaBruta(it))}</b></td>
-      <td>${it.fijo && it.sku !== 'CONCEPTO' && it.sku !== TR_SKU ? '' : `<button class="btn ico chico cli-x" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
+      <td>${it.fijo && it.sku !== 'CONCEPTO' && it.sku !== TR_SKU && it.sku !== ENVIO_SKU ? '' : `<button class="btn ico chico cli-x" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
   box.innerHTML += senaHTML() + giftHTML();
   document.getElementById('v-descs').style.display = (T.sena || T.gift) ? 'none' : '';
@@ -3440,6 +3490,10 @@ async function emitir(esNC) {
   { const accion = esNC || esMod ? 'nc' : T.tipo === 'RE' ? 're' : (T.tipo === 'MA' && !T.gift) ? 'ma' : null; T.autorizacion_id = undefined;
     if (accion) { const aid = await autorizar(accion, (esMod ? 'Modificar la ' + modNom + ': nota de crédito y factura nueva' : esNC ? 'Nota de crédito ' + (T.letra === 'X' ? 'manual' : T.letra) : T.tipo === 'RE' ? (T.re_destino ? 'Remito de traslado a ' + LOCALES[T.re_destino] : T.re_modo === 'prov' ? 'Remito a proveedor ' + document.getElementById('v-re-prov').value.trim() : 'Remito') : 'Comprobante X') + ' · ' + (T.re_destino ? T.items.reduce((s, i) => s + i.cantidad, 0) + ' unidades' : plata(t.tot)) + (T.cliente && !T.re_destino && T.re_modo !== 'prov' ? ' · ' + tit(T.cliente.nombre) : ''));
       if (aid === null) { btn.disabled = false; return; } if (aid) T.autorizacion_id = aid; } }
+  // precio del envío: si llega a Emitir sin autorización vigente para ese importe (p. ej. vino de un presupuesto vencido), se pide acá
+  { const env = T.items.find(x => x.sku === ENVIO_SKU && x.precio_unit > 0);
+    if (!env || esNC || esMod) T.envioAut = undefined;
+    else if (!(T.envioAut && T.envioAutP === env.precio_unit) && !T.presu_id && !T.remito) { const aid = await autorizar('envio', 'Precio del envío · ' + plata(env.precio_unit) + (T.cliente ? ' · ' + tit(T.cliente.nombre) : '')); if (aid === null) { btn.disabled = false; return; } T.envioAut = aid || undefined; T.envioAutP = env.precio_unit; } }
   let efAut;   // cobrar en efectivo: cajera, encargada o admin
   if (!esNC && !['PR', 'RE'].includes(T.tipo) && !(T.tipo === 'MA' && !T.gift) && pagos.some(p => (p.medio === 'efectivo' || p.medio === 'efectivo_usd') && p.importe > 0)) {
     const aid = await autorizar('efectivo', 'Cobrar en efectivo · ' + plata(t.tot) + (T.cliente ? ' · ' + tit(T.cliente.nombre) : '')); if (aid === null) { btn.disabled = false; return; } efAut = aid || undefined; }
@@ -3450,7 +3504,7 @@ async function emitir(esNC) {
   const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && T.gift.card_on && !T.gift.card) { toast('Cargá el código de la card física, o destildá «Se lleva la card física»', 'error'); btn.disabled = false; const i = document.getElementById('gift-card'); if (i) i.focus(); return; }
   if (T.gift && !(t.tot - (T.gift.card ? CARD_PRECIO : 0) > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
-  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio, canal_envio: waEnv ? 'wa' : undefined, modifica_id: esMod ? T.modif.id : undefined, devolver: esMod && t.dev > 0 ? t.dev : undefined, precio_dias: (T.tipo === 'PR' || T.sena) ? diasVal() : undefined, presupuesto_id: (!esNC && T.presu_id) || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
+  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, envio_autorizacion_id: T.envioAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio, canal_envio: waEnv ? 'wa' : undefined, modifica_id: esMod ? T.modif.id : undefined, devolver: esMod && t.dev > 0 ? t.dev : undefined, precio_dias: (T.tipo === 'PR' || T.sena) ? diasVal() : undefined, presupuesto_id: (!esNC && T.presu_id) || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? ['Bultos: ' + parseInt(document.getElementById('v-re-bultos').value, 10), document.getElementById('v-obs').value.trim()].filter(Boolean).join(' · ') : undefined,   // en el remito la observación de abajo es la nota de entrega
    
@@ -3918,6 +3972,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=156"></script>
+<script src="manual.js?v=157"></script>
 </body>
 </html>
