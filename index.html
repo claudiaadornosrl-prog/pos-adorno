@@ -702,7 +702,7 @@ input.din.falta { background: #e0f2fe; border-color: #38bdf8; width: 150px !impo
       <button class="hbtn ab-fijo" onclick="doLogout()" title="Salir" aria-label="Salir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span class="lb">Salir</span></button>
     </div>
   </header>
-  <script src="/hub/banner.js?v=7"></script>
+  <script src="/hub/banner.js?v=8"></script>
   <main>
 
     <section id="content-vender" class="tab-content active">
@@ -4050,6 +4050,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=162"></script>
+<script src="manual.js?v=163"></script>
 </body>
 </html>
