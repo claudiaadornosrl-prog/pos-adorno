@@ -1122,7 +1122,7 @@ async function init() {
   document.getElementById('v-q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); vEscanear(); } });
   document.getElementById('v-q').focus();
 }
-const HUB_FN = { nc: 'pos.nota_credito', re: 'pos.remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo', envio: 'pos.precio_envio' };
+const HUB_FN = { nc: 'pos.nota_credito', re: 'pos.remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo', envio: 'pos.precio_envio', precio: 'pos.precio' };
 const HUB_TAB = { vender: 'pos.vender', vales: 'pos.vales', etiquetas: 'pos.etiquetas', caja: 'pos.caja' };
 // estado de una función del Hub para quien está logueado; null si el Hub no respondió (ahí vale la regla de antes)
 const hubF = f => { if (!PERFIL) return null; if (PERFIL.es_admin) return 'h'; const m = PERFIL.hub; return m && Object.keys(m).length ? (m[f] || 'o') : null; };
@@ -1366,7 +1366,7 @@ function vAgregar(sku) {
   const n = T.pend || 1; T.pend = 0; vPend();
   if (T.sena) { const si = T.sena.items.find(x => x.sku === sku); if (si) si.cantidad += n; else T.sena.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: n, precio_unit: Number(a.precio) || 0 }); sonar('mas'); vRender(); vFicha(a.sku); document.getElementById('v-q').focus(); return; }
   const it = T.items.find(x => x.sku === sku);
-  if (sku === ENVIO_SKU && !it) {   // precio variable: entra sin importe y el importe pide autorización
+  if (sku === ENVIO_SKU && !it) {   // precio variable: entra sin importe y lo pone quien vende (permiso «Poner el precio del envío» del Hub)
     T.items.push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, precio_unit: 0, descuento_pct: 0, descuento_monto: 0, stock: 1, fijo: true, placeholder: 'Importe del envío' });
     sonar('mas'); vRender(); document.getElementById('v-q').value = ''; vBuscar();
     setTimeout(() => { const f = [...document.querySelectorAll('#v-renglones input.din')].pop(); if (f) f.focus(); }, 60); return; }
@@ -2437,7 +2437,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main">${(c.es_prueba || (c.preview && MODO === 'prueba')) ? `<div style="${FRANJA_PRUEBA}font-size:9.5pt;padding:2mm 4mm;margin-bottom:4mm">PRUEBA · SIN VALOR FISCAL</div>` : ''}<div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.sinMail = false; T.envioAut = undefined; T.envioAutP = 0; T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.modif = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.sinMail = false; T.precioAut = undefined; T.envioAut = undefined; T.envioAutP = 0; T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.modif = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -2479,8 +2479,25 @@ function vDto(i, v) {
   else { it.descuento_monto = Math.min(it.precio_unit, Math.max(0, r2(num(txt)))); it.descuento_pct = it.descuento_monto && it.precio_unit ? it.descuento_monto / it.precio_unit * 100 : 0; }
   vRender();
 }
+// precio de lista del artículo en este local (0 = no tiene: precio libre)
+function vLista(it) { const a = ARTS.find(x => x.sku === it.sku); return a ? r2(Number(a.precio) || 0) : 0; }
+// Cambiar el precio de un artículo: lo autoriza la encargada (o un admin). Volver al de lista, o al que traía de un presupuesto, no pide nada.
+async function vPrecio(i, v) {
+  const it = T.items[i]; if (!it) return; const p = Math.max(0, r2(num(v))), l = vLista(it);
+  if (p === r2(it.precio_unit)) { vRender(); return; }
+  if (it.px0 === undefined) it.px0 = r2(it.precio_unit);
+  if (T.tipo !== 'NC' && !T.modif && l > 0 && p !== l && p !== it.px0) {
+    const aid = await autorizar('precio', 'Cambiar precio · ' + it.sku + ' · de ' + plata(l) + ' a ' + plata(p));
+    if (aid === null || T.items[i] !== it) { vRender(); return; }
+    T.precioAut = { id: aid || undefined, at: Date.now(), ok: Object.assign({}, T.precioAut && T.precioAut.ok, { [it.sku]: p }) };
+  }
+  it.pxE = true; it.precio_unit = p;
+  if (it.descuento_monto > 0) { it.descuento_monto = Math.min(p, it.descuento_monto); it.descuento_pct = p ? it.descuento_monto / p * 100 : 0; }
+  vRender();
+}
 function vSet(i, campo, v) { const it = T.items[i]; if (it && it.sku === 'CARDFISICA') { vRender(); return; }
   if (it && it.sku === ENVIO_SKU && campo === 'precio_unit') { vEnvio(i, v); return; }   // el cargo de la card física no se edita
+  if (it && campo === 'precio_unit' && !it.fijo) { vPrecio(i, v); return; }
   if (campo === 'precio_unit' && it.descuento_monto > 0) { const p = Math.max(0, num(v)); it.descuento_monto = Math.min(p, it.descuento_monto); it.descuento_pct = p ? it.descuento_monto / p * 100 : 0; } if (campo === 'cantidad') { const neg = !it.fijo && (T.tipo === 'FC' || T.tipo === 'MA' || T.tipo === 'NC') && !T.sena && !T.gift; const nv = neg ? num(v) : Math.max(0, num(v)); if (nv !== it.cantidad) sonar(nv > it.cantidad ? 'mas' : 'menos'); it.cantidad = nv; } else it[campo] = Math.max(0, num(v)); if (campo === 'cantidad' && it.cantidad < 0 && it.max) { toast('En una devolución la cantidad negativa quita stock: solo si el cliente se lleva ese artículo', 'error'); } if (campo === 'cantidad' && it.max && it.cantidad > it.max) { toast('No se puede devolver más de lo vendido (' + it.max + ')', 'error'); it.cantidad = it.max; } if (campo === 'cantidad' && !it.cantidad) T.items.splice(i, 1); vRender(); }
 // Descuentos generales: uno o más renglones, cada uno por % o por importe en pesos (la última casilla tocada manda y la otra
 // se muestra calculada). Se aplican en cascada: cada uno sobre lo que queda. El "+" del primer renglón agrega otro.
@@ -3570,6 +3587,14 @@ async function emitir(esNC) {
   { const env = T.items.find(x => x.sku === ENVIO_SKU && x.precio_unit > 0);
     if (!env || esNC || esMod) T.envioAut = undefined;
     else if (!(T.envioAut && T.envioAutP === env.precio_unit) && !T.presu_id && !T.remito) { const aid = await autorizar('envio', 'Precio del envío · ' + plata(env.precio_unit) + (T.cliente ? ' · ' + tit(T.cliente.nombre) : '')); if (aid === null) { btn.disabled = false; return; } T.envioAut = aid || undefined; T.envioAutP = env.precio_unit; } }
+  let precioAut;   // precios cambiados: encargada o admin. Lo que viene de un presupuesto, remito o seña sin tocar lo revisa la base.
+  if (!esNC && !esMod) { const camb = T.items.filter(x => !x.fijo && vLista(x) > 0 && r2(x.precio_unit) !== vLista(x));
+    const deOrigen = (T.presu_id || T.remito || T.sena_usar) && !camb.some(x => x.pxE);
+    if (camb.length && !deOrigen) { const A = T.precioAut;
+      if (A && Date.now() - A.at < 8 * 60000 && camb.every(x => A.ok[x.sku] === r2(x.precio_unit))) precioAut = A.id;
+      else { const aid = await autorizar('precio', 'Cambiar precio · ' + camb.map(x => x.sku + ' ' + plata(vLista(x)) + ' → ' + plata(x.precio_unit)).join(' · '));
+        if (aid === null) { btn.disabled = false; return; }
+        precioAut = aid || undefined; T.precioAut = { id: precioAut, at: Date.now(), ok: Object.fromEntries(camb.map(x => [x.sku, r2(x.precio_unit)])) }; } } }
   let efAut;   // cobrar en efectivo: cajera, encargada o admin
   if (!esNC && !['PR', 'RE'].includes(T.tipo) && !(T.tipo === 'MA' && !T.gift) && pagos.some(p => (p.medio === 'efectivo' || p.medio === 'efectivo_usd') && p.importe > 0)) {
     const aid = await autorizar('efectivo', 'Cobrar en efectivo · ' + plata(t.tot) + (T.cliente ? ' · ' + tit(T.cliente.nombre) : '')); if (aid === null) { btn.disabled = false; return; } efAut = aid || undefined; }
@@ -3580,7 +3605,7 @@ async function emitir(esNC) {
   const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && T.gift.card_on && !T.gift.card) { toast('Cargá el código de la card física, o destildá «Se lleva la card física»', 'error'); btn.disabled = false; const i = document.getElementById('gift-card'); if (i) i.focus(); return; }
   if (T.gift && !(t.tot - (T.gift.card ? CARD_PRECIO : 0) > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
-  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, envio_autorizacion_id: T.envioAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio, canal_envio: waEnv ? 'wa' : (T.sinMail && T.canal !== 'wa') ? 'no' : undefined, modifica_id: esMod ? T.modif.id : undefined, devolver: esMod && t.dev > 0 ? t.dev : undefined, precio_dias: (T.tipo === 'PR' || T.sena) ? diasVal() : undefined, presupuesto_id: (!esNC && T.presu_id) || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
+  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, envio_autorizacion_id: T.envioAut, precio_autorizacion_id: precioAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio, canal_envio: waEnv ? 'wa' : (T.sinMail && T.canal !== 'wa') ? 'no' : undefined, modifica_id: esMod ? T.modif.id : undefined, devolver: esMod && t.dev > 0 ? t.dev : undefined, precio_dias: (T.tipo === 'PR' || T.sena) ? diasVal() : undefined, presupuesto_id: (!esNC && T.presu_id) || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
     relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? ['Bultos: ' + parseInt(document.getElementById('v-re-bultos').value, 10), document.getElementById('v-obs').value.trim()].filter(Boolean).join(' · ') : undefined,   // en el remito la observación de abajo es la nota de entrega
    
@@ -3649,7 +3674,7 @@ async function vlAnular(codigo) {
 const ACCION_NOM = { nc: 'una nota de crédito', ma: 'un comprobante X', re: 'un remito', anular: 'una anulación' };
 const pila = n => n ? tit((String(n).split(',')[1] || n).trim()) : '';
 let AUT = null;
-const AUT_SOLO_ENC = ['mov', 'recibir'];
+const AUT_SOLO_ENC = ['mov', 'recibir', 'precio'];
 function autorizar(accion, resumen, forzar) {
   { const e = hubE(accion); if (e === 'o') { toast('Tu perfil no tiene habilitado esto. Los permisos se manejan en el Hub → Permisos.', 'error'); return Promise.resolve(null); }
     if (e === 'h' && !forzar) return Promise.resolve(0); }   // 0 = no hace falta: su perfil lo tiene habilitado
@@ -4061,6 +4086,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=164"></script>
+<script src="manual.js?v=165"></script>
 </body>
 </html>
