@@ -3445,7 +3445,7 @@ async function caraOculta(probar, ms, vivo) {
     const t0 = Date.now();
     while (Date.now() - t0 < ms && (!vivo || vivo())) {
       let d = null; try { d = await caraLeer(video); } catch (e) {}
-      if (d) { const r = await probar(Array.from(d)); if (r) return r; }
+      if (d) { const dd = Array.from(d); const r = await probar(dd); if (r) { CARA.ult = { d: dd, at: Date.now() }; return r; } }
       await _esp(200);
     }
     CARA.falla = 'nadie'; return null;
@@ -3492,9 +3492,11 @@ function quienEmite(probar, titulo, at) {
     let pre = null, leyo = false;
     if (!apagado && conCara.length) {
       leyo = true; let ult = null, seg = 0;
-      const r = await caraOculta(async d => { ultimaLectura = d; let m = null; try { m = (await sb.rpc('pos_cara_identificar', { p_local: LOCAL, p_descriptor: d })).data; } catch (e) {}
+      let r = null;   // si la cámara reconoció a alguien hace menos de 2 minutos (p. ej. al autorizar el precio), vale esa lectura
+      if (CARA.ult && Date.now() - CARA.ult.at < 120000) { try { const m0 = (await sb.rpc('pos_cara_identificar', { p_local: LOCAL, p_descriptor: CARA.ult.d })).data; if (m0) r = { m: m0, d: CARA.ult.d, re: true }; } catch (e) {} }
+      if (!r) r = await caraOculta(async d => { ultimaLectura = d; let m = null; try { m = (await sb.rpc('pos_cara_identificar', { p_local: LOCAL, p_descriptor: d })).data; } catch (e) {}
         if (!m) { seg = 0; return null; } seg = ult === m.empleado_id ? seg + 1 : 1; ult = m.empleado_id; return seg >= 2 ? { m, d } : null; }, 7000);
-      if (r) { pre = { id: r.m.empleado_id, modo: 'cara', desc: r.d, nombre: r.m.nombre }; aprender(pre.id, r.d); toast((titulo || probar ? 'Sos ' : 'Emite ') + pila(r.m.nombre), 'success');
+      if (r) { pre = { id: r.m.empleado_id, modo: 'cara', desc: r.d, nombre: r.m.nombre }; if (!r.re) aprender(pre.id, r.d); toast((titulo || probar ? 'Sos ' : 'Emite ') + pila(r.m.nombre), 'success');
         if (!at || atId === null) { const v = { id: pre.id, modo: 'cara', desc: pre.desc }; cerrar(at ? { ...v, atendio: null } : v); return; } }
     }
     modal(`<div class="m-head"><h3>${titulo || (at ? '¿Quién emite y quién atendió?' : '¿Quién emite?')}</h3><span class="spacer"></span><button class="btn ico" onclick="_qeCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
@@ -3508,7 +3510,7 @@ function quienEmite(probar, titulo, at) {
     if (pre) { em = { id: pre.id, modo: 'cara', desc: pre.desc }; marca('qe-em', pre.id); msg('✔ ' + pila(pre.nombre) + ' · ahora tocá quién atendió', true); }
     else if (apagado) msg('El reconocimiento por cara está apagado por ahora: elegí tu nombre');
     else if (!conCara.length) msg('Todavía nadie grabó su cara (se graban en el Hub). Elegí tu nombre.');
-    else if (leyo) msg('No te reconocí: elegí tu nombre');
+    else if (leyo) msg(CARA.falla === 'cam' ? caraPorQue().replace(/ Tocá «Mirar a la cámara».*$/, '') + ' Elegí tu nombre.' : 'No te reconocí: elegí tu nombre');
   });
 }
 // ─── Registro de quién hizo y quién autorizó (JP 10-nov): RPC pos_registro, solo admin ───
@@ -3753,8 +3755,10 @@ async function autCara() {
   A.camMsg = ''; A.camHay = eq.some(e => e.cara) && !!navigator.mediaDevices;
   if (!A.camHay) return false;
   const quien = A.accion === 'caja' ? 'un administrador' : AUT_SOLO_ENC.includes(A.accion) ? 'la encargada' : 'la encargada o la cajera';
-  const r = await caraOculta(async d => { let r = null; try { r = (await sb.rpc('pos_autorizacion_cara', { p_local: LOCAL, p_accion: A.accion, p_detalle: { resumen: A.resumen, pedido_por: PERFIL.nombre, pedido_por_email: PERFIL.email }, p_descriptor: d })).data; } catch (e) {}
-    return r && (r.ok || r.motivo === 'sin_rango') ? r : null; }, 7000, () => AUT === A && !A.fin);
+  const probarA = async d => { let r = null; try { r = (await sb.rpc('pos_autorizacion_cara', { p_local: LOCAL, p_accion: A.accion, p_detalle: { resumen: A.resumen, pedido_por: PERFIL.nombre, pedido_por_email: PERFIL.email }, p_descriptor: d })).data; } catch (e) {}
+    return r && (r.ok || r.motivo === 'sin_rango') ? r : null; };
+  let r = CARA.ult && Date.now() - CARA.ult.at < 90000 ? await probarA(CARA.ult.d) : null;   // recién se reconoció a alguien (quién emite, u otra autorización): no hace falta mirar de nuevo
+  if (!r) r = await caraOculta(probarA, 7000, () => AUT === A && !A.fin);
   if (AUT !== A || A.fin) return true;
   if (r && r.ok) { toast('Autorizado por ' + pila(r.autorizadora), 'success'); autFin(r.id); return true; }
   if (r && r.motivo === 'sin_rango') A.camMsg = pila(r.nombre) + ': esto lo autoriza ' + quien + '.';
@@ -4164,6 +4168,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=175"></script>
+<script src="manual.js?v=176"></script>
 </body>
 </html>
