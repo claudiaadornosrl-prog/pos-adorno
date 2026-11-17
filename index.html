@@ -3440,8 +3440,8 @@ async function caraOculta(probar, ms, vivo) {
   caraPast('Un momento…'); CARA.falla = null;
   try {
     const cam = caraCam(video); let tarde = false;
-    try { await Promise.race([Promise.all([caraLib(), cam]), _esp(15000).then(() => { tarde = true; throw new Error('tarda'); })]); }
-    catch (e) { CARA.falla = 'cam'; if (tarde) cam.then(caraCamOff, () => {}); return null; }
+    try { await Promise.race([Promise.all([caraLib(), cam]), _esp(20000).then(() => { tarde = true; throw new Error('tarda'); })]); }
+    catch (e) { CARA.falla = 'cam'; CARA.err = tarde ? 'tarda' : String((e && e.name) || '') + (e && e.message ? ': ' + e.message : ''); try { console.warn('POS cámara:', CARA.err); } catch (x) {} if (tarde) cam.then(caraCamOff, () => {}); return null; }
     const t0 = Date.now();
     while (Date.now() - t0 < ms && (!vivo || vivo())) {
       let d = null; try { d = await caraLeer(video); } catch (e) {}
@@ -3758,9 +3758,17 @@ async function autCara() {
   if (AUT !== A || A.fin) return true;
   if (r && r.ok) { toast('Autorizado por ' + pila(r.autorizadora), 'success'); autFin(r.id); return true; }
   if (r && r.motivo === 'sin_rango') A.camMsg = pila(r.nombre) + ': esto lo autoriza ' + quien + '.';
-  else A.camMsg = CARA.falla === 'cam' ? 'No pude usar la cámara de esta compu.' : 'La cámara no reconoció a nadie que pueda autorizar.';
+  else A.camMsg = CARA.falla === 'cam' ? caraPorQue() : 'La cámara no reconoció a nadie que pueda autorizar.';
   return false;
 }
+// por qué no abrió la cámara, en palabras (el motivo técnico va entre paréntesis para poder diagnosticarlo)
+function caraPorQue() { const e = String(CARA.err || '');
+  if (e === 'tarda') return 'La cámara tardó demasiado en abrir. Tocá «Mirar a la cámara» para probar de nuevo.';
+  if (/NotAllowed|Permission/i.test(e)) return 'Chrome tiene la cámara bloqueada para el POS: tocá el candado de la barra de direcciones → Cámara → Permitir, y recargá.';
+  if (/NotFound|DevicesNotFound/i.test(e)) return 'Esta compu no tiene una cámara conectada.';
+  if (/NotReadable|in use|Could not start|Abort/i.test(e)) return 'La cámara está ocupada por otro programa y no la soltó. Tocá «Mirar a la cámara» para probar de nuevo.';
+  if (/reconocimiento|Failed to fetch|load/i.test(e)) return 'No pude bajar el reconocimiento de caras (revisá internet). Tocá «Mirar a la cámara» para probar de nuevo.';
+  return 'No pude usar la cámara de esta compu' + (e ? ' (' + e.slice(0, 80) + ')' : '') + '.'; }
 async function autCamOtra() {
   if (!AUT || AUT.id || AUT.mirando) return; const A = AUT; A.mirando = true;
   const fin = await autCara(); A.mirando = false;
@@ -4156,6 +4164,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=174"></script>
+<script src="manual.js?v=175"></script>
 </body>
 </html>
