@@ -3344,12 +3344,24 @@ function valeWa() {
   waAbrir('https://wa.me/' + tel + '?text=' + encodeURIComponent(_valeTxt));
 }
 let _mpPoll = null;
+// ¿Hay un cobro integrado de este importe ya aprobado y sin factura (se cerró el ticket, se recargó la página)? Se ofrece tomarlo.
+// Devuelve true si quedó tomado en el renglón.
+async function mpSuelta(row, importe, qr, avisar) {
+  let lista = []; try { lista = (await sb.rpc('pos_mp_orden_suelta', { p_local: LOCAL, p_importe: importe, p_qr: !!qr })).data || []; } catch (e) {}
+  const usadas = [...document.querySelectorAll('#v-pagos .medio')].filter(r => r.dataset.mp).map(r => JSON.parse(r.dataset.mp).order_id);
+  const o = lista.find(x => !usadas.includes(x.order_id));
+  if (!o) { if (avisar) toast('No hay un cobro de ' + plata(importe) + ' aprobado y sin facturar en ' + LOCALES[LOCAL], 'error'); return false; }
+  if (!await confirmar('Hay un cobro de ' + plata(importe) + ' ' + (qr ? 'por QR' : 'del Point') + ' aprobado el ' + o.dia + ' a las ' + o.hora + ' que quedó sin facturar.\n\n¿Lo uso para este ticket? (Si decís que no, se cobra de nuevo.)')) return false;
+  const imp = row.querySelector('.imp'); row.dataset.mp = JSON.stringify({ order_id: o.order_id, payment_id: o.payment_id, metodo: o.metodo, cuotas: o.cuotas, importe }); imp.value = plata(importe);
+  toast('Cobro de ' + plata(importe) + ' tomado: ya podés emitir', 'success'); pRender(); return true;
+}
 async function mpCobrar(btn, qr) {
   const row = btn.closest('.medio'); const imp = row.querySelector('.imp'); const importe = r2(num(imp.value)); const pt = qr ? miQr() : miPoint();
   if (!pt) { cajaElegir(); return; }
   if (!qr && importe < 15) { toast('El Point cobra desde $ 15', 'error'); return; }
   if (qr && !(importe > 0)) { toast('Poné el importe a cobrar', 'error'); return; }
   btn.disabled = true;
+  if (await mpSuelta(row, importe, qr)) { btn.disabled = false; return; }
   let o;
   try { o = await mpLlamar(qr ? 'qr_cobrar' : 'cobrar', { terminal_id: pt.terminal_id, importe, descripcion: 'Claudia Adorno ' + (LOCALES[LOCAL] || '') }); }
   catch (e) { toast(e.message, 'error'); btn.disabled = false; return; }
@@ -4171,6 +4183,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=177"></script>
+<script src="manual.js?v=178"></script>
 </body>
 </html>
