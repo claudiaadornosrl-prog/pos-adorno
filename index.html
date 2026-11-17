@@ -3442,12 +3442,15 @@ async function caraOculta(probar, ms, vivo) {
     const cam = caraCam(video); let tarde = false;
     try { await Promise.race([Promise.all([caraLib(), cam]), _esp(20000).then(() => { tarde = true; throw new Error('tarda'); })]); }
     catch (e) { CARA.falla = 'cam'; CARA.err = tarde ? 'tarda' : String((e && e.name) || '') + (e && e.message ? ': ' + e.message : ''); try { console.warn('POS cámara:', CARA.err); } catch (x) {} if (tarde) cam.then(caraCamOff, () => {}); return null; }
-    const t0 = Date.now();
+    const t0 = Date.now(); let huboImg = false;
     while (Date.now() - t0 < ms && (!vivo || vivo())) {
-      let d = null; try { d = await caraLeer(video); } catch (e) {}
-      if (d) { const dd = Array.from(d); const r = await probar(dd); if (r) { CARA.ult = { d: dd, at: Date.now() }; return r; } }
+      if (video.readyState < 2 || !video.videoWidth) { await _esp(200); continue; }   // todavía sin imagen
+      huboImg = true;
+      let d = null; try { d = await Promise.race([caraLeer(video), _esp(2500).then(() => null)]); } catch (e) {}
+      if (d) { const dd = Array.from(d); const r = await Promise.race([probar(dd), _esp(6000).then(() => null)]); if (r) { CARA.ult = { d: dd, at: Date.now() }; return r; } }
       await _esp(200);
     }
+    if (!huboImg) { CARA.falla = 'cam'; CARA.err = 'NotReadableError: la cámara abrió pero no dio imagen'; try { console.warn('POS cámara:', CARA.err); } catch (x) {} return null; }
     CARA.falla = 'nadie'; return null;
   } finally { caraCamOff(); video.remove(); caraPast(''); }
 }
@@ -4168,6 +4171,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=176"></script>
+<script src="manual.js?v=177"></script>
 </body>
 </html>
