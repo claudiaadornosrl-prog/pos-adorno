@@ -3476,16 +3476,20 @@ function quienEmite(probar, titulo, at) {
     const marca = (zona, id) => document.querySelectorAll('#' + zona + ' .pil').forEach(b => b.classList.toggle('on', Number(b.dataset.id) === id));
     const listo = () => { if (em && atId !== undefined) setTimeout(() => cerrar({ ...em, atendio: atId }), 250); };
     const emite = v => { if (!at) { cerrar(v); return; } em = v; marca('qe-em', v.id); listo(); };
-    window._qeElegir = id => emite({ id, modo: 'manual' }); window._qeCancelar = () => cerrar(null);
+    // (17-nov, caras que aprenden) la última lectura de la cámara se guarda como toma extra de la persona confirmada:
+    // la que reconoció la cámara, o la que eligió su nombre después de que la cámara la leyó (la base chequea que se parezca).
+    let ultimaLectura = null;
+    const aprender = (id, d) => { if (!id || !d) return; sb.rpc('pos_cara_aprender', { p_local: LOCAL, p_empleado_id: id, p_descriptor: d }).catch(() => {}); };
+    window._qeElegir = id => { aprender(id, ultimaLectura); emite({ id, modo: 'manual' }); }; window._qeCancelar = () => cerrar(null);
     window._qaPick = id => { atId = id; marca('qe-at', id); listo(); };
     const eq = await caraEquipo(); const conCara = eq.filter(e => e.cara); const apagado = eq.some(e => e.caras_activas === false);
     const delLocal = eq.filter(e => e.local === LOCAL); if (at && !delLocal.length) atId = null;
     let pre = null, leyo = false;
     if (!apagado && conCara.length) {
       leyo = true; let ult = null, seg = 0;
-      const r = await caraOculta(async d => { let m = null; try { m = (await sb.rpc('pos_cara_identificar', { p_local: LOCAL, p_descriptor: d })).data; } catch (e) {}
+      const r = await caraOculta(async d => { ultimaLectura = d; let m = null; try { m = (await sb.rpc('pos_cara_identificar', { p_local: LOCAL, p_descriptor: d })).data; } catch (e) {}
         if (!m) { seg = 0; return null; } seg = ult === m.empleado_id ? seg + 1 : 1; ult = m.empleado_id; return seg >= 2 ? { m, d } : null; }, 7000);
-      if (r) { pre = { id: r.m.empleado_id, modo: 'cara', desc: r.d, nombre: r.m.nombre }; toast((titulo || probar ? 'Sos ' : 'Emite ') + pila(r.m.nombre), 'success');
+      if (r) { pre = { id: r.m.empleado_id, modo: 'cara', desc: r.d, nombre: r.m.nombre }; aprender(pre.id, r.d); toast((titulo || probar ? 'Sos ' : 'Emite ') + pila(r.m.nombre), 'success');
         if (!at || atId === null) { const v = { id: pre.id, modo: 'cara', desc: pre.desc }; cerrar(at ? { ...v, atendio: null } : v); return; } }
     }
     modal(`<div class="m-head"><h3>${titulo || (at ? '¿Quién emite y quién atendió?' : '¿Quién emite?')}</h3><span class="spacer"></span><button class="btn ico" onclick="_qeCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
