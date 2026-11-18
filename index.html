@@ -605,7 +605,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 .sena-pils { display: flex; flex-direction: column; gap: 10px; align-items: stretch; max-width: 760px; } .sena-pil { background: #eff6ff; border-color: #93c5fd; color: #1e3a8a; } .sena-pil .n { font-size: 30px; white-space: nowrap; } .sena-pil .t .mini { color: #334155; } .sena-pil .btn { border-radius: 999px; } .sena-pils-pie { display: flex; justify-content: center; } .sena-pils-pie .btn { border-radius: 999px; background: #fff; }
 @media (max-width: 620px) { .sena-pil { border-radius: 30px; padding: 14px 16px; justify-content: center; text-align: center; } .sena-pil .t { min-width: 100%; align-items: center; } }
 .pd-conf { background: #fff; border-radius: 28px; padding: 18px 22px 16px; box-shadow: 0 12px 40px rgba(15,23,42,.28); width: 680px; max-width: 94vw; max-height: 90vh; overflow: auto; box-sizing: border-box; }
-.pd-c-cab { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; } .pd-c-cab h3 { margin: 0; flex: 1; font-size: 20px; font-weight: 600; color: #075985; }
+.pd-c-cab { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; } .pd-c-cab h3 { margin: 0; flex: 1; font-size: 20px; font-weight: 600; color: #075985; }
 .pd-c-ver { background: #e0f2fe; border: 1px solid #7dd3fc; color: #075985; border-radius: 999px; padding: 3px 12px; font-size: 13px; font-weight: 600; white-space: nowrap; }
 .pd-c-tabla { border: 1px solid #e2e8f0; border-radius: 18px; overflow: hidden; } .pd-c-tabla table.pd-items { margin: 0; box-shadow: none; } .pd-c-tabla thead th { background: #f1f5f9; }
 .pd-conf .pd-nota-box { margin: 12px 0 8px; } .pd-c-mail { font-size: 13px; color: var(--muted); }
@@ -1948,7 +1948,6 @@ function pdModal() {
   const mailPara = fg ? (pedPrueba() ? (PRUEBA && PRUEBA.mail || '') + ' (prueba: no sale al proveedor)' : PARAMS_PED[PD_PAR[g.destino] + '_mail'] || '') : (pedPrueba() ? (PRUEBA && PRUEBA.mail || '') + ' (prueba)' : PARAMS_PED.of_mail || '');
   const copia = fg && !pedPrueba() ? pdCopia(g.destino) : '';
   modal(`<div class="pd-conf"><div class="pd-c-cab"><h3>Pedido a ${esc(PD_CORTO[g.destino] || PD_NOM[g.destino])} · ${esc(LOCALES[LOCAL])}${PD.cola.length > 1 ? ' <span class="mini">(1 de ' + PD.cola.length + ')</span>' : ''}</h3><span class="pd-c-ver" title="Si después se descuenta algo, sale la versión 2 con el pedido completo actualizado">Versión 1</span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="pils" style="margin:0 0 12px"><button class="pil ${g.destino === 'familia_garcia' ? 'on' : ''}" onclick="pdDestino('familia_garcia')">A Familia García</button><button class="pil ${g.destino === 'espalma' ? 'on' : ''}" onclick="pdDestino('espalma')">A Espalma</button><button class="pil ${g.destino === 'oficina' ? 'on' : ''}" onclick="pdDestino('oficina')">A Oficina</button></div>
     <div class="pd-c-tabla"><table class="pd-items pd-t"><thead><tr><th>Artículo</th>${fg ? '' : '<th class="num">Administración</th>'}<th class="num">Cant.</th><th></th></tr></thead><tbody>${g.items.map((it, i) => `<tr><td>${it.libre ? '<span class="chip gray">fuera de lista</span> <b>' + esc(it.descripcion) + '</b>' : '<b>' + esc(it.sku) + '</b> <span class="mini">' + esc(it.descripcion || '') + '</span>'}</td>${fg ? '' : '<td class="num mini">' + (it.libre ? '' : it.deposito) + '</td>'}<td class="num"><input value="${it.cantidad}" inputmode="numeric" onchange="PD.cola[0].items[${i}].cantidad=Math.max(0,Math.round(num(this.value)))"></td><td><button class="btn ico chico" onclick="PD.cola[0].items.splice(${i},1);pdModal()" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('')}</tbody></table></div>
     <div class="cli-sin pd-nota-box">${_i('edit')}<input id="pd-nota" placeholder="${fg ? 'Nota para el proveedor: entrega, horario… (opcional)' : 'Nota para Oficina (opcional)'}" value="${esc(g.nota || '')}"></div>
     <div class="pd-c-mail">${mailPara ? (fg ? 'El mail va a ' : 'Le llega al depósito: aviso al celular y mail a ') + esc(mailPara) + (copia ? ' con copia a ' + esc(copia) : '') + '.' : (fg ? 'No hay mail configurado para este destino (Ajustes): no se manda mail.' : 'Le llega al depósito con aviso al celular.')}</div>
@@ -4277,6 +4276,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=189"></script>
+<script src="manual.js?v=190"></script>
 </body>
 </html>
