@@ -21,7 +21,9 @@
    window.ADORNO_ACCIONES = [{nombre, descripcion, parametros (JSON schema), disponible(), preparar(p), confirmar(p)}], Clodi puede
    PREPARAR una de esas acciones (completa el formulario del módulo) y la persona la manda con el botón Enviar, que corre la
    función del propio módulo con su sesión. Nada se envía sin ese clic. Voz: elige la más parecida a Claudia (mujer, es-AR) o la
-   que la persona elija en el panel; opción de leer siempre las respuestas. */
+   que la persona elija en el panel; opción de leer siempre las respuestas.
+   (18-nov-2026, POS) Una acción que solo CONSULTA (por ejemplo buscar comprobantes) devuelve desde preparar() { ok: true, listo: true, resumen }:
+   Clodi muestra lo que encontró como respuesta, sin tarjeta ni botón Enviar (no hay nada que mandar). */
 window.ADORNO_ASISTENTE = (function () {
   const URL = 'https://jfwtiagteuwmyvblgwms.supabase.co';
   const KEY = 'sb_publishable_udSPma98Sw9eskeeLCgdCw_S2vIX0Fk';
@@ -294,6 +296,7 @@ window.ADORNO_ASISTENTE = (function () {
     if (!def) { log('err', 'Eso no lo puedo preparar en esta pantalla.'); return; }
     let r; try { r = await def.preparar(acc.parametros || {}); } catch (e) { r = { ok: false, error: e.message || String(e) }; }
     if (!r || !r.ok) { log('err', 'No pude prepararlo: ' + ((r && r.error) || 'error desconocido')); return; }
+    if (r.listo) { log('a', { respuesta: r.resumen || 'Listo.' }); if (porVoz || siempreVoz()) leer(r.resumen || ''); return; }   // solo consulta: no hay nada que enviar
     const l = panel.querySelector('.asist-log'), card = document.createElement('div');
     card.className = 'asist-card';
     card.innerHTML = `<div>Te lo dejé preparado: <b>${esc(r.resumen || '')}</b>.<br>Revisalo y, si está bien, tocá <b>Enviar</b>.</div><div class="asist-bts"><button class="asist-bt si">Enviar</button><button class="asist-bt no">Cancelar</button></div>`;
@@ -823,7 +826,7 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
         <label>Desde <input type="date" id="c-desde" onchange="cargarComprobantes()"></label>
         <label>Hasta <input type="date" id="c-hasta" onchange="cargarComprobantes()"></label>
         <label>Tipo <select id="c-tipo" onchange="cargarComprobantes()"><option value="">Todos</option><option value="FC">Facturas</option><option value="NC">Notas de crédito</option><option value="MA">Facturas manuales</option><option value="PR">Presupuestos</option><option value="RE">Remitos</option></select></label>
-        <label>Buscar <input id="c-q" placeholder="cliente, número, SKU" oninput="cDebounce()"></label>
+        <label>Buscar <input id="c-q" placeholder="lo que sea: cliente, artículo, pago, importe…" oninput="cDebounce()"></label>
         <span class="stat" id="c-stat"></span>
       </div>
       <div id="c-lista"></div>
@@ -832,7 +835,7 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
       <div class="filters" id="rm-filtros">
         <button class="btn primary" id="rm-nuevo" onclick="rmNuevo()" title="Nuevo remito"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Remito</button>
         <span class="pils"><button class="pil on" data-f="tr" onclick="rmFiltro('tr')">En tránsito<span class="badge" id="rm-tr-n" style="display:none"></span></button><button class="pil" data-f="ac" onclick="rmFiltro('ac')" title="Traslados que el destino ya aceptó (entraron al stock)">Aceptados</button><span class="pil-sep"></span><button class="btn primary" id="rm-mov-nuevo" onclick="movNuevo()" title="Movimiento manual de stock: entrada, baja o ajuste. Desde el usuario del local pide la autorización de la encargada."><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Movimiento</button><button class="pil" data-f="mov" onclick="rmFiltro('mov')" title="Entradas, bajas y ajustes de stock hechos a mano (solo encargada)">Movimientos</button></span>
-        <label>Buscar <input id="rm-q" placeholder="cliente, número, dirección" oninput="rmDebounce()"></label>
+        <label>Buscar <input id="rm-q" placeholder="lo que sea: cliente, artículo, dirección, número…" oninput="rmDebounce()"></label>
         <span class="stat" id="rm-stat"></span>
       </div>
       <div id="rm-lista"></div>
@@ -1545,19 +1548,19 @@ async function cargarRemitos() {
   qq = RM.filtro === 'pend' ? qq.eq('local', LOCAL) : qq.or(`local.eq.${LOCAL},destino_local.eq.${LOCAL}`);
   if (RM.filtro === 'pend') qq = qq.is('facturado_en', null).is('destino_local', null).eq('estado', 'emitido');
   const { data, error } = await qq; if (error) { toast(error.message, 'error'); return; }
-  const q = document.getElementById('rm-q').value.trim().toUpperCase();
-  let lista = data || []; if (q) lista = lista.filter(c => (c.cliente_nombre + ' ' + c.numero + ' ' + (c.entrega_dir || '') + ' ' + (c.cliente_doc || '') + ' ' + (c.vendedora_nombre || '')).toUpperCase().includes(q));
+  const q = document.getElementById('rm-q').value.trim();
+  let lista = data || []; if (q) { await cIndice(lista); lista = lista.filter(c => coincide(q, cTexto(c) + ' ' + (c.fact ? 'factura ' + fmtNum(c.fact.punto_venta, c.fact.numero) : ''), cMontos(c))); }
   const puedeAnular = true;   // el genérico ve todo; anular pide autorización
   document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' remito' : ' remitos') + (RM.filtro === 'pend' ? ' sin facturar' : '');
   document.getElementById('rm-lista').innerHTML = lista.length ? `<table><thead><tr><th>Remito</th><th>Cliente</th><th>Entrega</th><th>Vendedora</th><th class="num">Referencia</th><th>Estado</th><th></th></tr></thead><tbody>` +
     lista.map(c => `<tr class="${c.estado === 'anulado' ? 'dim' : ''}">
-      <td><b>${fmtNum(c.punto_venta, c.numero)}</b><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)}</div></td>
+      <td><a href="#" onclick="verComprobante(${c.id});return false" title="Abrir el remito para verlo o imprimirlo"><b>${fmtNum(c.punto_venta, c.numero)}</b></a><div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)}</div></td>
       <td>${esc(c.cliente_nombre)}<div class="mini">${c.cliente_doc ? (c.cliente_doc_tipo || '') + ' ' + c.cliente_doc : ''}${c.cliente_tel ? ' · ' + esc(c.cliente_tel) : ''}</div></td>
       <td class="mini">${c.destino_local ? '<span class="chip viol">Traslado → ' + esc(LOCALES[c.destino_local]) + '</span>' : esc(c.entrega_dir || '')}${c.entrega_nota ? '<div>' + esc(c.entrega_nota) + '</div>' : ''}</td>
       <td class="mini">${esc(c.vendedora_nombre || '')}${c.atendio_nombre && c.atendio_nombre !== c.vendedora_nombre ? '<div>atendió ' + esc(pila(c.atendio_nombre)) + '</div>' : ''}${c.autorizado_por && c.autorizado_modo !== 'propia' ? '<div>autorizó ' + esc(pila(c.autorizado_por)) + ' <span class="chip green">' + c.autorizado_modo + '</span></div>' : ''}</td>
       <td class="num"><b>${plata(c.total)}</b></td>
       <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.destino_local ? trChip(c) : c.fact ? `<span class="chip green">Facturado</span> <a href="#" class="mini" onclick="verComprobante(${c.facturado_en});return false">${TIPO_NOM[c.fact.tipo]} ${c.fact.letra} ${fmtNum(c.fact.punto_venta, c.fact.numero)}</a>` : '<span class="chip amber">Sin facturar</span>'}</td>
-      <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver / imprimir" aria-label="Ver">${_i('ver')}</button><button class="btn ico" onclick="etDesdeRemito(${c.id})" title="Imprimir las etiquetas de la mercadería de este remito" aria-label="Etiquetas">${_i('print')}</button>
+      <td class="acc"><button class="btn ico" onclick="etDesdeRemito(${c.id})" title="Imprimir las etiquetas de la mercadería de este remito" aria-label="Etiquetas">${_i('print')}</button>
         ${c.estado === 'emitido' && !c.facturado_en && !c.destino_local ? `<button class="btn ico" onclick="rmFacturar(${c.id})" title="Facturar este remito" aria-label="Facturar">${_i('cobrar')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && !c.facturado_en && (!c.destino_local || c.transito_estado === 'en_transito') ? `<button class="btn ico peligro" onclick="anular(${c.id}).then(cargarRemitos)" title="Anular (la mercadería vuelve al stock)" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : `<div class="empty">No hay remitos${RM.filtro === 'pend' ? ' sin facturar' : ''} en ${esc(LOCALES[LOCAL])}.</div>`;
@@ -1655,17 +1658,17 @@ async function cargarTransito(aceptados) {
     const { data: sd } = await sb.from('pos_comprobantes').select('*').eq('tipo', 'RE').is('destino_local', null).eq('local', LOCAL).eq('estado', 'emitido').order('id', { ascending: false }).limit(200);
     lista = lista.concat(sd || []).sort((a, b) => b.id - a.id); }
   if (lista.length) { const { data: dd } = await sb.from('pos_comprobantes_det').select('comprobante_id,sku,descripcion,cantidad,cantidad_recibida').in('comprobante_id', lista.map(c => c.id)).order('nro_item'); (dd || []).forEach(d => { (dets[d.comprobante_id] = dets[d.comprobante_id] || []).push(d); }); }
-  const q = document.getElementById('rm-q').value.trim().toUpperCase();
-  const vis = q ? lista.filter(c => (remNum(c) + ' ' + trNum(c) + ' ' + c.numero + ' ' + (c.entrega_nota || '') + ' ' + (dets[c.id] || []).map(d => d.sku + ' ' + d.descripcion).join(' ') + ' ' + (c.vendedora_nombre || '')).toUpperCase().includes(q)) : lista;
+  const q = document.getElementById('rm-q').value.trim();
+  const vis = q ? lista.filter(c => coincide(q, cTexto(c) + ' ' + remNum(c) + ' ' + trNum(c) + ' ' + (dets[c.id] || []).map(d => d.sku + ' ' + d.descripcion).join(' '), [Number(c.total)].concat((dets[c.id] || []).map(d => Number(d.cantidad))))) : lista;
   const puedeAnular = true;
   document.getElementById('rm-stat').textContent = vis.length + (aceptados ? (vis.length === 1 ? ' aceptado' : ' aceptados') : ' en tránsito');
   document.getElementById('rm-lista').innerHTML = vis.length ? `<table><thead><tr><th>Remito</th><th>Trayecto</th><th>Mercadería</th><th>Estado</th><th></th></tr></thead><tbody>` +
     vis.map(c => `<tr class="tr-fila ${c.estado === 'anulado' ? 'dim' : ''}" onclick="if(!event.target.closest('button,a,input'))trAbrir(${c.id})" title="Tocá para ver la mercadería">
-      <td><b>${esc(remNum(c))}</b>${c.destino_local ? `<div class="mini">Tránsito <b>${trNum(c)}</b></div>` : ''}<div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(pila(c.vendedora_nombre))}</div></td>
+      <td><a href="#" onclick="verComprobante(${c.id});return false" title="Abrir el remito para verlo o imprimirlo (tocando el resto del renglón se ve la mercadería)"><b>${esc(remNum(c))}</b></a>${c.destino_local ? `<div class="mini">Tránsito <b>${trNum(c)}</b></div>` : ''}<div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(pila(c.vendedora_nombre))}</div></td>
       <td>${c.local === LOCAL ? '<b>' + esc(LOCALES[c.local]) + '</b>' : esc(LOCALES[c.local])} → ${!c.destino_local ? esc(tit(c.cliente_interno || c.cliente_nombre || '') || c.entrega_dir || 'sin destino cargado') : c.destino_local === LOCAL ? '<b>' + esc(LOCALES[c.destino_local]) + '</b>' : esc(LOCALES[c.destino_local])}${c.transito_estado === 'rechazado' ? '<div class="mini" style="color:#b45309">↩ rechazado: vuelve a ' + esc(LOCALES[c.local]) + '</div>' : ''}${c.dif_estado === 'pendiente' ? '<div class="mini" style="color:#b45309">' + (difN(dets[c.id]).falta ? '↩ lo que faltó vuelve a ' + esc(LOCALES[c.local]) : '') + (difN(dets[c.id]).falta && difN(dets[c.id]).sobra ? ' · ' : '') + (difN(dets[c.id]).sobra ? '⚠ llegó de más' : '') + '</div>' : ''}</td>
       <td class="mini">${(dets[c.id] || []).map(d => Number(d.cantidad) + ' × ' + esc(d.sku) + (d.cantidad_recibida != null && Number(d.cantidad_recibida) !== Number(d.cantidad) ? ' <span class="chip red">llegaron ' + Number(d.cantidad_recibida) + '</span>' : '')).join(' · ')}${c.entrega_nota ? '<div>«' + esc(c.entrega_nota) + '»</div>' : ''}</td>
       <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : trChip(c)}</td>
-      <td class="acc"><button class="btn ico" onclick="verComprobante(${c.id})" title="Ver el remito (desde ahí se imprime)" aria-label="Ver">${_i('ver')}</button>
+      <td class="acc">
         ${c.destino_local === LOCAL && c.estado === 'emitido' && c.transito_estado === 'en_transito' ? `<button class="btn primary chico" onclick="trConfirmar(${c.id})" title="Llegó todo: entra al stock">Aceptar</button><button class="btn peligro chico" onclick="trRechazar(${c.id})" title="No entra: queda en tránsito de vuelta al local que la mandó">Rechazar</button>` : ''}
         ${(c.local === LOCAL || PERFIL.es_admin) && c.estado === 'emitido' && c.transito_estado === 'rechazado' ? `<button class="btn primary chico" onclick="trDevAceptar(${c.id})" title="La mercadería rechazada volvió: entra al stock de ${esc(LOCALES[c.local])}">Aceptar la vuelta</button>` : ''}
         ${!c.destino_local && c.estado === 'emitido' && !c.facturado_en && c.local === LOCAL ? `<button class="btn ico" onclick="rmFacturar(${c.id})" title="Facturar este remito" aria-label="Facturar">${_i('cobrar')}</button>` : ''}
@@ -3369,6 +3372,30 @@ window.ADORNO_ACCIONES = [{
     return { ok: true, resumen: 'Gift card de ' + plata(imp) + (T.gift.para ? ' para ' + T.gift.para : '') + (T.gift.de_parte ? ' · de parte de ' + T.gift.de_parte : '') + (T.gift.contacto ? ' · se manda a ' + T.gift.contacto : '') + cliTxt + '. Falta revisar' + (T.cliente ? '' : ', cargar el cliente') + ' y poner la forma de pago.' };
   },
   confirmar: async () => { if (!T.gift) return { ok: false, error: 'no hay una gift card en el ticket' }; emitirTicket(); return { ok: true, mensaje: 'Le di a Emitir: seguí en la pantalla, que te pide el cliente y quién emite.' }; }
+}, {
+  // (JP 18-nov) Clodi también busca comprobantes: llena el buscador de Comprobantes, busca y dice qué encontró (no manda nada)
+  nombre: 'buscar_comprobantes',
+  get descripcion() { return 'Busca comprobantes del local (facturas, notas de crédito, presupuestos, remitos, comprobantes X) en la pestaña Comprobantes y dice cuáles encontró. Busca por cualquier cosa: cliente, DNI o CUIT, número, artículo (código o descripción), forma de pago (efectivo, Point, QR, transferencia, link, vale, dólares), referencia del pago, vendedora, importe, CAE. Usar cuando preguntan "buscame / encontrame / ¿dónde está la factura de…?", "¿a quién le vendimos tal artículo?", "la venta de 45000 con Point de ayer", "las notas de crédito de María". Las fechas van como AAAA-MM-DD; hoy es ' + new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10) + '. Si no dicen fechas, buscar en todo (desde y hasta vacíos). En texto van solo las palabras que identifican (no "factura", "venta" ni "buscame").'; },
+  parametros: { type: 'object', properties: {
+    texto: { type: 'string', description: 'Palabras a buscar (tienen que aparecer todas): nombre del cliente, código o descripción del artículo, forma de pago, importe en números, número de comprobante, etc.' },
+    desde: { type: 'string', description: 'Fecha desde, AAAA-MM-DD, si la dijeron' },
+    hasta: { type: 'string', description: 'Fecha hasta, AAAA-MM-DD, si la dijeron' },
+    tipo: { type: 'string', enum: ['factura', 'nota_credito', 'presupuesto', 'remito', 'manual'], description: 'Solo ese tipo de comprobante, si lo dijeron' } } },
+  disponible: () => typeof cargarComprobantes === 'function' && !!document.getElementById('c-q'),
+  preparar: async (p) => {
+    const f = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : '';
+    switchTab('comprobantes');
+    document.getElementById('c-desde').value = f(p.desde); document.getElementById('c-hasta').value = f(p.hasta);
+    document.getElementById('c-tipo').value = { factura: 'FC', nota_credito: 'NC', presupuesto: 'PR', remito: 'RE', manual: 'MA' }[p.tipo] || '';
+    document.getElementById('c-q').value = String(p.texto || '').trim();
+    await cargarComprobantes();
+    const L = window._cVis || [], d1 = f(p.desde), d2 = f(p.hasta), rango = d1 && d2 ? ' entre el ' + fechaAR(d1) + ' y el ' + fechaAR(d2) : d1 ? ' desde el ' + fechaAR(d1) : d2 ? ' hasta el ' + fechaAR(d2) : '';
+    const qué = (p.texto ? '«' + String(p.texto).trim() + '»' : 'comprobantes') + rango;
+    if (!L.length) return { ok: true, listo: true, resumen: 'No encontré nada con ' + qué + '. Probá con menos palabras o con otras fechas.' };
+    const uno = c => TIPO_NOM[c.tipo] + (c.tipo === 'RE' ? '' : ' ' + c.letra) + ' ' + fmtNum(c.punto_venta, c.numero) + ' del ' + fechaAR(c.fecha) + ' · ' + (c.cliente_nombre || 'sin cliente') + ' · ' + (c.signo < 0 ? '- ' : '') + plata(c.total) + (c.estado === 'anulado' ? ' (anulado)' : '');
+    return { ok: true, listo: true, resumen: 'Encontré ' + (L.length === 1 ? 'uno' : L.length) + ' con ' + qué + ': ' + L.slice(0, 5).map(uno).join(' | ') + (L.length > 5 ? ' | y ' + (L.length - 5) + ' más' : '') + '. Quedaron en la lista de Comprobantes: tocá el número para abrirlo.' };
+  },
+  confirmar: async () => ({ ok: true, mensaje: 'Están en la lista de Comprobantes.' })
 }];
 // ═══ Cobros por Mercado Pago que no pasan por el Point integrado (JP 10-nov) ═══
 // Transferencia, Point y QR «No integrado» y link de pago: antes de emitir se busca el cobro en la cuenta de Mercado Pago
@@ -4113,6 +4140,28 @@ async function cargarRangos() {
 async function setRango(email, rol) { const { error } = await sb.rpc('pos_set_rango', { p_email: email, p_rol: rol }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); cargarRangos(); return; } toast('Rango guardado', 'success'); }
 
 // ═══ Comprobantes ══════════════════════════════════════════════════════
+// (JP 18-nov) se busca por cualquier cosa: cada palabra tiene que aparecer (sin importar tildes ni mayúsculas); un número también
+// coincide con un importe (total, un pago o un artículo): «45000», «45.000» o «$45.000»
+const _sinTilde = s => String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+function coincide(q, texto, montos) {
+  const T = _sinTilde(texto), M = (montos || []).map(x => Math.round(Number(x))).filter(x => !isNaN(x));
+  return _sinTilde(q).split(/\s+/).filter(Boolean).every(w => {
+    if (/^\$?[\d.,]+$/.test(w)) { const n = Math.round(Number(w.replace(/\$/g, '').replace(/\./g, '').replace(',', '.'))); if (!isNaN(n) && M.includes(n)) return true; }
+    const v = w.replace(/^\$/, ''); return T.includes(v) || (v.length > 3 && /S$/.test(v) && T.includes(v.replace(/E?S$/, '')));   // plurales: «velas» encuentra VELA
+  });
+}
+const CIDX = {};   // por comprobante: el texto de los artículos y los pagos, y los importes (se pide una sola vez)
+async function cIndice(lista) {
+  const faltan = lista.map(c => c.id).filter(id => !CIDX[id]);
+  for (let i = 0; i < faltan.length; i += 250) {
+    const { data, error } = await sb.rpc('pos_comprobantes_buscador', { p_ids: faltan.slice(i, i + 250) }); if (error) { toast(error.message, 'error'); return; }
+    (data || []).forEach(r => { CIDX[r.id] = { t: r.texto || '', m: r.montos || [] }; });
+  }
+}
+function cTexto(c) { const x = CIDX[c.id] || {};
+  return [TIPO_NOM[c.tipo], c.tipo === 'RE' ? 'remito' : c.letra, fmtNum(c.punto_venta, c.numero), c.numero, c.cliente_nombre, c.cliente_interno, c.cliente_doc, c.cliente_tel, c.vendedora_nombre, c.atendio_nombre, c.autorizado_por,
+    c.estado, c.anulado_motivo, c.cae, c.obs, c.entrega_dir, c.entrega_nota, c.transporte, c.es_sena ? 'seña sena' : '', c.gift_codigos, c.local_venta ? LOCALES[c.local_venta] : '', c.destino_local ? 'traslado ' + LOCALES[c.destino_local] : '', plata(c.total), x.t].filter(v => v != null && v !== '').join(' '); }
+const cMontos = c => [Number(c.total)].concat((CIDX[c.id] || {}).m || []);
 let _cT; function cDebounce() { clearTimeout(_cT); _cT = setTimeout(cargarComprobantes, 600); }
 let COMPS = [];
 async function cargarComprobantes() {
@@ -4123,7 +4172,8 @@ async function cargarComprobantes() {
   const { data, error } = await qry; if (error) { toast(error.message, 'error'); return; }
   COMPS = data || [];
   let lista = COMPS;
-  if (q) { const Q = q.toUpperCase(); lista = COMPS.filter(c => (c.cliente_nombre + ' ' + (c.cliente_interno || '') + ' ' + c.numero + ' ' + (c.cliente_doc || '') + ' ' + (c.vendedora_nombre || '')).toUpperCase().includes(Q)); }
+  if (q) { await cIndice(COMPS); lista = COMPS.filter(c => coincide(q, cTexto(c), cMontos(c))); }
+  window._cVis = lista;
   const puedeAnular = true;   // el genérico ve todo; anular pide autorización
   document.getElementById('c-stat').textContent = lista.length + ' comprobantes · ' + plata(lista.filter(c => c.estado === 'emitido').reduce((s, c) => s + c.signo * Number(c.total), 0)) + (COMPS.length >= 500 ? ' · se muestran los 500 más nuevos: acotá las fechas para ver los anteriores' : '');
   document.getElementById('c-lista').innerHTML = lista.length ? `<table><thead><tr><th>Comprobante</th><th>Fecha</th><th>Cliente</th><th>Vendedora</th><th class="num">Total</th><th>Estado</th><th></th></tr></thead><tbody>` +
@@ -4415,6 +4465,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=202"></script>
+<script src="manual.js?v=203"></script>
 </body>
 </html>
