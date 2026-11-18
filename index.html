@@ -533,7 +533,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 /* estilo C: líneas de color entre secciones y fondo alternado */
 .prv.pr-vc .pr-blk { padding: 14px 6px 14px; border-top: 3px solid var(--ac); } .prv.pr-vc .pr-blk.b1 { border-top: 0; padding-top: 2px; } .prv.pr-vc .pr-blk:nth-child(even) { background: linear-gradient(180deg, var(--acs), rgba(255,255,255,0) 80%); }
 .prv #pr-res { display: flex; gap: 8px; align-items: flex-start; flex-wrap: nowrap; } .prv #pr-res > span { display: block; }
-.pr-ayuda { margin: 2px 0 6px; } .pr-ayuda.apag { opacity: .4; } .pr-sep { border-top: 1px dashed #cbd5e1; margin: 8px 0 4px; }
+.pr-ayuda { margin: 2px 0 6px; } .pr-lb small { display: block; font-size: 10.5px; color: #94a3b8; line-height: 1.1; } .pr-ayuda.apag { opacity: .4; } .pr-sep { border-top: 1px dashed #cbd5e1; margin: 8px 0 4px; }
 .pr-cnt { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-left: 10px; font-size: 13px; } .pr-cnt .ok { color: #15803d; } .pr-cnt .no { color: #b91c1c; } .pr-cnt .ej { color: #64748b; font-size: 12px; }
 .pr-sec { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; margin: 6px 0; } .pr-sec.apag { opacity: .4; pointer-events: none; }
 .pr-lb { font-size: 13px; color: #475569; min-width: 82px; } .pr-in { border: 1.5px solid #cbd5e1; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; background: #fff; box-sizing: border-box; } .pr-in.num { text-align: center; padding: 6px 8px; } .pr-in.chico { width: 190px; padding: 4px 12px; font-size: 13px; }
@@ -544,7 +544,9 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .pr-rap { display: inline-flex; gap: 6px; margin-left: 8px; flex-wrap: wrap; }
 .pr-alc { background: #f8fafc; border-radius: 22px; padding: 6px 16px; }
 .pr-chip { display: inline-flex; align-items: center; gap: 4px; background: #e0f2fe; color: #075985; border-radius: 999px; padding: 3px 4px 3px 11px; font-size: 13px; } .pr-chip button { background: none; border: 0; cursor: pointer; color: #0369a1; font-size: 15px; line-height: 1; padding: 0 5px; border-radius: 999px; } .pr-chip button:hover { background: #bae6fd; }
-.pr-sk { position: relative; display: inline-block; } .pr-sug { position: absolute; left: 0; top: 100%; z-index: 5; background: #fff; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.18); min-width: 320px; overflow: hidden; } .pr-sug:empty { display: none; } .pr-sug button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer; } .pr-sug button:hover { background: #f0f9ff; } .pr-sug .mini { display: block; padding: 8px 14px; }
+.pr-sk { position: relative; display: inline-block; } .pr-sug { position: absolute; left: 0; top: 100%; z-index: 5; background: #fff; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.18); min-width: 320px; max-height: 300px; overflow-y: auto; overscroll-behavior: contain; }
+.pr-sug button .n { float: right; margin-left: 14px; color: #94a3b8; font-size: 12px; } .pr-sug button.act { background: #e0f2fe; } .pr-sug-h { display: block; padding: 7px 14px 3px; font-size: 11.5px; color: #15803d; font-weight: 600; }
+.pr-chip.fuera, .pil.fuera { opacity: .55; text-decoration: line-through; } .pr-sug:empty { display: none; } .pr-sug button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer; } .pr-sug button:hover { background: #f0f9ff; } .pr-sug .mini { display: block; padding: 8px 14px; }
 .pr-sw { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
 .pr-hist { margin-top: 14px; font-size: 12.5px; color: #64748b; display: flex; flex-direction: column; gap: 2px; }
 @media (max-width: 700px) { .pr-lb { min-width: 0; width: 100%; } .prv .sub { flex-wrap: wrap; } }
@@ -1350,10 +1352,20 @@ function prQue(p) { const a = p.params || {};
     case 'medio': return `${prPct(a.pct)} pagando con ${(a.medios || []).filter(m => !m.endsWith('_ni')).map(prMedioNom).join(' o ') || '…'}`;
   } return p.tipo; }
 // (JP 18-nov) variables para elegir a qué artículos va una promo: se combinan (tienen que cumplirse todas); dentro de una variable alcanza con una
-const PR_VARS = [{ k: 'grupos', lb: 'Grupo', pil: true }, { k: 'categorias', lb: 'Categoría' }, { k: 'clasificaciones', lb: 'Clasificación' }, { k: 'proveedores', lb: 'Proveedor' },
+// (JP 18-nov) los niveles van de lo general a lo particular: Nivel 1 = grupo, Nivel 2 = categoría, Nivel 3 = clasificación
+const PR_VARS = [{ k: 'grupos', lb: 'Nivel 1', sub: 'grupo', pil: true }, { k: 'categorias', lb: 'Nivel 2', sub: 'categoría' }, { k: 'clasificaciones', lb: 'Nivel 3', sub: 'clasificación' }, { k: 'proveedores', lb: 'Proveedor' },
   { k: 'materiales', lb: 'Material' }, { k: 'origenes', lb: 'Origen' }, { k: 'temporadas', lb: 'Temporada', pil: true }, { k: 'lineas', lb: 'Línea', pil: true }, { k: 'textos', lb: 'La descripción dice', libre: true }];
 const PR_ALC_K = ['todo', ...PR_VARS.map(v => v.k), 'skus', 'excluir'];
 const prN = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+const PR_CI = { grupos: 0, categorias: 1, clasificaciones: 2, proveedores: 3, materiales: 4, origenes: 5, temporadas: 6, lineas: 7 };
+function prFaceta(c, k) {
+  const a = PR.f[c] || {}, out = new Map();
+  if (!(PR.combos || []).length || !(k in PR_CI)) { (PR.op[k] || []).forEach(v => out.set(v, null)); return out; }
+  const fil = Object.keys(PR_CI).filter(x => x !== k && (a[x] || []).length).map(x => [PR_CI[x], new Set(a[x])]);
+  for (const r of PR.combos) { const v = r[PR_CI[k]]; if (v == null || v === '') continue; if (fil.every(([i, st]) => st.has(r[i]))) out.set(v, (out.get(v) || 0) + Number(r[8] || 0)); }
+  return new Map([...out].sort((x, y) => String(x[0]).localeCompare(String(y[0]), 'es')));
+}
+const prFiltrando = (c, k) => Object.keys(PR_CI).some(x => x !== k && ((PR.f[c] || {})[x] || []).length);
 const prAlcVacio = a => !a || !Object.keys(a).some(k => k !== 'excluir' && (a[k] === true || (Array.isArray(a[k]) && a[k].length)));
 function prAlc(a, todoSiVacio) { a = a || {}; let s = '';
   if (a.todo || (todoSiVacio && prAlcVacio(a))) s = 'Todos los artículos';
@@ -1373,7 +1385,7 @@ const prLocs = p => (p.locales || []).length ? p.locales.map(l => LOCALES[l] || 
 async function cargarPromos() {
   const box = document.getElementById('pr-lista'); if (!PR.lista.length) box.innerHTML = '<div class="empty chico"><span class="spin"></span> Cargando…</div>';
   const { data, error } = await sb.rpc('pos_promo_datos'); if (error) { box.innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
-  PR.lista = data.promos || []; PR.op = Object.assign(PR.op, data.opciones || {}); PR.hist = data.hist || []; PR.hoy = data.hoy || hoyAR();
+  PR.lista = data.promos || []; PR.op = Object.assign(PR.op, data.opciones || {}); PR.hist = data.hist || []; PR.hoy = data.hoy || hoyAR(); PR.combos = data.combos || [];
   document.getElementById('pr-nueva').style.display = prPuede() ? '' : 'none';
   prRender();
 }
@@ -1461,16 +1473,19 @@ function prMedio(k) { const a = PR.f.params.medios = PR.f.params.medios || []; c
 // alcance: todo · las variables del catálogo (se combinan) · artículos sueltos (se suman) · menos estos
 function prAlcHTML(c) {
   const a = PR.f[c] = PR.f[c] || {}, todo = !!a.todo;
-  const chips = (k, xs) => xs.map(v => `<span class="pr-chip">${k === 'textos' ? '«' + esc(v) + '»' : esc(v)}<button type="button" data-c="${c}" data-k="${k}" data-v="${esc(v)}" onclick="prAlcQuitar(this)" aria-label="Sacar">×</button></span>`).join('');
+  const fac = {}; for (const v of PR_VARS) if (v.k in PR_CI) fac[v.k] = prFaceta(c, v.k);
+  const fuera = (k, v) => fac[k] && (PR.combos || []).length && !fac[k].has(v);
+  const chips = (k, xs) => xs.map(v => `<span class="pr-chip${fuera(k, v) ? ' fuera' : ''}"${fuera(k, v) ? ' title="No hay artículos con esto dentro de lo que elegiste en las otras variables"' : ''}>${k === 'textos' ? '«' + esc(v) + '»' : esc(v)}<button type="button" data-c="${c}" data-k="${k}" data-v="${esc(v)}" onclick="prAlcQuitar(this)" aria-label="Sacar">×</button></span>`).join('');
   const fila = v => { const xs = a[v.k] || [];
-    if (v.pil) return `<div class="pr-sec${todo ? ' apag' : ''}"><span class="pr-lb">${v.lb}</span>${(PR.op[v.k] || []).map(g => `<button type="button" class="pil chico${xs.includes(g) ? ' on' : ''}" data-c="${c}" data-k="${v.k}" data-v="${esc(g)}" onclick="prAlcTog(this)">${esc(g)}</button>`).join('')}</div>`;
+    if (v.pil) { const ops = [...new Set([...fac[v.k].keys(), ...xs])].sort((x, y) => String(x).localeCompare(String(y), 'es'));
+      return `<div class="pr-sec${todo ? ' apag' : ''}"><span class="pr-lb">${v.lb}${v.sub ? `<small>${v.sub}</small>` : ''}</span>${ops.length ? ops.map(g => `<button type="button" class="pil chico${xs.includes(g) ? ' on' : ''}${fuera(v.k, g) ? ' fuera' : ''}" data-c="${c}" data-k="${v.k}" data-v="${esc(g)}" onclick="prAlcTog(this)"${fac[v.k].get(g) ? ` title="${fac[v.k].get(g)} artículos"` : ''}>${esc(g)}</button>`).join('') : '<span class="mini">no hay dentro de lo elegido</span>'}</div>`; }
     const inp = v.libre ? `<input class="pr-in chico" placeholder="Ej: set · y Enter" data-c="${c}" data-k="${v.k}" onkeydown="if(event.key==='Enter'){event.preventDefault();prTxtAdd(this)}" onchange="prTxtAdd(this)" autocomplete="off">`
-      : `<input class="pr-in chico" placeholder="Buscar ${v.lb.toLowerCase()}…" data-c="${c}" data-k="${v.k}" oninput="prOpBuscar(this)" onfocus="prOpBuscar(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();const b=this.nextElementSibling.querySelector('button');if(b)b.click()}" autocomplete="off">`;
-    return `<div class="pr-sec${todo ? ' apag' : ''}"><span class="pr-lb">${v.lb}</span>${chips(v.k, xs)}<span class="pr-sk">${inp}<span class="pr-sug"></span></span></div>`; };
+      : `<input class="pr-in chico" placeholder="${((n) => fac[v.k] && prFiltrando(c, v.k) ? (n ? 'Elegir entre ' + n + '…' : xs.length ? 'No hay más dentro de lo elegido' : 'No hay dentro de lo elegido') : 'Buscar ' + v.lb.toLowerCase() + '…')(fac[v.k] ? [...fac[v.k].keys()].filter(x => !xs.includes(x)).length : 0)}" data-c="${c}" data-k="${v.k}" oninput="prOpBuscar(this)" onfocus="prOpBuscar(this)" onclick="prOpBuscar(this)" onkeydown="prOpTecla(event,this)" autocomplete="off">`;
+    return `<div class="pr-sec${todo ? ' apag' : ''}"><span class="pr-lb">${v.lb}${v.sub ? `<small>${v.sub}</small>` : ''}</span>${chips(v.k, xs)}<span class="pr-sk">${inp}<span class="pr-sug"></span></span></div>`; };
   const sku = (k, lb) => `<div class="pr-sec${todo && k === 'skus' ? ' apag' : ''}"><span class="pr-lb">${lb}</span>${chips(k, a[k] || [])}<span class="pr-sk"><input class="pr-in chico" placeholder="SKU o descripción" data-c="${c}" data-k="${k}" oninput="prSkuBuscar(this)" autocomplete="off"><span class="pr-sug"></span></span></div>`;
   return `<div class="pr-alc">
     <div class="pr-sec"><label class="pr-sw"><input type="checkbox"${todo ? ' checked' : ''} onchange="PR.f['${c}'].todo=this.checked||undefined;PR.f.nombre=document.getElementById('pr-nom').value;prForm()"> Todos los artículos</label><span class="pr-cnt" id="pr-cnt-${c}"></span></div>
-    <div class="mini pr-ayuda${todo ? ' apag' : ''}">Tiene que cumplir <b>todo</b> lo que elijas: por ejemplo Grupo BANO + Clasificación TOALLA + Proveedor Espalma = solo las toallas de Espalma. Dentro de una misma variable alcanza con una (TOALLA o BATA).</div>
+    <div class="mini pr-ayuda${todo ? ' apag' : ''}">Tiene que cumplir <b>todo</b> lo que elijas: por ejemplo Nivel 1 BANO + Nivel 3 TOALLA + Proveedor Espalma = solo las toallas de Espalma. Dentro de una misma variable alcanza con una (TOALLA o BATA). Cada lista muestra solo lo que hay dentro de lo ya elegido.</div>
     ${PR_VARS.map(fila).join('')}
     <div class="pr-sep"></div>
     ${sku('skus', 'Y además')}${sku('excluir', 'Menos')}</div>`;
@@ -1478,9 +1493,18 @@ function prAlcHTML(c) {
 function prAlcTog(b) { const a = PR.f[b.dataset.c], k = b.dataset.k, v = b.dataset.v; a[k] = a[k] || []; const i = a[k].indexOf(v); if (i >= 0) a[k].splice(i, 1); else a[k].push(v); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
 function prAlcQuitar(b) { const a = PR.f[b.dataset.c], k = b.dataset.k; a[k] = (a[k] || []).filter(x => x !== b.dataset.v); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
 // buscador de cada variable: busca por cualquier parte, sin importar tildes ni mayúsculas (escribís «espalma» y aparece «Espalma Sociedad Anonima»)
-function prOpBuscar(inp) { const k = inp.dataset.k, a = PR.f[inp.dataset.c] || {}, q = prN(inp.value), sug = inp.nextElementSibling;
-  const xs = (PR.op[k] || []).filter(x => !(a[k] || []).includes(x) && (!q || prN(x).includes(q))).slice(0, 10);
-  sug.innerHTML = xs.length ? xs.map(x => `<button type="button" data-c="${inp.dataset.c}" data-k="${k}" data-v="${esc(x)}" onclick="prOpAdd(this)">${esc(x)}</button>`).join('') : `<span class="mini">${q ? 'No hay ninguno con «' + esc(inp.value) + '»' : 'Ya están todos elegidos'}</span>`; }
+function prOpBuscar(inp) { const c = inp.dataset.c, k = inp.dataset.k, a = PR.f[c] || {}, q = prN(inp.value), sug = inp.nextElementSibling;
+  document.querySelectorAll('.prv .pr-sug').forEach(x => { if (x !== sug) x.innerHTML = ''; });
+  const fac = prFaceta(c, k), filt = prFiltrando(c, k);
+  const xs = [...fac].filter(([x]) => !(a[k] || []).includes(x) && (!q || prN(x).includes(q)));
+  sug.innerHTML = (filt ? `<span class="pr-sug-h">Dentro de lo elegido${fac.size ? '' : ': no hay'}</span>` : '') + (xs.length ? xs.map(([x, n], i) => `<button type="button" class="${i === 0 ? 'act' : ''}" data-c="${c}" data-k="${k}" data-v="${esc(x)}" onmousedown="event.preventDefault()" onclick="prOpAdd(this)">${esc(x)}${n ? `<span class="n">${n}</span>` : ''}</button>`).join('')
+    : `<span class="mini">${q ? 'No hay ninguno con «' + esc(inp.value) + '»' : fac.size ? 'Ya están todos elegidos' : 'Sacá algo de lo elegido para ver más'}</span>`); }
+function prOpTecla(ev, inp) { const sug = inp.nextElementSibling, bs = [...sug.querySelectorAll('button')];
+  if (ev.key === 'Escape') { sug.innerHTML = ''; return; }
+  if (ev.key === 'Enter') { ev.preventDefault(); const b = sug.querySelector('button.act') || bs[0]; if (b) b.click(); return; }
+  if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return; ev.preventDefault(); if (!bs.length) { prOpBuscar(inp); return; }
+  let i = bs.findIndex(b => b.classList.contains('act')); i = Math.max(0, Math.min(bs.length - 1, i + (ev.key === 'ArrowDown' ? 1 : -1)));
+  bs.forEach((b, j) => b.classList.toggle('act', j === i)); bs[i].scrollIntoView({ block: 'nearest' }); }
 function prOpAdd(b) { const a = PR.f[b.dataset.c], k = b.dataset.k; a[k] = a[k] || []; if (!a[k].includes(b.dataset.v)) a[k].push(b.dataset.v); PR.f.nombre = document.getElementById('pr-nom').value; prForm();
   setTimeout(() => { const i = document.querySelector(`.prv input[data-c="${b.dataset.c}"][data-k="${k}"]`); if (i) i.focus(); }, 30); }
 function prTxtAdd(inp) { const v = inp.value.trim(); if (v.length < 2) return; const a = PR.f[inp.dataset.c], k = inp.dataset.k; a[k] = a[k] || []; if (!a[k].some(x => prN(x) === prN(v))) a[k].push(v); inp.value = ''; PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
@@ -4823,6 +4847,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=211"></script>
+<script src="manual.js?v=212"></script>
 </body>
 </html>
