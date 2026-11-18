@@ -602,6 +602,8 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 #cara-past { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9999; background: #e0f2fe; border: 1px solid #7dd3fc; color: #075985; border-radius: 999px; padding: 14px 26px; font-size: 16px; box-shadow: 0 12px 40px rgba(15, 23, 42, .28); display: flex; align-items: center; gap: 10px; } .qe-pils { display: flex; flex-wrap: wrap; gap: 6px; }
 #ov .box.pastilla, #dlg .box.pastilla { background: transparent; padding: 0; box-shadow: none; border: none; width: auto; max-width: 96vw; overflow: visible; }
 .cartel-pil { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 999px; padding: 12px 14px 12px 26px; color: #075985; box-shadow: 0 12px 40px rgba(15, 23, 42, .28); }
+.sena-pils { display: flex; flex-direction: column; gap: 10px; align-items: stretch; max-width: 760px; } .sena-pil { background: #eff6ff; border-color: #93c5fd; color: #1e3a8a; } .sena-pil .n { font-size: 30px; white-space: nowrap; } .sena-pil .t .mini { color: #334155; } .sena-pil .btn { border-radius: 999px; } .sena-pils-pie { display: flex; justify-content: center; } .sena-pils-pie .btn { border-radius: 999px; background: #fff; }
+@media (max-width: 620px) { .sena-pil { border-radius: 30px; padding: 14px 16px; justify-content: center; text-align: center; } .sena-pil .t { min-width: 100%; align-items: center; } }
 .mp-pil .spin { width: 34px; height: 34px; margin: 0; border-width: 4px; flex: none; } .mp-pil .n { font-size: 30px; white-space: nowrap; } .mp-pil .btn.peligro { border-radius: 999px; }
 @media (max-width: 620px) { .mp-pil { border-radius: 30px; padding: 14px 16px; justify-content: center; text-align: center; } .mp-pil .t { min-width: 100%; align-items: center; } }
 .cartel-pil > svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; } .cartel-pil b { font-size: 19px; -webkit-text-stroke: .4px currentColor; } .cartel-pil.sin-cli b { flex: 1; min-width: 160px; }
@@ -1425,10 +1427,12 @@ async function vSenasOfrecer(c) {
   if (T.sena || T.tipo === 'NC' || sinPago()) return;
   const { data } = await sb.rpc('pos_senas_cliente', { p_globalid: c.globalid || null, p_doc: c.doc || null });
   const ss = (data || []).filter(x => x.local === LOCAL); if (!ss.length) return;
-  modal(`<div class="m-head"><h3>Este cliente tiene ${ss.length === 1 ? 'una seña' : ss.length + ' señas'}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="mini" style="margin-bottom:10px">Si la usás, entran al ticket los artículos reservados y se descuenta lo ya pagado.</div>
-    ${ss.map(x => `<div class="sena-card"><div><b>${plata(x.importe)}</b> · ${fechaAR(x.fecha)} · Factura ${esc(x.letra)} ${esc(x.factura)}<div class="mini">${x.items.map(i => Number(i.cantidad) + ' × ' + esc(i.descripcion)).join(' · ')}</div></div><button class="btn primary" onclick='vSenaUsar(${JSON.stringify(x).replace(/'/g, "&#39;")})'>Usar esta seña</button></div>`).join('')}
-    <div class="m-foot"><button class="btn" onclick="cerrarModal()">Ahora no</button></div>`);
+  const uno = ss.length === 1;
+  modal(`<div class="sena-pils">${ss.map((x, k) => `<div class="cartel-pil sena-pil"><span class="n">${plata(x.importe)}</span>
+      <span class="t"><b>${uno ? 'Este cliente tiene una seña' : k === 0 ? 'Este cliente tiene ' + ss.length + ' señas' : 'Otra seña'}</b>
+      <span class="mini">${fechaAR(x.fecha)} · Factura ${esc(x.letra)} ${esc(x.factura)} · ${x.items.map(i => Number(i.cantidad) + ' × ' + esc(i.descripcion)).join(' · ')}</span></span>
+      <button class="btn primary" onclick='vSenaUsar(${JSON.stringify(x).replace(/'/g, "&#39;")})'>Usar esta seña</button>${uno ? '<button class="btn" onclick="cerrarModal()">Ahora no</button>' : ''}</div>`).join('')}
+    ${uno ? '' : '<div class="sena-pils-pie"><button class="btn" onclick="cerrarModal()">Ahora no</button></div>'}</div>`, 'pastilla');
 }
 // Días corridos que se respeta el precio (presupuesto y seña). Los viejos, sin el dato: presupuesto 14 días, seña sin vencimiento.
 const diasVal = () => Math.max(0, Math.min(365, Math.round(num(document.getElementById('v-dias').value)) || 0));
@@ -4186,6 +4190,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=179"></script>
+<script src="manual.js?v=180"></script>
 </body>
 </html>
