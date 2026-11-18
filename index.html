@@ -2030,7 +2030,8 @@ async function pdWaIr(id, dest, sigue) {
   window._pdDespues = despues;
   modal(`<div class="cartel-pil"><span class="t"><b>Adjuntá el Excel en el chat</b><span class="mini">Se bajó <b>${esc(f.name)}</b> a la carpeta Descargas. En el chat de WhatsApp tocá el clip 📎 → Documento y elegilo, o arrastralo al chat.</span></span><button class="btn primary" onclick="window._pdDespues()">Listo</button></div>`, 'pastilla');
 }
-function pdTextoWA(numero, items, nota) { return `Pedido ${numero} · Claudia Adorno ${LOCALES[LOCAL]}`; }   // (JP 18-nov) solo el título: el detalle va en el Excel del link
+function pdQuien(n) { n = String(n || '').trim(); if (!n || n.includes('@')) return ''; const p = n.split(','); return p.length > 1 ? tit(p[1]) + ' ' + tit(p[0]) : tit(n); }   // «DONZELLI, SORAYA BEATRIZ» → «Soraya Beatriz Donzelli»; un usuario genérico (mail) no se muestra
+function pdTextoWA(numero, items, nota, quien) { const q = pdQuien(quien); return `Pedido ${numero} · Claudia Adorno ${LOCALES[LOCAL]}` + (q ? '\nEnviado por ' + q : ''); }   // (JP 18-nov) solo el título: el detalle va en el Excel del link
 async function pdEnviar() {
   const g = PD.cola[0]; const items = g.items.filter(i => i.cantidad > 0); if (!items.length) { toast('El pedido no tiene cantidades', 'error'); return; }
   const nota = document.getElementById('pd-nota').value.trim(); g.nota = nota; document.getElementById('pd-ok').disabled = true;
@@ -2040,11 +2041,11 @@ async function pdEnviar() {
   if (error) { pdAutFallo('pedido', error); pdModal(); return; }
   PD.cola.shift(); cerrarModal(); PD.extras[PD_KDE[g.destino]] = [];   // lo de fuera de lista ya salió en este pedido
   if (true) {
-    const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoWA(data.numero_fmt, items, nota); window._pdTxt = txt;
+    const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoWA(data.numero_fmt, items, nota, data.enviado_por); window._pdTxt = txt;
     pdFicha('Pedido ' + data.numero_fmt + ' a ' + (PD_CORTO[g.destino] || PD_NOM[g.destino]), data.id, g.destino, 'modal', data.wa_para, 'cerrarModal();pdModal()');
   } else { toast('Pedido ' + data.numero_fmt + ' a Oficina: ' + data.unidades + ' unidades', 'success'); pdModal(); }
 }
-function pdTextoDesc(numero, orig, items, nota, ver) { return `Pedido ${orig}${ver ? ' · versión ' + ver : ''} (actualizado) · Claudia Adorno ${LOCALES[LOCAL]}`; }   // (JP 18-nov) solo el título: el pedido completo va en el Excel del link
+function pdTextoDesc(numero, orig, items, nota, ver, quien) { const q = pdQuien(quien); return `Pedido ${orig}${ver ? ' · versión ' + ver : ''} (actualizado) · Claudia Adorno ${LOCALES[LOCAL]}` + (q ? '\nEnviado por ' + q : ''); }   // (JP 18-nov) solo el título: el pedido completo va en el Excel del link
 function pdYaDesc(p, it) { return (PD.hechos || []).filter(a => a.ajuste_de_id === p.id && a.estado !== 'cancelado').reduce((t, a) => t + (a.items || []).filter(x => x.sku === it.sku && (x.descripcion || '') === (it.descripcion || '')).reduce((u, x) => u - Number(x.cantidad), 0), 0); }
 function pdDescontar(id) {
   const p = (PD.hechos || []).find(x => x.id === id); if (!p) return; const its = p.items || [];
@@ -2063,13 +2064,13 @@ async function pdDescontarOk(id) {
   if (!await hubReg('pos.pedidos', { accion: 'descontar', pedido: id })) return; const { data, error } = await sb.rpc('pos_pedido_descontar', { p_id: id, p_items: items, p_nota: nota || null, p_autorizacion_id: aid || null });
   if (error) { pdAutFallo('pedido', error); return; }
   const lst = items.map(x => { const o = (p.items || []).find(i => i.nro_item === x.nro_item) || {}; return { sku: o.sku, descripcion: o.descripcion, cantidad: x.cantidad }; });
-  const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoDesc(data.numero_fmt, p.numero, lst, nota, 1 + (PD.hechos || []).filter(a => a.ajuste_de_id === p.id).length + 1); window._pdTxt = txt;
+  const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoDesc(data.numero_fmt, p.numero, lst, nota, 1 + (PD.hechos || []).filter(a => a.ajuste_de_id === p.id).length + 1, data.enviado_por); window._pdTxt = txt;
   pdFicha('Pedido ' + p.numero + ' actualizado', data.id, p.destino, 'lista', data.wa_para, 'cerrarModal();cargarPedidosLocal()');
   cargarPedidosLocal();
 }
 function pdWA(id) {
   const p = PD.hechos.find(x => x.id === id); if (!p) return; const its = (p.items || []).map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad) }));
-  const txt = p.ajuste_de ? pdTextoDesc(p.numero, p.ajuste_de, its, '', p.version) : pdTextoWA(p.numero, its, p.nota); window._pdTxt = txt;
+  const txt = p.ajuste_de ? pdTextoDesc(p.numero, p.ajuste_de, its, '', p.version, p.autorizado_por || p.por) : pdTextoWA(p.numero, its, p.nota, p.autorizado_por || p.por); window._pdTxt = txt;
   pdFicha(p.ajuste_de ? 'Pedido ' + p.ajuste_de + ' actualizado' : 'Pedido ' + p.numero + ' a ' + (PD_CORTO[p.destino] || PD_NOM[p.destino] || p.destino), p.id, p.destino, 'lista', p.wa_para, 'cerrarModal()');
 
 }
@@ -4281,6 +4282,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=191"></script>
+<script src="manual.js?v=192"></script>
 </body>
 </html>
