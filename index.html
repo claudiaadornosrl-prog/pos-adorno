@@ -604,6 +604,10 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 .cartel-pil { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 999px; padding: 12px 14px 12px 26px; color: #075985; box-shadow: 0 12px 40px rgba(15, 23, 42, .28); }
 .sena-pils { display: flex; flex-direction: column; gap: 10px; align-items: stretch; max-width: 760px; } .sena-pil { background: #eff6ff; border-color: #93c5fd; color: #1e3a8a; } .sena-pil .n { font-size: 30px; white-space: nowrap; } .sena-pil .t .mini { color: #334155; } .sena-pil .btn { border-radius: 999px; } .sena-pils-pie { display: flex; justify-content: center; } .sena-pils-pie .btn { border-radius: 999px; background: #fff; }
 @media (max-width: 620px) { .sena-pil { border-radius: 30px; padding: 14px 16px; justify-content: center; text-align: center; } .sena-pil .t { min-width: 100%; align-items: center; } }
+.pd-ficha { flex-wrap: nowrap; gap: 8px; padding: 10px 12px 10px 24px; } .pd-f-tit { font-size: 17px; white-space: nowrap; }
+.pd-f-num { border: 1.5px solid #cbd5e1; border-radius: 999px; padding: 9px 14px; font: inherit; font-size: 15px; width: 170px; background: #fff; }
+.pd-ficha .btn { white-space: nowrap; } .pd-ficha .pd-f-gh { background: #fff !important; border: 1px solid #7dd3fc !important; border-radius: 999px !important; color: #0f172a !important; } .pd-ficha .pd-f-ok { background: #16a34a !important; border: 1px solid #16a34a !important; color: #fff !important; border-radius: 999px !important; font-weight: 600; }
+@media (max-width: 760px) { .pd-ficha { flex-wrap: wrap; justify-content: center; border-radius: 30px; padding: 14px 16px; } .pd-f-tit { width: 100%; text-align: center; white-space: normal; } }
 .mp-pil .spin { width: 34px; height: 34px; margin: 0; border-width: 4px; flex: none; } .mp-pil .n { font-size: 30px; white-space: nowrap; } .mp-pil .btn.peligro { border-radius: 999px; }
 @media (max-width: 620px) { .mp-pil { border-radius: 30px; padding: 14px 16px; justify-content: center; text-align: center; } .mp-pil .t { min-width: 100%; align-items: center; } }
 .cartel-pil > svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; } .cartel-pil b { font-size: 19px; -webkit-text-stroke: .4px currentColor; } .cartel-pil.sin-cli b { flex: 1; min-width: 160px; }
@@ -1918,12 +1922,24 @@ function pdAdd(v) { const q = String(v || '').trim().toUpperCase(); if (!q) retu
 let PARAMS_PED = {};
 const pedPrueba = () => MODO === 'prueba' && PARAMS_PED.pedidos_modo !== 'real';   // los Pedidos pueden ser reales con el resto del POS en prueba
 function pedFranja() { const f = document.getElementById('franja-pos-prueba'); if (!f || PARAMS_PED.pedidos_modo !== 'real' || f.querySelector('.ped-real')) return; f.insertAdjacentHTML('beforeend', ' <span class="ped-real" style="font-weight:700;letter-spacing:0;white-space:nowrap">· OJO: los PEDIDOS sí son reales</span>'); }
-async function cargarParamsPedidos() { const { data } = await sb.from('pos_parametros').select('clave,valor').in('clave', ['fg_mail', 'es_mail', 'of_mail', 'fg_copia', 'es_copia', 'of_copia', 'pedidos_copia', 'pedidos_modo', 'card_fisica_precio']); PARAMS_PED = Object.fromEntries((data || []).map(r => [r.clave, r.valor || ''])); { const el = document.getElementById('a-card-precio'); if (el) el.value = PARAMS_PED.card_fisica_precio || ''; if (Number(PARAMS_PED.card_fisica_precio) > 0) CARD_PRECIO = Number(PARAMS_PED.card_fisica_precio); } for (const k of ['fg_mail', 'es_mail', 'fg_copia']) { const el = document.getElementById('a-' + k.replace('_', '-')); if (el) el.value = PARAMS_PED[k] || ''; }  pedFranja(); }
+async function cargarParamsPedidos() { const { data } = await sb.from('pos_parametros').select('clave,valor').in('clave', ['fg_mail', 'es_mail', 'of_mail', 'fg_copia', 'es_copia', 'of_copia', 'pedidos_copia', 'pedidos_modo', 'card_fisica_precio', 'fg_wa', 'es_wa', 'of_wa']); PARAMS_PED = Object.fromEntries((data || []).map(r => [r.clave, r.valor || ''])); { const el = document.getElementById('a-card-precio'); if (el) el.value = PARAMS_PED.card_fisica_precio || ''; if (Number(PARAMS_PED.card_fisica_precio) > 0) CARD_PRECIO = Number(PARAMS_PED.card_fisica_precio); } for (const k of ['fg_mail', 'es_mail', 'fg_copia']) { const el = document.getElementById('a-' + k.replace('_', '-')); if (el) el.value = PARAMS_PED[k] || ''; }  pedFranja(); }
 async function guardarParam(clave, valor) { const { error } = await sb.from('pos_parametros').update({ valor: valor.trim() }).eq('clave', clave); if (error) { toast(error.message, 'error'); return; } toast('Guardado', 'success'); cargarParamsPedidos(); }
 const pdCopia = d => { const k = PD_PAR[d] + '_copia'; return k in PARAMS_PED ? PARAMS_PED[k] : (PARAMS_PED.pedidos_copia || ''); };   // copia del mail según el destino
 function pdWaNum(v) { let n = String(v || '').replace(/\D/g, '').replace(/^0+/, ''); if (n.length === 10) n = '549' + n; else if (n.length === 12 && n.startsWith('54')) n = '549' + n.slice(2); return n.length >= 11 ? n : ''; }
 function pdWaUlt(dest) { try { return localStorage.getItem('pos_pd_wa_' + dest) || ''; } catch (e) { return ''; } }
-const pdWaCampo = dest => `<input id="pd-wa-num" inputmode="tel" autocomplete="off" placeholder="WhatsApp: código de área y número" title="A qué número de WhatsApp se lo mandás" value="${esc(pdWaUlt(dest))}" onkeydown="if(event.key==='Enter')document.getElementById('pd-wa-ir').click()" style="width:250px">`;
+function pdWaFmt(v) { const n = String(v || '').replace(/\D/g, ''); if (n.length === 13 && n.startsWith('54911')) return '+54 9 11 ' + n.slice(5, 9) + ' ' + n.slice(9); return n ? (n.length > 10 ? '+' : '') + n : ''; }
+function pdWaDef(dest, wa) { return dest === 'familia_garcia' ? pdWaFmt(wa || PARAMS_PED.fg_wa || '5491130833970') : (pdWaUlt(dest) || pdWaFmt(wa)); }
+const PD_CORTO = { familia_garcia: 'Familia García', espalma: 'Espalma', oficina: 'Oficina' };   // para el título de la ficha
+const pdWaCampo = (dest, wa) => `<input id="pd-wa-num" class="pd-f-num" inputmode="tel" autocomplete="off" placeholder="WhatsApp" title="Número de WhatsApp: tocá para cambiarlo" value="${esc(pdWaDef(dest, wa))}" onkeydown="if(event.key==='Enter')document.getElementById('pd-wa-ir').click()">`;
+// la ficha en una sola pastilla: título, número, Excel, Copiar texto, Mandar por WhatsApp y la cruz
+function pdFicha(titulo, id, dest, sigue, wa, cerrar) {
+  modal(`<div class="cartel-pil pd-ficha"><b class="pd-f-tit">${esc(titulo)}</b>${pdWaCampo(dest, wa)}
+    <button class="btn pd-f-gh" onclick="pdBajarExcel()" title="Bajar el Excel del pedido (Cantidad, SKU y Descripción)">Excel</button>
+    <button class="btn pd-f-gh" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))" title="Copiar el texto del pedido (con el link al Excel)">Copiar texto</button>
+    <button class="btn pd-f-ok" id="pd-wa-ir" onclick="pdWaIr(${id},'${dest}','${sigue}')">💬 Mandar por WhatsApp</button>
+    <button class="btn ico" onclick="${cerrar}" aria-label="Cerrar">${_i('x')}</button></div>`, 'pastilla');
+  pdWaPrep(id);
+}
 // Excel del pedido para WhatsApp: el mismo que va por mail (Cantidad y SKU), armado acá para no esperar al servidor.
 // Se prepara al abrir la ventana, así al tocar el botón se comparte en el acto (el celular no deja compartir si se demora).
 let _pdXlsLib = null;
@@ -1983,10 +1999,7 @@ async function pdEnviar() {
   PD.cola.shift(); cerrarModal(); PD.extras[PD_KDE[g.destino]] = [];   // lo de fuera de lista ya salió en este pedido
   if (true) {
     const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoWA(data.numero_fmt, items, nota); window._pdTxt = txt;
-    modal(`<div class="m-head"><h3>Pedido ${esc(data.numero_fmt)} a ${PD_NOM[g.destino]} armado</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal();pdModal()" aria-label="Cerrar">${_i('x')}</button></div>
-      <div style="margin:8px 0">${data.mail_para ? '✉ El mail con el pedido en PDF y en Excel sale solo en un minuto a <b>' + esc(data.mail_para) + '</b>' + (!data.prueba && pdCopia(g.destino) ? ' con copia a ' + esc(pdCopia(g.destino)) : '') + '.' : '✉ No hay mail configurado para este destino (Ajustes): no se manda mail.'}</div>
-      <div class="mini pd-wa-txt" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
-      <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))">Copiar texto</button><button class="btn" onclick="pdBajarExcel()" title="Bajar el Excel del pedido (Cantidad, SKU y Descripción)">Bajar el Excel</button><span class="spacer"></span>${pdWaCampo(g.destino)}<button class="btn primary" id="pd-wa-ir" onclick="pdWaIr(${data.id},'${g.destino}','modal')">💬 Mandar por WhatsApp</button></div>`); pdWaPrep(data.id);
+    pdFicha('Pedido ' + data.numero_fmt + ' a ' + (PD_CORTO[g.destino] || PD_NOM[g.destino]), data.id, g.destino, 'modal', data.wa_para, 'cerrarModal();pdModal()');
   } else { toast('Pedido ' + data.numero_fmt + ' a Oficina: ' + data.unidades + ' unidades', 'success'); pdModal(); }
 }
 function pdTextoDesc(numero, orig, items, nota, ver) { return `Pedido ${orig}${ver ? ' · versión ' + ver : ''} (actualizado) · Claudia Adorno ${LOCALES[LOCAL]}\nReemplaza a la versión anterior. Va adjunto el pedido completo ya actualizado. Se descontó:\n` + items.map(i => i.sku === 'VARIOS' ? `• ${Math.abs(i.cantidad)} × ${i.descripcion}` : `• ${Math.abs(i.cantidad)} × ${i.sku}${i.descripcion ? ' · ' + tit(i.descripcion) : ''}`).join('\n') + (nota ? `\nNota: ${nota}` : '') + `\nGracias.`; }
@@ -2009,19 +2022,14 @@ async function pdDescontarOk(id) {
   if (error) { pdAutFallo('pedido', error); return; }
   const lst = items.map(x => { const o = (p.items || []).find(i => i.nro_item === x.nro_item) || {}; return { sku: o.sku, descripcion: o.descripcion, cantidad: x.cantidad }; });
   const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoDesc(data.numero_fmt, p.numero, lst, nota, 1 + (PD.hechos || []).filter(a => a.ajuste_de_id === p.id).length + 1); window._pdTxt = txt;
-  modal(`<div class="m-head"><h3>Pedido ${esc(p.numero)} actualizado</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal();cargarPedidosLocal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div style="margin:8px 0">${data.mail_para ? '✉ El mail con el pedido actualizado (PDF y Excel completos) sale solo en un minuto a <b>' + esc(data.mail_para) + '</b>.' : '✉ Este destino no tiene mail configurado: no se manda mail.'}</div>
-    <div class="mini pd-wa-txt" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
-    <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))">Copiar texto</button><button class="btn" onclick="pdBajarExcel()" title="Bajar el Excel del pedido (Cantidad, SKU y Descripción)">Bajar el Excel</button><span class="spacer"></span>${pdWaCampo(p.destino)}<button class="btn primary" id="pd-wa-ir" onclick="pdWaIr(${data.id},'${p.destino}','lista')">💬 Mandar por WhatsApp</button></div>`); pdWaPrep(data.id);
+  pdFicha('Pedido ' + p.numero + ' actualizado', data.id, p.destino, 'lista', data.wa_para, 'cerrarModal();cargarPedidosLocal()');
   cargarPedidosLocal();
 }
 function pdWA(id) {
   const p = PD.hechos.find(x => x.id === id); if (!p) return; const its = (p.items || []).map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad) }));
   const txt = p.ajuste_de ? pdTextoDesc(p.numero, p.ajuste_de, its, '', p.version) : pdTextoWA(p.numero, its, p.nota); window._pdTxt = txt;
-  modal(`<div class="m-head"><h3>Mandar ${esc(p.numero)} por WhatsApp</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="mini pd-wa-txt" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
-    <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))">Copiar texto</button><button class="btn" onclick="pdBajarExcel()" title="Bajar el Excel del pedido (Cantidad, SKU y Descripción)">Bajar el Excel</button><span class="spacer"></span>${pdWaCampo(p.destino)}<button class="btn primary" id="pd-wa-ir" onclick="pdWaIr(${p.id},'${p.destino}','lista')">💬 Mandar por WhatsApp</button></div>`); pdWaPrep(p.id);
-  setTimeout(() => { const el = document.getElementById('pd-wa-num'); if (el) el.focus(); }, 50);
+  pdFicha(p.ajuste_de ? 'Pedido ' + p.ajuste_de + ' actualizado' : 'Pedido ' + p.numero + ' a ' + (PD_CORTO[p.destino] || PD_NOM[p.destino] || p.destino), p.id, p.destino, 'lista', p.wa_para, 'cerrarModal()');
+
 }
 async function pdRecibir(id) { if (!await confirmar('¿Llegó el pedido completo? Queda cerrado como recibido. (El stock entra por el Dragonfish, como hasta ahora.)')) return; const aid = await pdAut('pedido', 'Recibir un pedido en ' + LOCALES[LOCAL]); if (aid === null) return; if (!await hubReg('pos.pedidos', { accion: 'recibir', pedido: id })) return; const { error } = await sb.rpc('pos_pedido_recibir', { p_id: id, p_autorizacion_id: aid || null }); if (error) { pdAutFallo('pedido', error); return; } toast('Pedido recibido', 'success'); cargarPedidosLocal(); }
 async function pdCancelar(id) { const m = await pedirTexto('Motivo para cancelar el pedido:'); if (m === null) return; const aid = await pdAut('pedido', 'Cancelar un pedido de ' + LOCALES[LOCAL]); if (aid === null) return; if (!await hubReg('pos.pedidos', { accion: 'cancelar', pedido: id, motivo: m })) return; const { error } = await sb.rpc('pos_pedido_cancelar', { p_id: id, p_motivo: m, p_autorizacion_id: aid || null }); if (error) { pdAutFallo('pedido', error); return; } toast('Pedido cancelado', 'success'); cargarPedidosLocal(); }
@@ -4231,6 +4239,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=184"></script>
+<script src="manual.js?v=185"></script>
 </body>
 </html>
