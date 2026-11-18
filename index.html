@@ -620,6 +620,7 @@ table:has(> thead), .pd-c-tabla { overflow: clip; }   /* (JP 18-nov) con overflo
 .pv-pie { display: flex; align-items: center; gap: 6px; margin-top: 12px; } .pv-pie .ib { color: #2563eb; display: inline-flex; padding: 6px; border-radius: 999px; } .pv-pie .ib:hover { background: #f1f5f9; } .pv-pie .ib svg { width: 26px; height: 26px; } .pv-pie .pd-xls-ico svg { width: 26px !important; height: 26px !important; } .pv-pie .btn.primary { border-radius: 999px; padding: 9px 22px; }
 .pv-x { background: none; border: 0; cursor: pointer; color: #075985; display: inline-flex; padding: 4px; } .pv-x svg { width: 22px; height: 22px; }
 .pv-ico { width: 16px; height: 16px; flex: none; } .pv-av { display: inline-flex; align-items: center; gap: 6px; }
+tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight: 600; color: #0f172a; }
 .pv1 .cab { background: linear-gradient(180deg, #e0f2fe, #f0f9ff); border-bottom: 1px solid #bae6fd; padding: 18px 22px 14px; }
 .pv1 .t { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .pv1 h3 { margin: 0; font-size: 22px; font-weight: 600; color: #075985; } .pv-estd { font-size: 13px; color: #334155; }
 .pv1 .sub { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 14px; color: #0f172a; } .pv1 .sub span { display: inline-flex; align-items: center; gap: 6px; } .pv1 .sub .pv-ico { color: #0369a1; }
@@ -1847,17 +1848,17 @@ function pdRender() {
     box.innerHTML = lista.length ? `<table class="pd-hechos"><thead><tr><th>Pedido</th><th>A</th><th>Estado</th><th></th></tr></thead><tbody>` + lista.map(p => {
       const ofi = p.destino === 'oficina'; const its = p.items || [];
       let est;
-      if (p.estado === 'cancelado') est = '<span class="chip red" title="' + esc(p.cancelado_motivo || '') + '">Cancelado</span>';
+      if (p.estado === 'cancelado') est = '<span class="chip red" title="' + esc(p.cancelado_motivo || '') + '">' + (/^Reemplazado/.test(p.cancelado_motivo || '') ? 'Anulado' : 'Cancelado') + '</span>' + (p.cancelado_motivo ? ' <span class="mini">' + esc(p.cancelado_motivo) + '</span>' : '');
       else if (p.estado === 'recibido') est = '<span class="chip green">Recibido</span> <span class="mini">' + esc(pila(p.recibido_por)) + ' · ' + fechaAR(String(p.recibido_at).slice(0, 10)) + '</span>' + (its.some(i => i.recibida != null && Number(i.recibida) !== Number(i.cantidad)) ? ' <span class="chip red" title="Llegó distinto de lo pedido: abrí el pedido con el ojo para ver qué">con diferencias</span>' : '');
       else if (ofi) { const rec = its.filter(i => i.transito === 'recibido' || i.transito === 'con_diferencia').length, env = its.filter(i => i.remito_id).length;
         est = rec === its.length ? '<span class="chip green">Recibido</span>' : env ? '<span class="chip viol">En tránsito</span> <span class="mini">' + [...new Set(its.filter(i => i.remito).map(i => 'remito ' + i.remito))].join(', ') + '</span>' : '<span class="chip amber">Pendiente en Oficina</span>' + (its.some(i => i.traslado === 'apartado') ? ' <span class="mini">apartado</span>' : ''); }
       else if (p.estado === 'en_transito') est = pdEstTransito(p);
       else est = '<span class="chip amber">Pendiente de entrega</span>';
       if (p.estado === 'enviado' || p.estado === 'en_transito') est += pdAvisos(p);
-      return `<tr class="${p.estado === 'cancelado' ? 'dim' : ''}"><td><a href="#" onclick="pdVer(${p.id});return false" title="Abrir el pedido y ver todo lo que se pidió"><b>${esc(p.numero)}</b></a>${p.ajuste_de ? ' <span class="chip red" title="Descuenta cantidades del pedido ' + esc(p.ajuste_de) + '">descuento de ' + esc(p.ajuste_de) + '</span>' : ''}<div class="mini">${fechaAR(String(p.creado_at).slice(0, 10))} ${new Date(p.creado_at).toTimeString().slice(0, 5)} · ${esc(pila(p.por))}</div></td><td>${esc(PD_NOM[p.destino] || p.destino)}</td>
+      return `<tr class="${p.estado === 'cancelado' ? 'dim' : ''}"><td><a href="#" onclick="pdVer(${p.id});return false" title="Abrir el pedido y ver todo lo que se pidió"><b>${esc(p.numero)}</b></a>${!p.ajuste_de && Number(p.version) > 1 ? ' <span class="chip gray">versión ' + Number(p.version) + '</span>' : ''}${p.ajuste_de ? ' <span class="chip red" title="Descuenta cantidades del pedido ' + esc(p.ajuste_de) + '">descuento de ' + esc(p.ajuste_de) + '</span>' : ''}<div class="mini">${fechaAR(String(p.creado_at).slice(0, 10))} ${new Date(p.creado_at).toTimeString().slice(0, 5)} · ${esc(pila(p.por))}</div></td><td>${esc(PD_NOM[p.destino] || p.destino)}</td>
         <td>${est}</td>
         <td class="acc">${p.pdf_url ? `<a class="btn ico" href="${esc(p.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}${p.xlsx_url ? `<a class="btn ico" href="${esc(p.xlsx_url)}" title="Bajar el pedido en Excel" aria-label="Excel"><span class="pd-xls-ico">${XLS_ICO}</span></a>` : ''}${p.estado === 'enviado' ? `<button class="btn ico" onclick="pdWA(${p.id})" title="Abrir el WhatsApp con el pedido" aria-label="WhatsApp"><span class="pd-wa-ico">${WA_LOGO}</span></button>` : ''}
-          ${p.estado === 'enviado' && !p.ajuste_de_id ? `<button class="btn chico" onclick="pdDescontar(${p.id})" title="Sacar algo de este pedido: genera un descuento que le llega al proveedor. El pedido enviado no se modifica.">Descontar</button>` : ''}${(p.estado === 'enviado' || p.estado === 'en_transito') && !p.ajuste_de_id ? `<button class="btn ico" onclick="pdRecibir(${p.id})" title="${p.estado === 'en_transito' ? 'Llegó: confirmar lo que vino' : 'Llegó el pedido: marcarlo recibido'}" aria-label="Recibido">${_i('ok')}</button>` : ''}${p.estado === 'enviado' && PERFIL.es_admin && !p.ajuste_de_id ? `<button class="btn ico peligro" onclick="pdCancelar(${p.id})" title="Cancelar el pedido entero (solo admin)" aria-label="Cancelar">${_i('anular')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>'
+          ${p.estado === 'enviado' && !p.ajuste_de_id && !p.ajuste_de ? `<button class="btn ico" onclick="pdModificar(${p.id})" title="Modificar el pedido: cambiar cantidades, sacar o sumar artículos. Sale la versión siguiente y esta queda anulada" aria-label="Modificar">${_i('edit')}</button>` : ''}${(p.estado === 'enviado' || p.estado === 'en_transito') && !p.ajuste_de_id ? `<button class="btn ico" onclick="pdRecibir(${p.id})" title="${p.estado === 'en_transito' ? 'Llegó: confirmar lo que vino' : 'Llegó el pedido: marcarlo recibido'}" aria-label="Recibido">${_i('ok')}</button>` : ''}${p.estado === 'enviado' && PERFIL.es_admin && !p.ajuste_de_id ? `<button class="btn ico peligro" onclick="pdCancelar(${p.id})" title="Cancelar el pedido entero (solo admin)" aria-label="Cancelar">${_i('anular')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>'
       : `<div class="empty">Todavía no hay pedidos de ${esc(LOCALES[LOCAL])}.</div>`;
   } else {
     const puede = puedeMinimos();
@@ -1943,14 +1944,14 @@ function pdVer(id) {
   const p = (PD.hechos || []).find(x => x.id === id); if (!p) return; const its = p.items || []; const ofi = p.destino === 'oficina';
   const [estT, estC] = p.estado === 'cancelado' ? ['Cancelado', 'red'] : p.estado === 'recibido' ? ['Recibido', 'green'] : p.estado === 'en_transito' ? ['En tránsito', 'viol'] : ofi ? (its.some(i => i.remito_id) ? ['En tránsito', 'viol'] : ['Pendiente en Oficina', 'amber']) : ['Pendiente de entrega', 'amber'];
   const estD = p.estado === 'cancelado' ? (p.cancelado_motivo || '') : p.estado === 'recibido' ? (p.recibido_por ? pila(p.recibido_por) : '') + (p.recibido_at ? ' · ' + fechaAR(String(p.recibido_at).slice(0, 10)) : '') : p.estado === 'en_transito' ? pdRems(p) + (p.transito_at ? ' · ' + fechaAR(String(p.transito_at).slice(0, 10)) : '') : ofi && its.some(i => i.remito) ? [...new Set(its.filter(i => i.remito).map(i => 'remito ' + i.remito))].join(', ') : '';
-  const hayRec = its.some(i => i.recibida != null), hayRem = !ofi && (p.remitos || []).length > 0, quien = pdQuien(p.autorizado_por || p.por) || pila(p.por);
+  const hayRec = its.some(i => i.recibida != null), hayRem = !ofi && (p.remitos || []).length > 0, quien = pdQuien(p.autorizado_por || p.por) || pila(p.por), its2 = pdItemsCambios(p, its);
   const mail = p.mail_enviado_at ? ['ok', 'Mail a ' + (p.mail_para || '')] : p.mail_error ? ['mal', 'El mail no salió: ' + p.mail_error] : p.mail_para ? ['esp', 'Mail en camino a ' + p.mail_para] : null;
   const wa = p.wa_abierto_at ? ['ok', 'WhatsApp enviado'] : ['esp', 'WhatsApp todavía no'];
-  modal(`<div class="pv pv1"><div class="cab"><div class="t"><h3>Pedido ${esc(p.numero)}</h3><span class="chip ${estC}">${estT}</span>${estD ? '<span class="pv-estd">' + esc(estD) + '</span>' : ''}${p.ajuste_de ? ' <span class="chip red">descuento de ' + esc(p.ajuste_de) + '</span>' : ''}<span class="spacer"></span><button class="pv-x" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+  modal(`<div class="pv pv1"><div class="cab"><div class="t"><h3>Pedido ${esc(p.numero)}</h3><span class="chip ${estC}">${estT}</span>${estD ? '<span class="pv-estd">' + esc(estD) + '</span>' : ''}${p.ajuste_de ? ' <span class="chip red">descuento de ' + esc(p.ajuste_de) + '</span>' : ''}${p.reemplaza_a ? ' <span class="chip gray" title="Reemplaza a la versión anterior: lo que cambió va primero y en negrita">versión ' + Number(p.version) + ' · modificado</span>' : ''}<span class="spacer"></span><button class="pv-x" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="sub"><span>${PV_IC.cam} A <b>${esc(PD_NOM[p.destino] || p.destino)}</b></span><span>${PV_IC.cal} ${fechaAR(String(p.creado_at).slice(0, 10))} · ${new Date(p.creado_at).toTimeString().slice(0, 5)}</span>${quien ? `<span>${PV_IC.per} Pidió <b>${esc(quien)}</b></span>` : ''}</div>
     <div class="avs">${mail ? `<span class="pv-av"><span class="pd-av ${mail[0]}">${_i('mail')}</span>${esc(mail[1])}</span>` : ''}<span class="pv-av"><span class="pd-av ${wa[0]}">${WA_LOGO}</span>${wa[1]}</span></div>
     ${p.nota ? '<div class="pv-nota">Nota: «' + esc(p.nota) + '»</div>' : ''}</div>
-    <div class="pv-cuerpo"><div class="pd-c-tabla"><table class="pd-items pd-t"><thead><tr><th>Artículo</th><th class="num">Pedido</th>${hayRem ? '<th class="num" title="Lo que trajo el remito de ' + esc(PD_NOM[p.destino] || '') + '">Remito</th>' : ''}${hayRec ? '<th class="num">Llegó</th>' : ''}${ofi ? '<th>Remito</th>' : ''}</tr></thead><tbody>${its.map(i => `<tr><td><div class="art">${i.sku === 'VARIOS' ? '' : foto(i.sku, 'chica')}<div><b>${esc(i.sku === 'VARIOS' ? (i.descripcion || 'Varios') : i.sku)}</b>${i.sku === 'VARIOS' ? ' <span class="chip gray">renglón libre</span>' : '<div class="mini">' + esc(i.descripcion || '') + '</div>'}</div></div></td><td class="num"><b>${Number(i.cantidad)}</b></td>${hayRem ? '<td class="num">' + (i.sku === 'VARIOS' ? '<span class="mini">sin código</span>' : pdVinoNum(i)) + '</td>' : ''}${hayRec ? '<td class="num">' + (i.recibida != null ? (Number(i.recibida) < Number(i.cantidad) ? '<span class="chip red">' + Number(i.recibida) + '</span>' : Number(i.recibida)) : '') + '</td>' : ''}${ofi ? '<td class="mini">' + (i.remito ? esc(i.remito) + (i.transito === 'recibido' || i.transito === 'con_diferencia' ? ' · recibido' : ' · en tránsito') : i.traslado === 'apartado' ? 'apartado' : 'pendiente') + '</td>' : ''}</tr>`).join('')}</tbody></table></div>
+    <div class="pv-cuerpo"><div class="pd-c-tabla"><table class="pd-items pd-t"><thead><tr><th>Artículo</th><th class="num">Pedido</th>${hayRem ? '<th class="num" title="Lo que trajo el remito de ' + esc(PD_NOM[p.destino] || '') + '">Remito</th>' : ''}${hayRec ? '<th class="num">Llegó</th>' : ''}${ofi ? '<th>Remito</th>' : ''}</tr></thead><tbody>${its2.map(i => `<tr class="${pdCambioDe(p, i) ? 'pdv-cambio' : ''}"><td><div class="art">${i.sku === 'VARIOS' ? '' : foto(i.sku, 'chica')}<div><b>${esc(i.sku === 'VARIOS' ? (i.descripcion || 'Varios') : i.sku)}</b>${i.sku === 'VARIOS' ? ' <span class="chip gray">renglón libre</span>' : '<div class="mini">' + esc(i.descripcion || '') + '</div>'}${pdCambioChip(pdCambioDe(p, i))}</div></div></td><td class="num"><b>${Number(i.cantidad)}</b></td>${hayRem ? '<td class="num">' + (i.sku === 'VARIOS' ? '<span class="mini">sin código</span>' : pdVinoNum(i)) + '</td>' : ''}${hayRec ? '<td class="num">' + (i.recibida != null ? (Number(i.recibida) < Number(i.cantidad) ? '<span class="chip red">' + Number(i.recibida) + '</span>' : Number(i.recibida)) : '') + '</td>' : ''}${ofi ? '<td class="mini">' + (i.sacado ? '' : i.remito ? esc(i.remito) + (i.transito === 'recibido' || i.transito === 'con_diferencia' ? ' · recibido' : ' · en tránsito') : i.traslado === 'apartado' ? 'apartado' : 'pendiente') + '</td>' : ''}</tr>`).join('')}</tbody></table></div>
     <div class="pv-tot"><b>${its.reduce((t, i) => t + Number(i.cantidad), 0)}</b> unidades en ${its.length} ${its.length === 1 ? 'renglón' : 'renglones'}</div>
     <div class="pv-pie">${p.pdf_url ? `<a class="ib" href="${esc(p.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF del pedido" aria-label="PDF">${_i('pdf')}</a>` : ''}${p.xlsx_url ? `<a class="ib" href="${esc(p.xlsx_url)}" title="Bajar el pedido en Excel" aria-label="Excel"><span class="pd-xls-ico">${XLS_ICO}</span></a>` : ''}<span class="spacer"></span><button class="btn primary" onclick="cerrarModal()">Cerrar</button></div></div></div>`, 'pastilla');
 }
@@ -2022,7 +2023,7 @@ async function pdWaPrep0(id) {
   try {
     const { data: p } = await sb.rpc('pos_pedido_completo', { p_id: id });   // en la versión 2, 3…: el pedido completo ya actualizado
     const det = p && p.items; if (!p || !det || !det.length) return; await pdXlsLib(); if (window._pdFileId !== id) return;
-    const filas = [['Cantidad', 'SKU', 'Descripción']].concat(det.map(d => [Number(d.cantidad), d.sku, d.descripcion || '']));   // (JP 18-nov) con la descripción
+    const filas = [['Cantidad', 'SKU', 'Descripción']].concat(pdItemsCambios(p, det).map(d => [Number(d.cantidad), d.sku, (d.descripcion || '') + pdCambioTxt(pdCambioDe(p, d))]));   // (JP 18-nov) lo que cambió, primero   // (JP 18-nov) con la descripción
     const ws = XLSX.utils.aoa_to_sheet(filas); ws['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 56 }]; const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
     const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
     window._pdFile = new File([buf], (p.archivo || 'Pedido_' + id) + '_ClaudiaAdorno.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -2061,7 +2062,7 @@ async function pdWaIr(id, dest, sigue) {
   modal(`<div class="cartel-pil"><span class="t"><b>Adjuntá el Excel en el chat</b><span class="mini">Se bajó <b>${esc(f.name)}</b> a la carpeta Descargas. En el chat de WhatsApp tocá el clip 📎 → Documento y elegilo, o arrastralo al chat.</span></span><button class="btn primary" onclick="window._pdDespues()">Listo</button></div>`, 'pastilla');
 }
 function pdQuien(n) { n = String(n || '').trim(); if (!n || n.includes('@')) return ''; const p = n.split(','); return p.length > 1 ? tit(p[1]) + ' ' + tit(p[0]) : tit(n); }   // «DONZELLI, SORAYA BEATRIZ» → «Soraya Beatriz Donzelli»; un usuario genérico (mail) no se muestra
-function pdTextoWA(numero, items, nota, quien) { const q = pdQuien(quien); return `Pedido ${numero} · Claudia Adorno ${LOCALES[LOCAL]}` + (q ? '\nEnviado por ' + q : ''); }   // (JP 18-nov) solo el título: el detalle va en el Excel del link
+function pdTextoWA(numero, items, nota, quien, ver) { const q = pdQuien(quien); return `Pedido ${numero}${Number(ver) > 1 ? ' · versión ' + Number(ver) + ' (modificado)' : ''} · Claudia Adorno ${LOCALES[LOCAL]}` + (q ? '\nEnviado por ' + q : ''); }   // (JP 18-nov) solo el título: el detalle va en el Excel del link
 async function pdEnviar() {
   const g = PD.cola[0]; const items = g.items.filter(i => i.cantidad > 0); if (!items.length) { toast('El pedido no tiene cantidades', 'error'); return; }
   const nota = document.getElementById('pd-nota').value.trim(); g.nota = nota; document.getElementById('pd-ok').disabled = true;
@@ -2100,9 +2101,54 @@ async function pdDescontarOk(id) {
 }
 function pdWA(id) {
   const p = PD.hechos.find(x => x.id === id); if (!p) return; const its = (p.items || []).map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad) }));
-  const txt = p.ajuste_de ? pdTextoDesc(p.numero, p.ajuste_de, its, '', p.version, p.autorizado_por || p.por) : pdTextoWA(p.numero, its, p.nota, p.autorizado_por || p.por); window._pdTxt = txt;
-  pdFicha(p.ajuste_de ? 'Pedido ' + p.ajuste_de + ' actualizado' : 'Pedido ' + p.numero + ' a ' + (PD_CORTO[p.destino] || PD_NOM[p.destino] || p.destino), p.id, p.destino, 'lista', p.wa_para, 'cerrarModal()');
+  const txt = p.ajuste_de ? pdTextoDesc(p.numero, p.ajuste_de, its, '', p.version, p.autorizado_por || p.por) : pdTextoWA(p.numero, its, p.nota, p.autorizado_por || p.por, p.reemplaza_a ? p.version : 0); window._pdTxt = txt;
+  pdFicha(p.ajuste_de ? 'Pedido ' + p.ajuste_de + ' actualizado' : 'Pedido ' + p.numero + (p.reemplaza_a ? ' · versión ' + p.version : ' a ' + (PD_CORTO[p.destino] || PD_NOM[p.destino] || p.destino)), p.id, p.destino, 'lista', p.wa_para, 'cerrarModal()');
 
+}
+// (JP 18-nov) qué cambió en una versión modificada: va primero y en negrita (ficha, PDF y Excel); lo que se sacó aparece con 0
+function pdCambioDe(p, i) { return (p.cambios || []).find(c => c.sku === i.sku && (i.sku !== 'VARIOS' || String(c.descripcion || '').toLowerCase() === String(i.descripcion || '').toLowerCase())) || null; }
+function pdCambioChip(c) { if (!c) return ''; const a = Number(c.antes), n = Number(c.ahora); return ' <span class="chip ' + (!a ? 'green' : !n ? 'red' : 'amber') + '">' + (!a ? 'nuevo' : !n ? 'se sacó · eran ' + a : 'antes ' + a) + '</span>'; }
+function pdCambioTxt(c) { if (!c) return ''; const a = Number(c.antes), n = Number(c.ahora); return !a ? ' (nuevo)' : !n ? ' (se sacó, eran ' + a + ')' : ' (antes ' + a + ')'; }
+function pdItemsCambios(p, its) { const camb = p.cambios || []; if (!camb.length) return its; const es = i => !!pdCambioDe(p, i); return [...its.filter(es), ...camb.filter(c => !Number(c.ahora)).map(c => ({ sku: c.sku, descripcion: c.descripcion, cantidad: 0, sacado: true })), ...its.filter(i => !es(i))]; }
+// (JP 18-nov) Modificar un pedido enviado (el lápiz): se cambian cantidades, se saca o se suma; sale la versión siguiente con el pedido completo y la anterior queda anulada
+let PDM = null;
+async function pdModificar(id) {
+  const p = (PD.hechos || []).find(x => x.id === id); if (!p) return;
+  const { data, error } = await sb.rpc('pos_pedido_completo', { p_id: id }); if (error || !data) { toast(error ? error.message : 'No pude leer el pedido', 'error'); return; }
+  PDM = { id, numero: p.numero, destino: p.destino, version: Number(data.version || p.version || 1), items: (data.items || []).map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad), antes: Number(i.cantidad), libre: i.sku === 'VARIOS' })) };
+  pdModRender();
+}
+function pdModRender() {
+  const M = PDM; if (!M) return; const v = M.version + 1;
+  const camb = M.items.filter(i => i.cantidad !== (i.antes || 0)).length;
+  const fila = (it, n) => { const c = it.cantidad, a = it.antes || 0, ch = c !== a;
+    return `<tr class="${ch ? 'pdv-cambio' : ''}"><td>${it.libre ? '<span class="chip gray">renglón libre</span> <b>' + esc(it.descripcion) + '</b>' : '<b>' + esc(it.sku) + '</b> <span class="mini">' + esc(it.descripcion || '') + '</span>'}${ch ? pdCambioChip({ antes: a, ahora: c }) : ''}</td><td class="num"><input value="${c}" inputmode="numeric" onfocus="this.select()" onchange="PDM.items[${n}].cantidad=Math.max(0,Math.round(num(this.value)));pdModRender()"></td><td>${c > 0 ? `<button class="btn ico chico" onclick="PDM.items[${n}].cantidad=0;pdModRender()" title="Sacarlo del pedido" aria-label="Sacar">${_i('x')}</button>` : ''}</td></tr>`; };
+  modal(`<div class="pd-conf"><div class="pd-c-cab"><h3>Modificar ${esc(M.numero)}</h3><span class="pd-c-ver" title="Sale la versión ${v} con el pedido completo y la versión ${M.version} queda anulada">Versión ${v}</span><button class="btn ico" onclick="PDM=null;cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="cli-sin pd-nota-box" style="margin:0 0 10px">${_i('buscar')}<input id="pdm-add" placeholder="Sumar un artículo: código o descripción, y Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();pdModAdd(this.value)}"></div>
+    <div class="pd-c-tabla"><table class="pd-items pd-t"><thead><tr><th>Artículo</th><th class="num">Cant.</th><th></th></tr></thead><tbody>${M.items.map(fila).join('')}</tbody></table></div>
+    <div class="pd-c-mail" style="margin-top:10px">${camb ? camb + (camb === 1 ? ' cambio: va primero y en negrita' : ' cambios: van primero y en negrita') + ' en el pedido que se manda.' : 'Cambiá una cantidad, sacá un artículo con la cruz o sumá uno arriba.'} Sale la versión ${v} completa y la ${M.version} queda anulada.</div>
+    <div class="pd-c-pie"><button class="btn" onclick="PDM=null;cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="pdm-ok" onclick="pdModificarOk()"${camb ? '' : ' disabled'}>Mandar la versión ${v}</button></div></div>`, 'pastilla');
+}
+function pdModAdd(v) {
+  const q = String(v || '').trim().toUpperCase(); if (!q || !PDM) return;
+  const a = ARTS.find(x => x.sku.toUpperCase() === q) || ARTS.find(x => !x.discontinuado && (x.sku + ' ' + x.descripcion).toUpperCase().includes(q)); if (!a) { toast('No encontré ese producto', 'error'); return; }
+  const ya = PDM.items.find(i => i.sku === a.sku);
+  if (a.discontinuado && !ya) { toast(a.sku + ' está dado de baja (tilde importado en el Dragonfish): no se pide', 'error'); return; }
+  if (ya) ya.cantidad++; else PDM.items.unshift({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, antes: 0 });
+  pdModRender(); setTimeout(() => { const n = document.getElementById('pdm-add'); if (n) n.focus(); }, 90);
+}
+async function pdModificarOk() {
+  const M = PDM; if (!M) return;
+  const items = M.items.filter(i => i.cantidad > 0).map(i => i.libre ? { sku: 'VARIOS', cantidad: i.cantidad, descripcion: i.descripcion } : { sku: i.sku, cantidad: i.cantidad });
+  if (!items.length) { toast('El pedido quedaría vacío: para anularlo entero, pedíselo a un admin', 'error'); return; }
+  const b = document.getElementById('pdm-ok'); if (b) b.disabled = true;
+  const aid = await pdAut('pedido', 'Modificar el pedido ' + M.numero + ' de ' + LOCALES[LOCAL] + ' · sale la versión ' + (M.version + 1)); if (aid === null) { pdModRender(); return; }
+  if (!await hubReg('pos.pedidos', { accion: 'modificar', pedido: M.id })) return;
+  const { data, error } = await sb.rpc('pos_pedido_modificar', { p_id: M.id, p_items: items, p_nota: null, p_autorizacion_id: aid || null });
+  if (error) { pdAutFallo('pedido', error); pdModRender(); return; }
+  PDM = null; window._pdTxt = pdTextoWA(data.numero_fmt, items, '', data.enviado_por, data.version);
+  pdFicha('Pedido ' + data.numero_fmt + ' · versión ' + data.version, data.id, data.destino, 'lista', data.wa_para, 'cerrarModal();cargarPedidosLocal()');
+  cargarPedidosLocal();
 }
 // el remito de FGR: «R 0003-00072748» → «72748»
 function pdRems(p) { const r = (p.remitos || []).map(x => String(x).replace(/^R\s*\d+-0*/, '')); return r.length ? (r.length > 1 ? 'remitos ' : 'remito ') + r.join(', ') : ''; }
@@ -2530,25 +2576,53 @@ function imprimirA4(x) {
 
 // ═══ Hoja A4 (misma plantilla que pos_pdf.py del servicio: si se cambia una, cambiar la otra) ═══
 const A4_TECA = 'https://cdn.shopify.com/s/files/1/0827/7635/9129/files/mails-fondo-teca.jpg?v=1789414736&width=900';
-const A4_CSS = `body{margin:0;background:#fff;font-family:'Jost',sans-serif;color:#1C1612;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:0}
-.a4{width:210mm;height:297mm;background:#4A3F35 url('${A4_TECA}') center/cover;box-sizing:border-box;padding:8mm;overflow:hidden;page-break-after:always}.a4:last-child{page-break-after:auto}
-.panel{height:100%;display:grid;grid-template-columns:64mm 1fr;box-sizing:border-box}
-.side{background:rgba(250,247,242,.82);padding:12mm 8mm 9mm;display:flex;flex-direction:column;font-size:10.5px;line-height:1.65;color:#43464A}
-.side .logo{width:50mm;display:block;filter:brightness(0);margin-bottom:7mm}.side .logo.atelier{width:52mm}
-.side .et{font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:#95867B;margin:5mm 0 1mm;font-weight:500}.side b{color:#1C1612;font-weight:500}
-.side .qr{width:32mm;height:32mm;margin-top:auto;display:block}.side .cae{margin-top:3mm;font-size:9.5px;line-height:1.6}
-.aviso{margin-top:6mm;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#95867B;border:1px solid #C8B89A;padding:2mm 3mm;text-align:center}
-.main{background:#fff;padding:12mm 11mm 9mm 10mm;display:flex;flex-direction:column}
-.n{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:300;line-height:1;color:#1C1612}.nro{font-size:11px;letter-spacing:.12em;color:#43464A;margin-top:3mm;line-height:1.7}
-.sep{height:1.5px;background:#1C1612;margin:6mm 0 5mm}.et2{font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:#95867B;margin:0 0 2mm;font-weight:500;text-align:center}
-.it{display:grid;grid-template-columns:17mm 1fr auto;gap:4mm;align-items:center;padding:2mm 0;border-bottom:1px solid #EDEAE4;font-size:12px}.it img,.it .sinfoto{width:17mm;height:17mm;object-fit:contain;display:block}
-.it .sku{font-size:9.5px;color:#95867B;margin-top:1mm;letter-spacing:.06em}.it .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.6}.it .num small{color:#95867B;font-size:10px;display:block}
-.tot{margin-top:auto}.fila{display:flex;justify-content:space-between;font-size:12px;padding:1mm 0;font-variant-numeric:tabular-nums}
-.fila.total{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;border-top:1.5px solid #1C1612;margin-top:3mm;padding-top:3.5mm}.fila.imp{font-size:10.5px;color:#95867B;padding:.5mm 0}
-.mini{font-size:9.5px;color:#95867B;line-height:1.6}.frase{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:#1C1612;margin-top:6mm}
-.contacto{font-size:9.5px;color:#95867B;line-height:2.4;margin-top:3mm}.contacto b{color:#43464A;font-weight:500}.contacto a{color:inherit;text-decoration:none;border-bottom:1px solid #E9E2D5}
-.cont{font-size:9.5px;color:#95867B;text-align:right;margin-top:auto;letter-spacing:.1em}.hoja{font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:#95867B;text-align:right;margin-top:1.5mm}
-.prev{position:absolute;top:4mm;left:0;right:0;text-align:center;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#fff;opacity:.8}`;
+const A4_CSS = `/* Claudia Adorno · diseño ÚNICO de las hojas A4 del POS (JP 18-nov-2026).
+   Lo usan: factura, nota de crédito, comprobante manual, presupuesto, remito, traslado y pedido de mercadería;
+   tanto el PDF que arma el servidor (pos_pdf.py lo lee de la web) como la «Hoja A4» que el POS muestra en pantalla (_generar.py lo incrusta).
+   Si se cambia algo acá, cambia en todas las piezas. */
+body { margin: 0; background: #fff; font-family: 'Jost', sans-serif; color: #1C1612; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+@page { size: A4; margin: 0; }
+.a4 { width: 210mm; height: 297mm; background: #4A3F35 url('https://cdn.shopify.com/s/files/1/0827/7635/9129/files/mails-fondo-teca.jpg?v=1789414736&width=900') center / cover; box-sizing: border-box; padding: 8mm; overflow: hidden; page-break-after: always; }
+.a4:last-child { page-break-after: auto; }
+.panel { height: 100%; display: grid; grid-template-columns: 64mm 1fr; box-sizing: border-box; }
+.side { background: rgba(250,247,242,.82); padding: 12mm 8mm 9mm; display: flex; flex-direction: column; font-size: 10.5px; line-height: 1.65; color: #43464A; }
+.side .logo { width: 50mm; display: block; filter: brightness(0); margin-bottom: 7mm; } .side .logo.atelier { width: 52mm; }
+.side .et { font-size: 8.5px; letter-spacing: .22em; text-transform: uppercase; color: #95867B; margin: 5mm 0 1mm; font-weight: 500; }
+.side b { color: #1C1612; font-weight: 500; }
+.side .qr { width: 32mm; height: 32mm; margin-top: auto; display: block; }
+.side .cae { margin-top: 3mm; font-size: 9.5px; line-height: 1.6; }
+.aviso { margin-top: 6mm; font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: #95867B; border: 1px solid #C8B89A; padding: 2mm 3mm; text-align: center; }
+.main { background: #FFFFFF; padding: 12mm 11mm 9mm 10mm; display: flex; flex-direction: column; }
+.n { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 300; line-height: 1; color: #1C1612; }
+.nro { font-size: 11px; letter-spacing: .12em; color: #43464A; margin-top: 3mm; line-height: 1.7; }
+.sep { height: 1.5px; background: #1C1612; margin: 6mm 0 5mm; }
+.et2 { font-size: 8.5px; letter-spacing: .22em; text-transform: uppercase; color: #95867B; margin: 0 0 2mm; font-weight: 500; text-align: center; }
+.it { display: grid; grid-template-columns: 17mm 1fr auto; gap: 4mm; align-items: center; padding: 2mm 0; border-bottom: 1px solid #EDEAE4; font-size: 12px; }
+.it img, .it .sinfoto { width: 17mm; height: 17mm; object-fit: contain; display: block; }
+.it .sku { font-size: 9.5px; color: #95867B; margin-top: 1mm; letter-spacing: .06em; }
+.it .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; line-height: 1.6; } .it .num small { color: #95867B; font-size: 10px; display: block; }
+.tot { margin-top: auto; }
+.fila { display: flex; justify-content: space-between; font-size: 12px; padding: 1mm 0; font-variant-numeric: tabular-nums; }
+.fila.total { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 600; border-top: 1.5px solid #1C1612; margin-top: 3mm; padding-top: 3.5mm; }
+.fila.imp { font-size: 10.5px; color: #95867B; padding: .5mm 0; }
+.mini { font-size: 9.5px; color: #95867B; line-height: 1.6; }
+.frase { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 16px; color: #1C1612; margin-top: 6mm; }
+.contacto { font-size: 9.5px; color: #95867B; line-height: 2.4; margin-top: 3mm; } .contacto b { color: #43464A; font-weight: 500; }
+.contacto a { color: inherit; text-decoration: none; border-bottom: 1px solid #E9E2D5; }
+.cont { font-size: 9.5px; color: #95867B; text-align: right; margin-top: auto; letter-spacing: .1em; }
+.hoja { font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase; color: #95867B; text-align: right; margin-top: 1.5mm; }
+.anulado { margin-top: 5mm; text-align: center; color: #b91c1c; font-weight: 500; border: 2px solid #b91c1c; padding: 2mm; letter-spacing: .1em; }
+.prev { position: absolute; top: 4mm; left: 0; right: 0; text-align: center; font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: #fff; opacity: .8; }
+/* pedido de mercadería: muchos artículos y sin precios → renglones más bajos y la cantidad grande */
+.it.ch { grid-template-columns: 12mm 1fr auto; gap: 3.5mm; padding: 1.3mm 0; font-size: 11.5px; }
+.it.ch img, .it.ch .sinfoto { width: 12mm; height: 12mm; }
+.it.ch .sku { margin-top: .4mm; }
+.it .cant { font-size: 15px; font-weight: 500; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; } .it .cant small { font-size: 10px; color: #95867B; font-weight: 400; margin-left: 1mm; }
+.side .nota { margin-top: 1mm; font-style: italic; }
+/* versión modificada de un pedido: lo que cambió va primero y en negrita, con lo que era antes */
+.it.cambio b, .it.cambio .cant { font-weight: 700; } .it.cambio .sku { color: #43464A; font-weight: 500; }
+.it .cambio-l { display: inline-block; margin-left: 2mm; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #9a3412; font-weight: 500; }
+`;   // (JP 18-nov) sale de a4.css: el MISMO diseño que los PDF de pos_pdf.py (una sola fuente para todas las piezas)
 const A4_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 function a4HTML(x) {
   const { c, det, pagos, rel } = x; const mp = Object.fromEntries(MEDIOS.map(m => [m.clave, m.nombre]));
@@ -4342,6 +4416,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=200"></script>
+<script src="manual.js?v=201"></script>
 </body>
 </html>
