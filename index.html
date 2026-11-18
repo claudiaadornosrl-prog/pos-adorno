@@ -1931,8 +1931,8 @@ function pdXlsLib() { return _pdXlsLib || (_pdXlsLib = new Promise((ok, mal) => 
 async function pdWaPrep(id) {
   window._pdFile = null; window._pdFileId = id;
   try {
-    const [{ data: p }, { data: det }] = await Promise.all([sb.from('pos_pedidos').select('archivo,local,numero,version').eq('id', id).maybeSingle(), sb.from('pos_pedidos_det').select('sku,descripcion,cantidad,nro_item').eq('pedido_id', id).order('nro_item')]);
-    if (!p || !det || !det.length) return; await pdXlsLib(); if (window._pdFileId !== id) return;
+    const { data: p } = await sb.rpc('pos_pedido_completo', { p_id: id });   // en la versión 2, 3…: el pedido completo ya actualizado
+    const det = p && p.items; if (!p || !det || !det.length) return; await pdXlsLib(); if (window._pdFileId !== id) return;
     const filas = [['Cantidad', 'SKU']].concat(det.map(d => [Number(d.cantidad), d.sku === 'VARIOS' ? (d.descripcion || 'VARIOS') : d.sku]));
     const ws = XLSX.utils.aoa_to_sheet(filas); ws['!cols'] = [{ wch: 12 }, { wch: 24 }]; const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
     const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
@@ -1979,12 +1979,12 @@ async function pdEnviar() {
       <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))">Copiar texto</button><button class="btn" onclick="pdBajarExcel()" title="Bajar el Excel del pedido (Cantidad y SKU)">Bajar el Excel</button><span class="spacer"></span>${pdWaCampo(g.destino)}<button class="btn primary" id="pd-wa-ir" onclick="pdWaIr(${data.id},'${g.destino}','modal')">💬 Mandar por WhatsApp</button></div>`); pdWaPrep(data.id);
   } else { toast('Pedido ' + data.numero_fmt + ' a Oficina: ' + data.unidades + ' unidades', 'success'); pdModal(); }
 }
-function pdTextoDesc(numero, orig, items, nota) { return `DESCUENTO del pedido ${orig} · Claudia Adorno ${LOCALES[LOCAL]}\nDescontar de lo ya pedido:\n` + items.map(i => i.sku === 'VARIOS' ? `• ${Math.abs(i.cantidad)} × ${i.descripcion}` : `• ${Math.abs(i.cantidad)} × ${i.sku}${i.descripcion ? ' · ' + tit(i.descripcion) : ''}`).join('\n') + (nota ? `\nNota: ${nota}` : '') + `\n(Descuento ${numero})\nGracias.`; }
+function pdTextoDesc(numero, orig, items, nota, ver) { return `Pedido ${orig}${ver ? ' · versión ' + ver : ''} (actualizado) · Claudia Adorno ${LOCALES[LOCAL]}\nReemplaza a la versión anterior. Va adjunto el pedido completo ya actualizado. Se descontó:\n` + items.map(i => i.sku === 'VARIOS' ? `• ${Math.abs(i.cantidad)} × ${i.descripcion}` : `• ${Math.abs(i.cantidad)} × ${i.sku}${i.descripcion ? ' · ' + tit(i.descripcion) : ''}`).join('\n') + (nota ? `\nNota: ${nota}` : '') + `\nGracias.`; }
 function pdYaDesc(p, it) { return (PD.hechos || []).filter(a => a.ajuste_de_id === p.id && a.estado !== 'cancelado').reduce((t, a) => t + (a.items || []).filter(x => x.sku === it.sku && (x.descripcion || '') === (it.descripcion || '')).reduce((u, x) => u - Number(x.cantidad), 0), 0); }
 function pdDescontar(id) {
   const p = (PD.hechos || []).find(x => x.id === id); if (!p) return; const its = p.items || [];
   modal(`<div class="m-head"><h3>Descontar del pedido ${esc(p.numero)}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="mini" style="margin-bottom:10px;line-height:1.6">El pedido ya enviado no se modifica. Poné cuánto hay que <b>sacar</b> de cada artículo: se genera un descuento aparte que le llega a ${esc(PD_NOM[p.destino] || p.destino)} con esas cantidades en negativo. Si lo que querés es <b>agregar</b>, hacé un pedido nuevo.</div>
+    <div class="mini" style="margin-bottom:10px;line-height:1.6">El pedido ya enviado no se modifica. Poné cuánto hay que <b>sacar</b> de cada artículo: le llega a ${esc(PD_NOM[p.destino] || p.destino)} la versión siguiente del pedido, completa y ya actualizada (con lo que se descontó). Si lo que querés es <b>agregar</b>, hacé un pedido nuevo.</div>
     <table class="pd-items pd-t"><thead><tr><th>Artículo</th><th class="num">Pedido</th><th class="num">Ya descontado</th><th class="num">Descontar</th></tr></thead><tbody>${its.map(i => { const ya = pdYaDesc(p, i), max = Number(i.cantidad) - ya; return `<tr><td><b>${esc(i.sku === 'VARIOS' ? (i.descripcion || 'Varios') : i.sku)}</b>${i.sku === 'VARIOS' ? '' : ' <span class="mini">' + esc(i.descripcion || '') + '</span>'}</td><td class="num">${Number(i.cantidad)}</td><td class="num">${ya || ''}</td><td class="num">${max > 0 ? `<input class="pd-desc" data-n="${i.nro_item}" data-max="${max}" inputmode="numeric" pattern="[0-9]*" placeholder="0" onfocus="this.select()">` : '<span class="mini">todo</span>'}</td></tr>`; }).join('')}</tbody></table>
     <div class="cli-sin pd-nota-box">${_i('edit')}<input id="pd-desc-nota" placeholder="Nota (opcional): por qué se descuenta" autocomplete="off"></div>
     <div class="m-foot"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn peligro" id="pd-desc-ok" onclick="pdDescontarOk(${p.id})">Enviar el descuento</button></div>`);
@@ -1998,16 +1998,16 @@ async function pdDescontarOk(id) {
   if (!await hubReg('pos.pedidos', { accion: 'descontar', pedido: id })) return; const { data, error } = await sb.rpc('pos_pedido_descontar', { p_id: id, p_items: items, p_nota: nota || null, p_autorizacion_id: aid || null });
   if (error) { pdAutFallo('pedido', error); return; }
   const lst = items.map(x => { const o = (p.items || []).find(i => i.nro_item === x.nro_item) || {}; return { sku: o.sku, descripcion: o.descripcion, cantidad: x.cantidad }; });
-  const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoDesc(data.numero_fmt, p.numero, lst, nota); window._pdTxt = txt;
-  modal(`<div class="m-head"><h3>Descuento ${esc(data.numero_fmt)} del pedido ${esc(p.numero)}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal();cargarPedidosLocal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div style="margin:8px 0">${data.mail_para ? '✉ El mail con el descuento sale solo en un minuto a <b>' + esc(data.mail_para) + '</b>.' : '✉ Este destino no tiene mail configurado: no se manda mail.'}</div>
+  const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoDesc(data.numero_fmt, p.numero, lst, nota, 1 + (PD.hechos || []).filter(a => a.ajuste_de_id === p.id).length + 1); window._pdTxt = txt;
+  modal(`<div class="m-head"><h3>Pedido ${esc(p.numero)} actualizado</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal();cargarPedidosLocal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div style="margin:8px 0">${data.mail_para ? '✉ El mail con el pedido actualizado (PDF y Excel completos) sale solo en un minuto a <b>' + esc(data.mail_para) + '</b>.' : '✉ Este destino no tiene mail configurado: no se manda mail.'}</div>
     <div class="mini" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
     <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))">Copiar texto</button><button class="btn" onclick="pdBajarExcel()" title="Bajar el Excel del pedido (Cantidad y SKU)">Bajar el Excel</button><span class="spacer"></span>${pdWaCampo(p.destino)}<button class="btn primary" id="pd-wa-ir" onclick="pdWaIr(${data.id},'${p.destino}','lista')">💬 Mandar por WhatsApp</button></div>`); pdWaPrep(data.id);
   cargarPedidosLocal();
 }
 function pdWA(id) {
   const p = PD.hechos.find(x => x.id === id); if (!p) return; const its = (p.items || []).map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad) }));
-  const txt = p.ajuste_de ? pdTextoDesc(p.numero, p.ajuste_de, its, '') : pdTextoWA(p.numero, its, p.nota); window._pdTxt = txt;
+  const txt = p.ajuste_de ? pdTextoDesc(p.numero, p.ajuste_de, its, '', p.version) : pdTextoWA(p.numero, its, p.nota); window._pdTxt = txt;
   modal(`<div class="m-head"><h3>Mandar ${esc(p.numero)} por WhatsApp</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="mini" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
     <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))">Copiar texto</button><button class="btn" onclick="pdBajarExcel()" title="Bajar el Excel del pedido (Cantidad y SKU)">Bajar el Excel</button><span class="spacer"></span>${pdWaCampo(p.destino)}<button class="btn primary" id="pd-wa-ir" onclick="pdWaIr(${p.id},'${p.destino}','lista')">💬 Mandar por WhatsApp</button></div>`); pdWaPrep(p.id);
@@ -4221,6 +4221,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=181"></script>
+<script src="manual.js?v=182"></script>
 </body>
 </html>
