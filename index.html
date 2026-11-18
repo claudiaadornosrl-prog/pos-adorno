@@ -656,6 +656,7 @@ table:has(> thead), .pd-c-tabla { overflow: clip; }   /* (JP 18-nov) con overflo
 .aut-pils { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
 .aut-pil { border: 1.5px solid var(--primary); background: #fff; color: var(--primary); border-radius: 999px; padding: 11px 14px; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .aut-pil.esta { background: var(--primary); color: #fff; }
+.aut-pils .aut-pil { height: 50px; padding: 0 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; } .aut-pil .ap-n { max-width: 100%; overflow: hidden; text-overflow: ellipsis; } .aut-pil .ap-s { font-size: 11px; font-weight: 400; letter-spacing: .02em; }
 .aut-pil.sin { border-style: dashed; border-color: #9ca3af; background: #fff; color: #6b7280; } .aut-pil.cam { border-color: #9ca3af; color: var(--text, #374151); } .aut-caja.sin { background: #fee2e2; } .aut-caja.ok { background: #dcfce7; }
 .aut-p { display: flex; align-items: center; gap: 8px; padding: 5px 0; } .aut-p .nom { flex: 1; } .aut-p .nom .mini { display: block; } .aut-clave { display: flex; gap: 8px; margin-top: 12px; } .aut-clave input { flex: 1; border: 1.5px solid var(--border); border-radius: 999px; padding: 8px 12px; font-family: inherit; font-size: 14px; }
 .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid #cbd5e1; border-top-color: var(--primary); border-radius: 50%; animation: gir 1s linear infinite; vertical-align: middle; margin-right: 6px; } @keyframes gir { to { transform: rotate(360deg); } }
@@ -3946,10 +3947,11 @@ function autVentana() {
 function autFin(v) { if (!AUT || AUT.fin) return; AUT.fin = true; clearInterval(AUT.poll); caraCamOff(); const r = AUT.resolve; AUT = null; cerrarModal(); r(v); }
 function autCancelar() { if (AUT && AUT.id) sb.rpc('pos_autorizacion_cancelar', { p_id: AUT.id }); autFin(null); }
 function autPersona(p, lista) {
-  const pn = pila(p.nombre).split(' ')[0], rep = lista.filter(x => pila(x.nombre).split(' ')[0] === pn).length > 1, nom = rep ? pila(p.nombre) : pn;
+  const ape = n => String(n || '').includes(',') ? tit(String(n).split(',')[0]) : pila(n);   // «BENITEZ, ROMINA SOLANGE» → «Benitez»
+  const pn = ape(p.nombre), rep = lista.filter(x => ape(x.nombre) === pn).length > 1, nom = rep ? pn + ' ' + pila(p.nombre).slice(0, 1) + '.' : pn;
   const donde = p.fuente === 'reloj' ? 'En el local · fichó ' + p.hora : p.fuente === 'turno' ? 'En el local · turno desde ' + p.hora : 'Fuera del local: puede autorizar desde donde esté';
-  if (!p.push) return `<button class="aut-pil sin" title="No tiene los avisos activados en el celu: con la cámara o con su usuario y clave" onclick="autSinPush(${p.empleado_id})">${esc(nom)} · sin avisos</button>`;
-  return `<button class="aut-pil${p.presente ? ' esta' : ''}" title="${esc(donde)}" onclick="autPedir(${p.empleado_id})">Pedir a ${esc(nom)}</button>`;
+  if (!p.push) return `<button class="aut-pil sin" title="No tiene los avisos activados en el celu: con la cámara o con su usuario y clave" onclick="autSinPush(${p.empleado_id})"><span class="ap-n">${esc(nom)}</span><span class="ap-s">sin avisos</span></button>`;
+  return `<button class="aut-pil${p.presente ? ' esta' : ''}" title="${esc(donde)}" onclick="autPedir(${p.empleado_id})"><span class="ap-n">${esc(nom)}</span></button>`;
 }
 function autLista(msg) {
   if (!AUT) return; const caja = document.getElementById('aut-caja'); if (!caja) return;
@@ -4322,6 +4324,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=196"></script>
+<script src="manual.js?v=197"></script>
 </body>
 </html>
