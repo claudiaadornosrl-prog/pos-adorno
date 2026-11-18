@@ -1928,8 +1928,9 @@ const pdWaCampo = dest => `<input id="pd-wa-num" inputmode="tel" autocomplete="o
 // Se prepara al abrir la ventana, así al tocar el botón se comparte en el acto (el celular no deja compartir si se demora).
 let _pdXlsLib = null;
 function pdXlsLib() { return _pdXlsLib || (_pdXlsLib = new Promise((ok, mal) => { if (window.XLSX) return ok(); const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload = () => ok(); sc.onerror = () => { _pdXlsLib = null; mal(new Error('No pude cargar el armado del Excel')); }; document.head.appendChild(sc); })); }
-async function pdWaPrep(id) {
-  window._pdFile = null; window._pdFileId = id;
+async function pdWaPrep(id) { window._pdPrep = pdWaPrep0(id); return window._pdPrep; }
+async function pdWaPrep0(id) {
+  window._pdFile = null; window._pdFileId = id; window._pdLink = null;
   try {
     const { data: p } = await sb.rpc('pos_pedido_completo', { p_id: id });   // en la versión 2, 3…: el pedido completo ya actualizado
     const det = p && p.items; if (!p || !det || !det.length) return; await pdXlsLib(); if (window._pdFileId !== id) return;
@@ -1937,6 +1938,14 @@ async function pdWaPrep(id) {
     const ws = XLSX.utils.aoa_to_sheet(filas); ws['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 56 }]; const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
     const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
     window._pdFile = new File([buf], (p.archivo || 'Pedido_' + id) + '_ClaudiaAdorno.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    // se sube a la carpeta del pedido (la misma donde el servidor deja el del mail) y el link va al final del texto
+    const ruta = (p.local || LOCAL) + '/pedidos/' + id + '/' + window._pdFile.name;
+    const { error: eu } = await sb.storage.from('comprobantes').upload(ruta, window._pdFile, { upsert: true, contentType: window._pdFile.type });
+    if (eu) { console.warn('Excel del pedido (subir):', eu.message); return; }
+    if (window._pdFileId !== id) return;
+    window._pdLink = SUPABASE_URL + '/storage/v1/object/public/comprobantes/' + ruta;
+    window._pdTxt = window._pdTxt + '\n\n📎 Excel del pedido: ' + window._pdLink;
+    const caja = document.querySelector('#ov .pd-wa-txt'); if (caja) caja.textContent = window._pdTxt;
   } catch (e) { console.warn('Excel del pedido:', e); }
 }
 function pdBajarExcel() {
@@ -1945,6 +1954,7 @@ function pdBajarExcel() {
 }
 async function pdWaIr(id, dest, sigue) {
   const despues = () => { cerrarModal(); if (sigue === 'modal') pdModal(); else cargarPedidosLocal(); };
+  if (window._pdFileId === id && !window._pdLink && window._pdPrep) await Promise.race([window._pdPrep, _esp(3000)]);   // que llegue el link al Excel
   const f = window._pdFileId === id ? window._pdFile : null;
   // celular o tablet: se comparte el Excel adjunto con el texto; WhatsApp pide elegir el contacto
   if (f && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files: [f] })) {
@@ -1955,8 +1965,8 @@ async function pdWaIr(id, dest, sigue) {
   const el = document.getElementById('pd-wa-num'); const n = pdWaNum(el && el.value);
   if (!n) { toast('Escribí el número de WhatsApp con código de área, sin 0 ni 15 (por ejemplo 11 2345 6789)', 'error'); if (el) el.focus(); return; }
   try { localStorage.setItem('pos_pd_wa_' + dest, el.value.trim()); } catch (e) {}
-  // compu: WhatsApp Web no deja adjuntar desde un link, así que el Excel se baja a Descargas y se adjunta en el chat
-  const bajo = f ? pdBajarExcel() : false;
+  // con el link al Excel en el texto no hace falta nada más; si no se pudo subir, el Excel se baja a Descargas y se adjunta a mano
+  const bajo = f && !window._pdLink ? pdBajarExcel() : false;
   waAbrir('https://wa.me/' + n + '?text=' + encodeURIComponent(window._pdTxt)); sb.rpc('pos_pedido_wa', { p_id: id }).then(() => {});
   if (!bajo) { setTimeout(despues, 300); return; }
   window._pdDespues = despues;
@@ -1975,7 +1985,7 @@ async function pdEnviar() {
     const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoWA(data.numero_fmt, items, nota); window._pdTxt = txt;
     modal(`<div class="m-head"><h3>Pedido ${esc(data.numero_fmt)} a ${PD_NOM[g.destino]} armado</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal();pdModal()" aria-label="Cerrar">${_i('x')}</button></div>
       <div style="margin:8px 0">${data.mail_para ? '✉ El mail con el pedido en PDF y en Excel sale solo en un minuto a <b>' + esc(data.mail_para) + '</b>' + (!data.prueba && pdCopia(g.destino) ? ' con copia a ' + esc(pdCopia(g.destino)) : '') + '.' : '✉ No hay mail configurado para este destino (Ajustes): no se manda mail.'}</div>
-      <div class="mini" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
+      <div class="mini pd-wa-txt" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
       <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))">Copiar texto</button><button class="btn" onclick="pdBajarExcel()" title="Bajar el Excel del pedido (Cantidad, SKU y Descripción)">Bajar el Excel</button><span class="spacer"></span>${pdWaCampo(g.destino)}<button class="btn primary" id="pd-wa-ir" onclick="pdWaIr(${data.id},'${g.destino}','modal')">💬 Mandar por WhatsApp</button></div>`); pdWaPrep(data.id);
   } else { toast('Pedido ' + data.numero_fmt + ' a Oficina: ' + data.unidades + ' unidades', 'success'); pdModal(); }
 }
@@ -2001,7 +2011,7 @@ async function pdDescontarOk(id) {
   const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoDesc(data.numero_fmt, p.numero, lst, nota, 1 + (PD.hechos || []).filter(a => a.ajuste_de_id === p.id).length + 1); window._pdTxt = txt;
   modal(`<div class="m-head"><h3>Pedido ${esc(p.numero)} actualizado</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal();cargarPedidosLocal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div style="margin:8px 0">${data.mail_para ? '✉ El mail con el pedido actualizado (PDF y Excel completos) sale solo en un minuto a <b>' + esc(data.mail_para) + '</b>.' : '✉ Este destino no tiene mail configurado: no se manda mail.'}</div>
-    <div class="mini" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
+    <div class="mini pd-wa-txt" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
     <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))">Copiar texto</button><button class="btn" onclick="pdBajarExcel()" title="Bajar el Excel del pedido (Cantidad, SKU y Descripción)">Bajar el Excel</button><span class="spacer"></span>${pdWaCampo(p.destino)}<button class="btn primary" id="pd-wa-ir" onclick="pdWaIr(${data.id},'${p.destino}','lista')">💬 Mandar por WhatsApp</button></div>`); pdWaPrep(data.id);
   cargarPedidosLocal();
 }
@@ -2009,7 +2019,7 @@ function pdWA(id) {
   const p = PD.hechos.find(x => x.id === id); if (!p) return; const its = (p.items || []).map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: Number(i.cantidad) }));
   const txt = p.ajuste_de ? pdTextoDesc(p.numero, p.ajuste_de, its, '', p.version) : pdTextoWA(p.numero, its, p.nota); window._pdTxt = txt;
   modal(`<div class="m-head"><h3>Mandar ${esc(p.numero)} por WhatsApp</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="mini" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
+    <div class="mini pd-wa-txt" style="white-space:pre-wrap;background:var(--primary-bg);border-radius:12px;padding:10px 12px">${esc(txt)}</div>
     <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText(window._pdTxt).then(()=>toast('Texto copiado','success'))">Copiar texto</button><button class="btn" onclick="pdBajarExcel()" title="Bajar el Excel del pedido (Cantidad, SKU y Descripción)">Bajar el Excel</button><span class="spacer"></span>${pdWaCampo(p.destino)}<button class="btn primary" id="pd-wa-ir" onclick="pdWaIr(${p.id},'${p.destino}','lista')">💬 Mandar por WhatsApp</button></div>`); pdWaPrep(p.id);
   setTimeout(() => { const el = document.getElementById('pd-wa-num'); if (el) el.focus(); }, 50);
 }
@@ -4221,6 +4231,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=183"></script>
+<script src="manual.js?v=184"></script>
 </body>
 </html>
