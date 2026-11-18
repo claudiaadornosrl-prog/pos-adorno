@@ -1641,11 +1641,14 @@ async function trDevAceptar(id) {
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
   toast('Mercadería de vuelta: ' + data.unidades + ' unidades entraron al stock de ' + (LOCALES[data.origen] || data.origen), 'success'); cargarArticulos(); cargarRemitos();
 }
+function trFgrVer(id) { PD.hechos = window._PFGR || PD.hechos || []; pdVer(id); }
+function trFgrRecibir(id) { PD.hechos = window._PFGR || PD.hechos || []; const p = PD.hechos.find(x => x.id === id); if (p) pdRecibirFgr(p); }
 async function rmBadge() {
   const { count } = await sb.from('pos_comprobantes').select('id', { count: 'exact', head: true }).eq('tipo', 'RE').eq('destino_local', LOCAL).eq('transito_estado', 'en_transito').eq('estado', 'emitido');
   const { count: cd } = await sb.from('pos_comprobantes').select('id', { count: 'exact', head: true }).eq('tipo', 'RE').eq('local', LOCAL).eq('dif_estado', 'pendiente');
   const { count: cv } = await sb.from('pos_comprobantes').select('id', { count: 'exact', head: true }).eq('tipo', 'RE').eq('local', LOCAL).eq('transito_estado', 'rechazado').eq('estado', 'emitido');
-  const nt = (count || 0) + (cd || 0) + (cv || 0);
+  let nf = 0; try { const { data: pf } = await sb.rpc('pos_pedidos_listar', { p_local: LOCAL }); nf = (pf || []).filter(p => p.estado === 'en_transito' && p.destino !== 'oficina' && !p.ajuste_de).length; } catch (e) {}   // pedidos a Familia García por recibir
+  const nt = (count || 0) + (cd || 0) + (cv || 0) + nf;
   const b = document.getElementById('rm-tr-n'); if (!b) return; b.textContent = nt || ''; b.style.display = nt ? '' : 'none';
   const { data: ped } = await sb.rpc('pos_pedidos_para_remito', { p_local: LOCAL }); const n = new Set((ped || []).filter(p => p.estado !== 'sin_stock').map(mpKey)).size;   // pedidos con algo para mandar const p = document.getElementById('pd-ped-n'); if (p) { p.textContent = n || ''; p.style.display = n ? '' : 'none'; }
 }
@@ -1659,11 +1662,21 @@ async function cargarTransito(aceptados) {
     const { data: sd } = await sb.from('pos_comprobantes').select('*').eq('tipo', 'RE').is('destino_local', null).eq('local', LOCAL).eq('estado', 'emitido').order('id', { ascending: false }).limit(200);
     lista = lista.concat(sd || []).sort((a, b) => b.id - a.id); }
   if (lista.length) { const { data: dd } = await sb.from('pos_comprobantes_det').select('comprobante_id,sku,descripcion,cantidad,cantidad_recibida').in('comprobante_id', lista.map(c => c.id)).order('nro_item'); (dd || []).forEach(d => { (dets[d.comprobante_id] = dets[d.comprobante_id] || []).push(d); }); }
+  // (JP 18-nov) los pedidos a Familia García en tránsito (ya vino su remito) se reciben acá, como los traslados
+  let fgr = [];
+  if (!aceptados) { try { const { data: pf } = await sb.rpc('pos_pedidos_listar', { p_local: LOCAL }); window._PFGR = pf || []; fgr = (pf || []).filter(p => p.estado === 'en_transito' && p.destino !== 'oficina' && !p.ajuste_de); } catch (e) {} }
   const q = document.getElementById('rm-q').value.trim();
+  if (q) fgr = fgr.filter(p => coincide(q, p.numero + ' ' + pdRems(p) + ' ' + (PD_NOM[p.destino] || '') + ' ' + (p.items || []).map(i => i.sku + ' ' + (i.descripcion || '')).join(' '), []));
   const vis = q ? lista.filter(c => coincide(q, cTexto(c) + ' ' + remNum(c) + ' ' + trNum(c) + ' ' + (dets[c.id] || []).map(d => d.sku + ' ' + d.descripcion).join(' '), [Number(c.total)].concat((dets[c.id] || []).map(d => Number(d.cantidad))))) : lista;
   const puedeAnular = true;
-  document.getElementById('rm-stat').textContent = vis.length + (aceptados ? (vis.length === 1 ? ' aceptado' : ' aceptados') : ' en tránsito');
-  document.getElementById('rm-lista').innerHTML = vis.length ? `<table><thead><tr><th>Remito</th><th>Trayecto</th><th>Mercadería</th><th>Estado</th><th></th></tr></thead><tbody>` +
+  document.getElementById('rm-stat').textContent = (vis.length + fgr.length) + (aceptados ? (vis.length === 1 ? ' aceptado' : ' aceptados') : ' en tránsito');
+  const filaFgr = p => { const its = (p.items || []).filter(i => i.sku !== 'VARIOS'), u = its.reduce((t, i) => t + Number(i.vino || 0), 0);
+    return `<tr class="tr-fila"><td><a href="#" onclick="trFgrVer(${p.id});return false" title="Abrir el pedido"><b>${esc(pdRems(p) || 'Remito de ' + (PD_CORTO[p.destino] || ''))}</b></a><div class="mini">Pedido <b>${esc(p.numero)}</b>${p.transito_at ? ' · cargado el ' + fechaAR(String(p.transito_at).slice(0, 10)) : ''}</div></td>
+      <td>${esc(PD_CORTO[p.destino] || PD_NOM[p.destino] || p.destino)} → <b>${esc(LOCALES[LOCAL])}</b></td>
+      <td class="mini">${its.filter(i => Number(i.vino || 0) > 0).slice(0, 8).map(i => Number(i.vino) + ' × ' + esc(i.sku)).join(' · ')}${its.filter(i => Number(i.vino || 0) > 0).length > 8 ? ' …' : ''}<div>${u} ${u === 1 ? 'unidad' : 'unidades'} según el remito</div></td>
+      <td>${pdEstTransito(p)}</td>
+      <td class="acc"><button class="btn primary chico" onclick="trFgrRecibir(${p.id})" title="Llegaron las cajas: confirmar lo que vino">Recibir</button></td></tr>`; };
+  document.getElementById('rm-lista').innerHTML = vis.length || fgr.length ? `<table><thead><tr><th>Remito</th><th>Trayecto</th><th>Mercadería</th><th>Estado</th><th></th></tr></thead><tbody>` + fgr.map(filaFgr).join('') +
     vis.map(c => `<tr class="tr-fila ${c.estado === 'anulado' ? 'dim' : ''}" onclick="if(!event.target.closest('button,a,input'))trAbrir(${c.id})" title="Tocá para ver la mercadería">
       <td><a href="#" onclick="verComprobante(${c.id});return false" title="Abrir el remito para verlo o imprimirlo (tocando el resto del renglón se ve la mercadería)"><b>${esc(remNum(c))}</b></a>${c.destino_local ? `<div class="mini">Tránsito <b>${trNum(c)}</b></div>` : ''}<div class="mini">${fechaAR(c.fecha)} ${String(c.hora).slice(0, 5)} · ${esc(pila(c.vendedora_nombre))}</div></td>
       <td>${c.local === LOCAL ? '<b>' + esc(LOCALES[c.local]) + '</b>' : esc(LOCALES[c.local])} → ${!c.destino_local ? esc(tit(c.cliente_interno || c.cliente_nombre || '') || c.entrega_dir || 'sin destino cargado') : c.destino_local === LOCAL ? '<b>' + esc(LOCALES[c.destino_local]) + '</b>' : esc(LOCALES[c.destino_local])}${c.transito_estado === 'rechazado' ? '<div class="mini" style="color:#b45309">↩ rechazado: vuelve a ' + esc(LOCALES[c.local]) + '</div>' : ''}${c.dif_estado === 'pendiente' ? '<div class="mini" style="color:#b45309">' + (difN(dets[c.id]).falta ? '↩ lo que faltó vuelve a ' + esc(LOCALES[c.local]) : '') + (difN(dets[c.id]).falta && difN(dets[c.id]).sobra ? ' · ' : '') + (difN(dets[c.id]).sobra ? '⚠ llegó de más' : '') + '</div>' : ''}</td>
@@ -1873,7 +1886,7 @@ function pdRender() {
       return `<tr class="${p.estado === 'cancelado' ? 'dim' : ''}"><td><a href="#" onclick="pdVer(${p.id});return false" title="Abrir el pedido y ver todo lo que se pidió"><b>${esc(p.numero)}</b></a>${!p.ajuste_de && Number(p.version) > 1 ? ' <span class="chip gray">versión ' + Number(p.version) + '</span>' : ''}${p.ajuste_de ? ' <span class="chip red" title="Descuenta cantidades del pedido ' + esc(p.ajuste_de) + '">descuento de ' + esc(p.ajuste_de) + '</span>' : ''}<div class="mini">${fechaAR(String(p.creado_at).slice(0, 10))} ${new Date(p.creado_at).toTimeString().slice(0, 5)} · ${esc(pila(p.por))}</div></td><td>${esc(PD_NOM[p.destino] || p.destino)}</td>
         <td>${est}</td>
         <td class="acc">${p.pdf_url ? `<a class="btn ico" href="${esc(p.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}${p.xlsx_url ? `<a class="btn ico" href="${esc(p.xlsx_url)}" title="Bajar el pedido en Excel" aria-label="Excel"><span class="pd-xls-ico">${XLS_ICO}</span></a>` : ''}${p.estado === 'enviado' ? `<button class="btn ico" onclick="pdWA(${p.id})" title="Abrir el WhatsApp con el pedido" aria-label="WhatsApp"><span class="pd-wa-ico">${WA_LOGO}</span></button>` : ''}
-          ${p.estado === 'enviado' && !p.ajuste_de_id && !p.ajuste_de ? `<button class="btn ico" onclick="pdModificar(${p.id})" title="Modificar el pedido: cambiar cantidades, sacar o sumar artículos. Sale la versión siguiente y esta queda anulada" aria-label="Modificar">${_i('edit')}</button>` : ''}${(p.estado === 'enviado' || p.estado === 'en_transito') && !p.ajuste_de_id ? `<button class="btn ico" onclick="pdRecibir(${p.id})" title="${p.estado === 'en_transito' ? 'Llegó: confirmar lo que vino' : 'Llegó el pedido: marcarlo recibido'}" aria-label="Recibido">${_i('ok')}</button>` : ''}${p.estado === 'enviado' && PERFIL.es_admin && !p.ajuste_de_id ? `<button class="btn ico peligro" onclick="pdCancelar(${p.id})" title="Cancelar el pedido entero (solo admin)" aria-label="Cancelar">${_i('anular')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>'
+          ${p.estado === 'enviado' && !p.ajuste_de_id && !p.ajuste_de ? `<button class="btn ico" onclick="pdModificar(${p.id})" title="Modificar el pedido: cambiar cantidades, sacar o sumar artículos. Sale la versión siguiente y esta queda anulada" aria-label="Modificar">${_i('edit')}</button>` : ''}${p.estado === 'enviado' && PERFIL.es_admin && !p.ajuste_de_id ? `<button class="btn ico peligro" onclick="pdCancelar(${p.id})" title="Cancelar el pedido entero (solo admin)" aria-label="Cancelar">${_i('anular')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>'
       : `<div class="empty">Todavía no hay pedidos de ${esc(LOCALES[LOCAL])}.</div>`;
   } else {
     const puede = puedeMinimos();
@@ -2191,7 +2204,7 @@ async function pdRecibirFgrOk(id) {
   const aid = await pdAut('pedido', 'Recibir un pedido en ' + LOCALES[LOCAL]); if (aid === null) return;
   if (!await hubReg('pos.pedidos', { accion: 'recibir', pedido: id })) return;
   const { error } = await sb.rpc('pos_pedido_recibir', { p_id: id, p_items: items, p_autorizacion_id: aid || null }); if (error) { pdAutFallo('pedido', error); return; }
-  cerrarModal(); toast('Pedido recibido', 'success'); cargarPedidosLocal();
+  cerrarModal(); toast('Pedido recibido', 'success'); cargarPedidosLocal(); if (document.getElementById('content-remitos').classList.contains('active')) cargarRemitos(); else rmBadge();
 }
 async function pdRecibir(id) { { const p0 = (PD.hechos || []).find(x => x.id === id); if (p0 && p0.estado === 'en_transito') return pdRecibirFgr(p0); } if (!await confirmar('¿Llegó el pedido completo? Queda cerrado como recibido. (El stock entra por el Dragonfish, como hasta ahora.)')) return; const aid = await pdAut('pedido', 'Recibir un pedido en ' + LOCALES[LOCAL]); if (aid === null) return; if (!await hubReg('pos.pedidos', { accion: 'recibir', pedido: id })) return; const { error } = await sb.rpc('pos_pedido_recibir', { p_id: id, p_autorizacion_id: aid || null }); if (error) { pdAutFallo('pedido', error); return; } toast('Pedido recibido', 'success'); cargarPedidosLocal(); }
 async function pdCancelar(id) { const m = await pedirTexto('Motivo para cancelar el pedido:'); if (m === null) return; const aid = await pdAut('pedido', 'Cancelar un pedido de ' + LOCALES[LOCAL]); if (aid === null) return; if (!await hubReg('pos.pedidos', { accion: 'cancelar', pedido: id, motivo: m })) return; const { error } = await sb.rpc('pos_pedido_cancelar', { p_id: id, p_motivo: m, p_autorizacion_id: aid || null }); if (error) { pdAutFallo('pedido', error); return; } toast('Pedido cancelado', 'success'); cargarPedidosLocal(); }
@@ -4477,6 +4490,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=205"></script>
+<script src="manual.js?v=206"></script>
 </body>
 </html>
