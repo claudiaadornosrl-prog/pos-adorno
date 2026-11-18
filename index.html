@@ -629,6 +629,13 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
 .pv1 .t { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .pv1 h3 { margin: 0; font-size: 22px; font-weight: 600; color: #075985; } .pv-estd { font-size: 13px; color: #334155; }
 .pv1 .sub { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 14px; color: #0f172a; } .pv1 .sub span { display: inline-flex; align-items: center; gap: 6px; } .pv1 .sub .pv-ico { color: #0369a1; }
 .pv1 .avs { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; font-size: 13px; color: #334155; } .pv-nota { margin-top: 8px; font-size: 13.5px; color: #0f172a; }
+.lk1 { display: flex; align-items: center; gap: 8px; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 999px; padding: 8px 10px 8px 22px; box-shadow: 0 12px 40px rgba(15,23,42,.28); color: #075985; max-width: 96vw; box-sizing: border-box; }
+.lk1 .t { font-size: 18px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; } .lk1 .t svg { width: 20px; height: 20px; }
+.lk-ib { background: none; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; flex: none; border-radius: 999px; color: #0369a1; } .lk-ib:hover { background: #bae6fd; } .lk-ib svg { width: 22px; height: 22px; }
+.lk-ib.wa { background: #16a34a; color: #fff; } .lk-ib.wa:hover { background: #15803d; }
+.lk-in { border: 1.5px solid #cbd5e1; border-radius: 999px; padding: 0 16px; height: 42px; width: 210px; font: inherit; font-size: 15px; background: #fff; box-sizing: border-box; }
+.lk-chip { border-radius: 999px; padding: 3px 11px; font-size: 12.5px; font-weight: 600; white-space: nowrap; } .lk-chip.g { background: #fff; color: #475569; } .lk-chip.r { background: #fee2e2; color: #b91c1c; }
+@media (max-width: 760px) { .lk1 { flex-wrap: wrap; justify-content: center; border-radius: 30px; padding: 14px; } .lk1 .lk-in { width: 100%; } }
 .pd-avisos { display: flex; gap: 8px; margin-top: 5px; align-items: center; } .pd-av { display: inline-flex; } .pd-av svg { width: 17px; height: 17px; }
 .pd-av.ok { color: #16a34a; } .pd-av.esp { color: #cbd5e1; } .pd-av.mal { color: #dc2626; } .pd-wa-ico { display: inline-flex; color: #16a34a; } .pd-xls-ico { display: inline-flex; flex: none; vertical-align: middle; } .pd-xls-ico svg { width: 21px !important; height: 21px !important; flex: none; } .pd-xls-ico svg * { stroke: none !important; } .pd-wa-ico svg { width: 19px; height: 19px; }
 .pd-t tbody tr:nth-child(odd):not(.pd-sub):not(.pd-prov):not(.pd-junto):not(.emb) > td:not(.pd-gq) { background: #fff; }
@@ -3489,15 +3496,18 @@ async function linkCrear(b) {
   cobroOlvidar(row); row.dataset.link = JSON.stringify({ ext: d.ext, url: d.link, importe: v }); pRender(); linkVer(row);
 }
 let _linkTxt = '';
+const LK_IC = { link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="3"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>' };
 function linkVer(b) {
   const row = b.closest ? b.closest('.medio') : b; const L = JSON.parse(row.dataset.link); const c = T.cliente || {};
   const nom = c.nombre ? ' ' + pila(c.nombre) : ''; const cel = c.celular || (c.ficha && c.ficha.celular) || '';
   _linkTxt = `Hola${nom}! Te paso el link para pagar tu compra en Claudia Adorno por ${plata(L.importe)}: ${L.url}`;
-  modal(`<div class="m-head"><h3>🔗 Link de pago por ${plata(L.importe)}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="vale-cod"><div class="mini" style="word-break:break-all;font-size:14px;color:var(--text)">${esc(L.url)}</div><div class="mini" style="margin-top:6px">Vence en 48 horas · el cliente paga con tarjeta, débito o dinero en cuenta${MODO === 'prueba' ? ' · <b>ojo: aunque el POS esté en prueba, este link cobra de verdad</b>' : ''}</div></div>
-    <div class="mini" style="margin:8px 0">Poné el WhatsApp del cliente y tocá «Enviar por WhatsApp»: se abre el chat con el mensaje y el link listos. Cuando avise que pagó, tocá «Ver si ya pagó» (o Emitir): la factura sale sola.</div>
-    <div class="vale-wa-fila"><input id="lk-wa" inputmode="tel" autocomplete="off" placeholder="WhatsApp del cliente: 11 1234 5678" value="${esc(cel)}" onkeydown="if(event.key==='Enter'){event.preventDefault();linkWa()}"><button class="btn primary" onclick="linkWa()">Enviar por WhatsApp</button></div>
-    <div class="m-foot"><button class="btn" onclick="navigator.clipboard.writeText('${esc(L.url)}').then(() => toast('Link copiado', 'success'))">Copiar el link</button><span class="spacer"></span><button class="btn" onclick="cerrarModal()">Listo</button></div>`);
+  window._linkUrl = L.url;
+  modal(`<div class="lk1"><span class="t">${LK_IC.link} ${plata(L.importe)}</span><span class="lk-chip g" title="Después de 48 horas el link deja de funcionar">vence en 48 h</span>${MODO === 'prueba' ? '<span class="lk-chip r" title="Aunque el POS esté en prueba, este link cobra de verdad">cobra de verdad</span>' : ''}
+    <input id="lk-wa" class="lk-in" inputmode="tel" autocomplete="off" placeholder="WhatsApp del cliente" value="${esc(cel)}" onkeydown="if(event.key==='Enter'){event.preventDefault();linkWa()}">
+    <button class="lk-ib wa" onclick="linkWa()" title="Mandar el link por WhatsApp (se abre el chat con el mensaje listo)" aria-label="WhatsApp">${WA_LOGO}</button>
+    <button class="lk-ib" onclick="navigator.clipboard.writeText(window._linkUrl).then(() => toast('Link copiado', 'success'))" title="Copiar el link: ${esc(L.url)}" aria-label="Copiar">${LK_IC.copy}</button>
+    <button class="lk-ib" onclick="cerrarModal()" title="Cerrar (cuando el cliente pague, tocá «Ver si ya pagó» o Emitir)" aria-label="Cerrar">${_i('x')}</button></div>`, 'pastilla');
   if (!cel) setTimeout(() => { const i = document.getElementById('lk-wa'); if (i) i.focus(); }, 80);
 }
 function linkWa() {
@@ -4490,6 +4500,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=206"></script>
+<script src="manual.js?v=207"></script>
 </body>
 </html>
