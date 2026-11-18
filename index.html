@@ -521,7 +521,20 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .chip.pr-act { background: #dcfce7; color: #166534; } .chip.pr-prog { background: #e0f2fe; color: #0369a1; } .chip.pr-pausa { background: #fef3c7; color: #92400e; } .chip.pr-venc { background: #e2e8f0; color: #475569; } .chip.pr-baja { background: #fee2e2; color: #b91c1c; }
 .prv { width: 900px; } .prv .sub .pr-ic { width: 18px; height: 18px; color: var(--pr-tx); flex: none; } .prv .sub { align-items: center; flex-wrap: nowrap; }
 .pr-fs { border: 0; margin: 0; padding: 0; min-width: 0; } .pr-fs[disabled] .pr-tp:not(.on), .pr-fs[disabled] .pr-sk, .pr-fs[disabled] .pr-alc input.pr-in, .pr-fs[disabled] .pf-mas, .pr-fs[disabled] .pr-chip button { display: none; }
-.pr-h { font-weight: 600; color: #075985; margin: 16px 0 6px; font-size: 14.5px; } .pr-h .mini { font-weight: 400; }
+.prv { --b1: #0e7490; --b1s: #ecfeff; --b2: #c2410c; --b2s: #fff7ed; --b3: #15803d; --b3s: #f0fdf4; --b4: #6d28d9; --b4s: #f5f3ff; --b5: #0369a1; --b5s: #eff6ff; }
+.pr-blk.b1 { --ac: var(--b1); --acs: var(--b1s); } .pr-blk.b2 { --ac: var(--b2); --acs: var(--b2s); } .pr-blk.b3 { --ac: var(--b3); --acs: var(--b3s); } .pr-blk.b4 { --ac: var(--b4); --acs: var(--b4s); } .pr-blk.b5 { --ac: var(--b5); --acs: var(--b5s); }
+.pr-h { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--ac); margin: 0 0 10px; } .pr-hi { width: 20px; height: 20px; flex: none; } .pr-h .mini { font-weight: 400; }
+.pr-sub { font-weight: 600; font-size: 13.5px; color: var(--ac); margin: 10px 0 4px; } .pr-sub:first-child { margin-top: 0; }
+/* estilo A: tarjetas blancas con la franja de color sobre fondo gris */
+.prv.pr-va .pv-cuerpo { background: #eef2f6; } .prv.pr-va .pr-blk { background: #fff; border-radius: 22px; padding: 14px 18px 12px; margin-bottom: 12px; box-shadow: inset 6px 0 0 var(--ac), 0 1px 3px rgba(15,23,42,.06); }
+/* estilo B: cada sección con su color de fondo y el título en pastilla */
+.prv.pr-vb .pr-blk { background: var(--acs); border-radius: 22px; padding: 12px 18px 12px; margin-bottom: 12px; } .prv.pr-vb .pr-h { background: var(--ac); color: #fff; border-radius: 999px; padding: 5px 16px 5px 12px; display: inline-flex; }
+.prv.pr-vb .pr-par, .prv.pr-vb .pr-alc { background: #fff; }
+/* estilo C: líneas de color entre secciones y fondo alternado */
+.prv.pr-vc .pr-blk { padding: 14px 6px 14px; border-top: 3px solid var(--ac); } .prv.pr-vc .pr-blk.b1 { border-top: 0; padding-top: 2px; } .prv.pr-vc .pr-blk:nth-child(even) { background: linear-gradient(180deg, var(--acs), rgba(255,255,255,0) 80%); }
+.prv #pr-res { display: flex; gap: 8px; align-items: flex-start; flex-wrap: nowrap; } .prv #pr-res > span { display: block; }
+.pr-ayuda { margin: 2px 0 6px; } .pr-ayuda.apag { opacity: .4; } .pr-sep { border-top: 1px dashed #cbd5e1; margin: 8px 0 4px; }
+.pr-cnt { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-left: 10px; font-size: 13px; } .pr-cnt .ok { color: #15803d; } .pr-cnt .no { color: #b91c1c; } .pr-cnt .ej { color: #64748b; font-size: 12px; }
 .pr-sec { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; margin: 6px 0; } .pr-sec.apag { opacity: .4; pointer-events: none; }
 .pr-lb { font-size: 13px; color: #475569; min-width: 82px; } .pr-in { border: 1.5px solid #cbd5e1; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; background: #fff; box-sizing: border-box; } .pr-in.num { text-align: center; padding: 6px 8px; } .pr-in.chico { width: 190px; padding: 4px 12px; font-size: 13px; }
 .pr-tipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
@@ -1336,17 +1349,19 @@ function prQue(p) { const a = p.params || {};
     case 'ticket': return `Comprando desde ${plata(a.minimo || 0)}: ${Number(a.pct) > 0 ? prPct(a.pct) : plata(a.monto || 0)} de descuento`;
     case 'medio': return `${prPct(a.pct)} pagando con ${(a.medios || []).filter(m => !m.endsWith('_ni')).map(prMedioNom).join(' o ') || '…'}`;
   } return p.tipo; }
+// (JP 18-nov) variables para elegir a qué artículos va una promo: se combinan (tienen que cumplirse todas); dentro de una variable alcanza con una
+const PR_VARS = [{ k: 'grupos', lb: 'Grupo', pil: true }, { k: 'categorias', lb: 'Categoría' }, { k: 'clasificaciones', lb: 'Clasificación' }, { k: 'proveedores', lb: 'Proveedor' },
+  { k: 'materiales', lb: 'Material' }, { k: 'origenes', lb: 'Origen' }, { k: 'temporadas', lb: 'Temporada', pil: true }, { k: 'lineas', lb: 'Línea', pil: true }, { k: 'textos', lb: 'La descripción dice', libre: true }];
+const PR_ALC_K = ['todo', ...PR_VARS.map(v => v.k), 'skus', 'excluir'];
+const prN = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
 const prAlcVacio = a => !a || !Object.keys(a).some(k => k !== 'excluir' && (a[k] === true || (Array.isArray(a[k]) && a[k].length)));
-function prAlc(a, todoSiVacio) { a = a || {}; const x = [];
-  if (a.todo || (todoSiVacio && prAlcVacio(a))) x.push('Todos los artículos');
+function prAlc(a, todoSiVacio) { a = a || {}; let s = '';
+  if (a.todo || (todoSiVacio && prAlcVacio(a))) s = 'Todos los artículos';
   else {
-    if ((a.grupos || []).length) x.push((a.grupos.length > 1 ? 'Grupos ' : 'Grupo ') + a.grupos.join(', '));
-    if ((a.categorias || []).length) x.push((a.categorias.length > 1 ? 'Categorías ' : 'Categoría ') + a.categorias.join(', '));
-    if ((a.clasificaciones || []).length) x.push((a.clasificaciones.length > 1 ? 'Clasificaciones ' : 'Clasificación ') + a.clasificaciones.join(', '));
-    if ((a.proveedores || []).length) x.push((a.proveedores.length > 1 ? 'Proveedores ' : 'Proveedor ') + a.proveedores.join(', '));
-    if ((a.skus || []).length) x.push(a.skus.length > 4 ? a.skus.length + ' artículos' : a.skus.join(', '));
+    s = PR_VARS.filter(v => (a[v.k] || []).length).map(v => v.k === 'textos' ? 'descripción con ' + a.textos.map(t => '«' + t + '»').join(' o ') : v.lb + ' ' + a[v.k].join(' o ')).join(' + ');
+    if ((a.skus || []).length) s = (s ? s + ' · y además ' : '') + (a.skus.length > 4 ? a.skus.length + ' artículos sueltos' : a.skus.join(', '));
   }
-  return (x.join(' · ') || 'nada elegido') + ((a.excluir || []).length ? ' · menos ' + (a.excluir.length > 4 ? a.excluir.length + ' artículos' : a.excluir.join(', ')) : ''); }
+  return (s || 'nada elegido') + ((a.excluir || []).length ? ' · menos ' + (a.excluir.length > 4 ? a.excluir.length + ' artículos' : a.excluir.join(', ')) : ''); }
 function prAlcT(p) { const tk = p.tipo === 'ticket' || p.tipo === 'medio'; const s = prAlc(p.alcance, tk);
   return p.tipo === 'regalo' ? s + ' → se regala: ' + prAlc(p.alcance_b) : p.tipo === 'cruzado' ? s + ' → descuento en: ' + prAlc(p.alcance_b) : s; }
 function prCuando(p) { const x = [];
@@ -1382,33 +1397,37 @@ function prAbrir(id, copiar) {
   f.params = f.params || {}; f.alcance = f.alcance || {}; f.alcance_b = f.alcance_b || {}; f.dias = f.dias || []; f.locales = f.locales || [];
   PR.f = f; prForm();
 }
+var PR_ESTILO = 'b';   // (JP 18-nov) eligió B: secciones de color con el título en pastilla
+const PR_HI = { tipo: '<svg class="pr-hi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
+  como: '<svg class="pr-hi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
+  arts: '<svg class="pr-hi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+  cuando: '<svg class="pr-hi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  donde: '<svg class="pr-hi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' };
 function prForm() {
-  const f = PR.f, ed = prPuede() && !f.baja_at, e = f.id ? prEstado(f) : null, nuevo = !f.id;
+  const f = PR.f, ed = prPuede() && !f.baja_at, e = f.id ? prEstado(f) : null, nuevo = !f.id, rb = f.tipo === 'regalo' || f.tipo === 'cruzado';
   const hs = f.id ? PR.hist.filter(h => h.promo_id === f.id) : [];
   const ACC = { alta: 'La creó', cambio: 'La cambió', baja: 'La dio de baja' };
-  modal(`<div class="pv pv1 prv"><div class="cab"><div class="t"><h3>${nuevo ? 'Nueva promoción' : esc(f.nombre)}</h3>${e ? `<span class="chip pr-${e.k}">${e.t}</span>` : ''}${f.usos ? `<span class="pv-estd">usada ${f.usos} ${f.usos === 1 ? 'vez' : 'veces'}</span>` : ''}<span class="spacer"></span><button class="pv-x" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+  const blk = (n, ic, tit, html) => `<section class="pr-blk b${n}"><div class="pr-h">${PR_HI[ic]}<span>${tit}</span></div>${html}</section>`;
+  modal(`<div class="pv pv1 prv pr-v${PR_ESTILO}"><div class="cab"><div class="t"><h3>${nuevo ? 'Nueva promoción' : esc(f.nombre)}</h3>${e ? `<span class="chip pr-${e.k}">${e.t}</span>` : ''}${f.usos ? `<span class="pv-estd">usada ${f.usos} ${f.usos === 1 ? 'vez' : 'veces'}</span>` : ''}<span class="spacer"></span><button class="pv-x" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="sub" id="pr-res">${PROMO_IC}<span>${esc(prQue(f))} · ${esc(prAlcT(f))}</span></div>
     ${!ed && !f.baja_at ? '<div class="avs">Solo para ver: las promociones las cambian el admin y la oficina (Rivera y Contreras).</div>' : ''}${ed && hubE('promo') === 'a' ? '<div class="avs">Al guardar se pide la autorización de Rivera, Contreras o el admin.</div>' : ''}</div>
     <div class="pv-cuerpo"><fieldset class="pr-fs"${ed ? '' : ' disabled'}>
-      <div class="pr-sec"><span class="pr-lb">Nombre</span><input class="pr-in" id="pr-nom" value="${esc(f.nombre)}" placeholder="Ej: 2x1 en almohadones" maxlength="60" onchange="PR.f.nombre=this.value.trim()" style="flex:1;min-width:220px"></div>
-      <div class="pr-h">Tipo de promoción</div>
-      <div class="pr-tipos">${PR_TIPOS.map(t => `<button type="button" class="pr-tp${f.tipo === t.k ? ' on' : ''}" onclick="prTipo('${t.k}')"><b>${t.t}</b><span>${t.ej}</span></button>`).join('')}</div>
-      <div class="pr-h">Cómo funciona</div><div class="pr-par">${prParHTML()}</div>
-      <div class="pr-h">${f.tipo === 'regalo' || f.tipo === 'cruzado' ? 'Lo que tiene que llevar' : 'A qué artículos'}${f.tipo === 'ticket' || f.tipo === 'medio' ? ' <span class="mini">(si no elegís nada, vale para todo el ticket)</span>' : ''}</div>${prAlcHTML('alcance')}
-      ${f.tipo === 'regalo' || f.tipo === 'cruzado' ? `<div class="pr-h">${f.tipo === 'regalo' ? 'Lo que se regala' : 'Lo que lleva el descuento'} <span class="mini">(tiene que estar en el ticket; va lo más barato)</span></div>${prAlcHTML('alcance_b')}` : ''}
-      <div class="pr-h">Cuándo</div>
-      <div class="pr-sec"><span class="pr-lb">Desde</span><input type="date" class="pr-in" value="${f.desde || ''}" onchange="PR.f.desde=this.value;prRes()"><span class="pr-lb">Hasta</span><input type="date" class="pr-in" value="${f.hasta || ''}" onchange="PR.f.hasta=this.value;prRes()"><span class="mini">vacío = sin límite</span></div>
-      <div class="pr-sec"><span class="pr-lb">Días</span>${PR_DIAS.map((d, i) => `<button type="button" class="pil chico pr-dia${f.dias.includes(i + 1) ? ' on' : ''}" onclick="prTog('dias',${i + 1})" title="${PR_DIAS_L[i]}">${d}</button>`).join('')}<span class="mini">ninguno = todos los días</span></div>
-      <div class="pr-sec"><span class="pr-lb">Horario</span><input type="time" class="pr-in" value="${String(f.hora_desde || '').slice(0, 5)}" onchange="PR.f.hora_desde=this.value"> a <input type="time" class="pr-in" value="${String(f.hora_hasta || '').slice(0, 5)}" onchange="PR.f.hora_hasta=this.value"><span class="mini">vacío = todo el día</span></div>
-      <div class="pr-h">Dónde</div>
-      <div class="pr-sec"><span class="pr-lb">Locales</span>${Object.keys(LOCALES).map(l => `<button type="button" class="pil chico${f.locales.includes(l) ? ' on' : ''}" onclick="prTog('locales','${l}')">${esc(LOCALES[l])}</button>`).join('')}<span class="mini">ninguno = todos</span></div>
-      <div class="pr-sec"><span class="pr-lb">Tope</span>hasta <input class="pr-in num" style="width:70px" inputmode="numeric" value="${f.tope_unidades || ''}" onchange="PR.f.tope_unidades=Math.max(0,Math.round(num(this.value)))||null"> unidades por ticket<span class="mini">vacío = sin tope</span></div>
-      <div class="pr-sec"><label class="pr-sw"><input type="checkbox"${f.activa !== false ? ' checked' : ''} onchange="PR.f.activa=this.checked"> Activa</label><span class="mini">destildada queda guardada pero no se aplica</span></div>
+      ${blk(1, 'tipo', 'Nombre y tipo de promoción', `<div class="pr-sec"><span class="pr-lb">Nombre</span><input class="pr-in" id="pr-nom" value="${esc(f.nombre)}" placeholder="Ej: 2ª al 50 % en toallas Espalma" maxlength="60" onchange="PR.f.nombre=this.value.trim()" style="flex:1;min-width:220px"></div>
+        <div class="pr-tipos">${PR_TIPOS.map(t => `<button type="button" class="pr-tp${f.tipo === t.k ? ' on' : ''}" onclick="prTipo('${t.k}')"><b>${t.t}</b><span>${t.ej}</span></button>`).join('')}</div>`)}
+      ${blk(2, 'como', 'Cómo funciona', `<div class="pr-par">${prParHTML()}</div>`)}
+      ${blk(3, 'arts', rb ? 'Artículos' : 'A qué artículos', `${rb ? '<div class="pr-sub">Lo que tiene que llevar</div>' : ''}${f.tipo === 'ticket' || f.tipo === 'medio' ? '<div class="mini" style="margin-bottom:4px">Si no elegís nada, vale para todo el ticket.</div>' : ''}${prAlcHTML('alcance')}
+        ${rb ? `<div class="pr-sub">${f.tipo === 'regalo' ? 'Lo que se regala' : 'Lo que lleva el descuento'} <span class="mini">(tiene que estar en el ticket; va lo más barato)</span></div>${prAlcHTML('alcance_b')}` : ''}`)}
+      ${blk(4, 'cuando', 'Cuándo', `<div class="pr-sec"><span class="pr-lb">Desde</span><input type="date" class="pr-in" value="${f.desde || ''}" onchange="PR.f.desde=this.value;prRes()"><span class="pr-lb" style="min-width:0">Hasta</span><input type="date" class="pr-in" value="${f.hasta || ''}" onchange="PR.f.hasta=this.value;prRes()"><span class="mini">vacío = sin límite</span></div>
+        <div class="pr-sec"><span class="pr-lb">Días</span>${PR_DIAS.map((d, i) => `<button type="button" class="pil chico pr-dia${f.dias.includes(i + 1) ? ' on' : ''}" onclick="prTog('dias',${i + 1})" title="${PR_DIAS_L[i]}">${d}</button>`).join('')}<span class="mini">ninguno = todos los días</span></div>
+        <div class="pr-sec"><span class="pr-lb">Horario</span><input type="time" class="pr-in" value="${String(f.hora_desde || '').slice(0, 5)}" onchange="PR.f.hora_desde=this.value"> a <input type="time" class="pr-in" value="${String(f.hora_hasta || '').slice(0, 5)}" onchange="PR.f.hora_hasta=this.value"><span class="mini">vacío = todo el día</span></div>`)}
+      ${blk(5, 'donde', 'Dónde y estado', `<div class="pr-sec"><span class="pr-lb">Locales</span>${Object.keys(LOCALES).map(l => `<button type="button" class="pil chico${f.locales.includes(l) ? ' on' : ''}" onclick="prTog('locales','${l}')">${esc(LOCALES[l])}</button>`).join('')}<span class="mini">ninguno = todos</span></div>
+        <div class="pr-sec"><span class="pr-lb">Tope</span>hasta <input class="pr-in num" style="width:70px" inputmode="numeric" value="${f.tope_unidades || ''}" onchange="PR.f.tope_unidades=Math.max(0,Math.round(num(this.value)))||null"> unidades por ticket<span class="mini">vacío = sin tope</span></div>
+        <div class="pr-sec"><label class="pr-sw"><input type="checkbox"${f.activa !== false ? ' checked' : ''} onchange="PR.f.activa=this.checked"> Activa</label><span class="mini">destildada queda guardada pero no se aplica</span></div>`)}
     </fieldset>
     ${hs.length ? `<div class="pr-hist">${hs.map(h => `<div>${ACC[h.accion] || h.accion} <b>${esc(h.por || '')}</b>${h.autorizado_por ? ' · autorizó <b>' + esc(h.autorizado_por) + '</b>' : ''} · ${fechaAR(String(h.at).slice(0, 10))} ${String(h.at).slice(11, 16)}</div>`).join('')}</div>` : ''}
     <div class="pv-pie">${ed && f.id ? `<button class="ib" onclick="prBaja(${f.id})" title="Dar de baja" aria-label="Dar de baja">${PR_IC.baja}</button>` : ''}<span class="spacer"></span><button class="btn" onclick="cerrarModal()">${ed ? 'Cancelar' : 'Cerrar'}</button>${ed ? `<button class="btn primary" onclick="prGuardar()">${nuevo ? 'Crear la promoción' : 'Guardar los cambios'}</button>` : ''}</div></div></div>`, 'pastilla');
-  ['pr-dl-categorias', 'pr-dl-clasificaciones', 'pr-dl-proveedores'].forEach(id => { if (!document.getElementById(id)) { const dl = document.createElement('datalist'); dl.id = id; document.body.appendChild(dl); } });
-  for (const k of ['categorias', 'clasificaciones', 'proveedores']) document.getElementById('pr-dl-' + k).innerHTML = (PR.op[k] || []).map(v => `<option value="${esc(v)}">`).join('');
+  { const ov = document.getElementById('ov'); if (!ov.dataset.prSug) { ov.dataset.prSug = 1; ov.addEventListener('click', ev => { if (!ev.target.closest('.pr-sk')) ov.querySelectorAll('.pr-sug').forEach(x => x.innerHTML = ''); }); } }
+  prContar('alcance'); if (rb) prContar('alcance_b');
 }
 function prRes() { const el = document.getElementById('pr-res'); if (el) el.innerHTML = `${PROMO_IC}<span>${esc(prQue(PR.f))} · ${esc(prAlcT(PR.f))}</span>`; }
 const PR_DEF = { nxm: { n: 2, m: 1 }, unidad_n: { n: 2, pct: 50 }, cantidad: { escalones: [{ desde: 3, pct: 10 }, { desde: 6, pct: 20 }] }, combo: { n: 3, precio: null }, pct: { pct: 20 }, monto: { monto: null }, precio: { precio: null },
@@ -1439,28 +1458,49 @@ function prParHTML() {
 function prMedio(k) { const a = PR.f.params.medios = PR.f.params.medios || []; const on = a.includes(k);
   for (const c of [k, k + '_ni']) { const i = a.indexOf(c); if (on && i >= 0) a.splice(i, 1); else if (!on && i < 0 && (c === k || MEDIOS.some(m => m.clave === c))) a.push(c); }
   PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
-// alcance: todo · grupos (pastillas) · categorías / clasificaciones / proveedores (con la lista) · artículos sueltos · menos estos
+// alcance: todo · las variables del catálogo (se combinan) · artículos sueltos (se suman) · menos estos
 function prAlcHTML(c) {
   const a = PR.f[c] = PR.f[c] || {}, todo = !!a.todo;
-  const chips = (k, xs) => xs.map(v => `<span class="pr-chip">${esc(v)}<button type="button" data-c="${c}" data-k="${k}" data-v="${esc(v)}" onclick="prAlcQuitar(this)" aria-label="Sacar">×</button></span>`).join('');
-  const lista = (k, lb, ph) => `<div class="pr-sec${todo ? ' apag' : ''}"><span class="pr-lb">${lb}</span>${chips(k, a[k] || [])}<input class="pr-in chico" list="pr-dl-${k}" placeholder="${ph}" data-c="${c}" data-k="${k}" onchange="prAlcAdd(this)"></div>`;
+  const chips = (k, xs) => xs.map(v => `<span class="pr-chip">${k === 'textos' ? '«' + esc(v) + '»' : esc(v)}<button type="button" data-c="${c}" data-k="${k}" data-v="${esc(v)}" onclick="prAlcQuitar(this)" aria-label="Sacar">×</button></span>`).join('');
+  const fila = v => { const xs = a[v.k] || [];
+    if (v.pil) return `<div class="pr-sec${todo ? ' apag' : ''}"><span class="pr-lb">${v.lb}</span>${(PR.op[v.k] || []).map(g => `<button type="button" class="pil chico${xs.includes(g) ? ' on' : ''}" data-c="${c}" data-k="${v.k}" data-v="${esc(g)}" onclick="prAlcTog(this)">${esc(g)}</button>`).join('')}</div>`;
+    const inp = v.libre ? `<input class="pr-in chico" placeholder="Ej: set · y Enter" data-c="${c}" data-k="${v.k}" onkeydown="if(event.key==='Enter'){event.preventDefault();prTxtAdd(this)}" onchange="prTxtAdd(this)" autocomplete="off">`
+      : `<input class="pr-in chico" placeholder="Buscar ${v.lb.toLowerCase()}…" data-c="${c}" data-k="${v.k}" oninput="prOpBuscar(this)" onfocus="prOpBuscar(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();const b=this.nextElementSibling.querySelector('button');if(b)b.click()}" autocomplete="off">`;
+    return `<div class="pr-sec${todo ? ' apag' : ''}"><span class="pr-lb">${v.lb}</span>${chips(v.k, xs)}<span class="pr-sk">${inp}<span class="pr-sug"></span></span></div>`; };
   const sku = (k, lb) => `<div class="pr-sec${todo && k === 'skus' ? ' apag' : ''}"><span class="pr-lb">${lb}</span>${chips(k, a[k] || [])}<span class="pr-sk"><input class="pr-in chico" placeholder="SKU o descripción" data-c="${c}" data-k="${k}" oninput="prSkuBuscar(this)" autocomplete="off"><span class="pr-sug"></span></span></div>`;
   return `<div class="pr-alc">
-    <div class="pr-sec"><label class="pr-sw"><input type="checkbox"${todo ? ' checked' : ''} onchange="PR.f['${c}'].todo=this.checked||undefined;PR.f.nombre=document.getElementById('pr-nom').value;prForm()"> Todos los artículos</label></div>
-    <div class="pr-sec${todo ? ' apag' : ''}"><span class="pr-lb">Grupo</span>${(PR.op.grupos || []).map(g => `<button type="button" class="pil chico${(a.grupos || []).includes(g) ? ' on' : ''}" data-c="${c}" data-k="grupos" data-v="${esc(g)}" onclick="prAlcTog(this)">${esc(g)}</button>`).join('')}</div>
-    ${lista('categorias', 'Categoría', 'Agregar categoría')}${lista('clasificaciones', 'Clasificación', 'Agregar clasificación')}${lista('proveedores', 'Proveedor', 'Agregar proveedor')}
-    ${sku('skus', 'Artículos')}${sku('excluir', 'Menos')}</div>`;
+    <div class="pr-sec"><label class="pr-sw"><input type="checkbox"${todo ? ' checked' : ''} onchange="PR.f['${c}'].todo=this.checked||undefined;PR.f.nombre=document.getElementById('pr-nom').value;prForm()"> Todos los artículos</label><span class="pr-cnt" id="pr-cnt-${c}"></span></div>
+    <div class="mini pr-ayuda${todo ? ' apag' : ''}">Tiene que cumplir <b>todo</b> lo que elijas: por ejemplo Grupo BANO + Clasificación TOALLA + Proveedor Espalma = solo las toallas de Espalma. Dentro de una misma variable alcanza con una (TOALLA o BATA).</div>
+    ${PR_VARS.map(fila).join('')}
+    <div class="pr-sep"></div>
+    ${sku('skus', 'Y además')}${sku('excluir', 'Menos')}</div>`;
 }
 function prAlcTog(b) { const a = PR.f[b.dataset.c], k = b.dataset.k, v = b.dataset.v; a[k] = a[k] || []; const i = a[k].indexOf(v); if (i >= 0) a[k].splice(i, 1); else a[k].push(v); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
 function prAlcQuitar(b) { const a = PR.f[b.dataset.c], k = b.dataset.k; a[k] = (a[k] || []).filter(x => x !== b.dataset.v); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
-function prAlcAdd(inp) { const k = inp.dataset.k, a = PR.f[inp.dataset.c], v = inp.value.trim(); if (!v) return;
-  const ok = (PR.op[k] || []).find(x => x.toLowerCase() === v.toLowerCase()); if (!ok) { toast('«' + v + '» no está en la lista: elegilo de las opciones que aparecen', 'error'); inp.value = ''; return; }
-  a[k] = a[k] || []; if (!a[k].includes(ok)) a[k].push(ok); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
+// buscador de cada variable: busca por cualquier parte, sin importar tildes ni mayúsculas (escribís «espalma» y aparece «Espalma Sociedad Anonima»)
+function prOpBuscar(inp) { const k = inp.dataset.k, a = PR.f[inp.dataset.c] || {}, q = prN(inp.value), sug = inp.nextElementSibling;
+  const xs = (PR.op[k] || []).filter(x => !(a[k] || []).includes(x) && (!q || prN(x).includes(q))).slice(0, 10);
+  sug.innerHTML = xs.length ? xs.map(x => `<button type="button" data-c="${inp.dataset.c}" data-k="${k}" data-v="${esc(x)}" onclick="prOpAdd(this)">${esc(x)}</button>`).join('') : `<span class="mini">${q ? 'No hay ninguno con «' + esc(inp.value) + '»' : 'Ya están todos elegidos'}</span>`; }
+function prOpAdd(b) { const a = PR.f[b.dataset.c], k = b.dataset.k; a[k] = a[k] || []; if (!a[k].includes(b.dataset.v)) a[k].push(b.dataset.v); PR.f.nombre = document.getElementById('pr-nom').value; prForm();
+  setTimeout(() => { const i = document.querySelector(`.prv input[data-c="${b.dataset.c}"][data-k="${k}"]`); if (i) i.focus(); }, 30); }
+function prTxtAdd(inp) { const v = inp.value.trim(); if (v.length < 2) return; const a = PR.f[inp.dataset.c], k = inp.dataset.k; a[k] = a[k] || []; if (!a[k].some(x => prN(x) === prN(v))) a[k].push(v); inp.value = ''; PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
 function prSkuBuscar(inp) { const q = inp.value.trim(), sug = inp.nextElementSibling; if (q.length < 2) { sug.innerHTML = ''; return; }
   const xs = ARTS.filter(x => coincide(q, x.sku + ' ' + (x.descripcion || ''), [])).slice(0, 6);
   sug.innerHTML = xs.length ? xs.map(x => `<button type="button" data-c="${inp.dataset.c}" data-k="${inp.dataset.k}" data-v="${esc(x.sku)}" onclick="prSkuAdd(this)"><b>${esc(x.sku)}</b> ${esc(x.descripcion || '')}</button>`).join('') : '<span class="mini">No encontré ese artículo</span>'; }
 function prSkuAdd(b) { const a = PR.f[b.dataset.c], k = b.dataset.k; a[k] = a[k] || []; if (!a[k].includes(b.dataset.v)) a[k].push(b.dataset.v); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
-const prAlcLimpio = a => { const o = {}; a = a || {}; if (a.todo) o.todo = true; for (const k of ['grupos', 'categorias', 'clasificaciones', 'proveedores', 'skus', 'excluir']) if ((a[k] || []).length) o[k] = a[k].slice(); return o; };
+// cuántos artículos del catálogo entran con lo elegido (y algunos de ejemplo): para ver enseguida si la combinación está bien
+const PR_CNT = {};
+async function prContar(c) {
+  const el = () => document.getElementById('pr-cnt-' + c); if (!el()) return;
+  const a = prAlcLimpio(PR.f[c]), tk = c === 'alcance' && (PR.f.tipo === 'ticket' || PR.f.tipo === 'medio');
+  if (prAlcVacio(a)) { el().innerHTML = tk ? '<span class="ok">Vale para todo el ticket</span>' : '<span class="no">Elegí al menos una variable o un artículo</span>'; return; }
+  const k = JSON.stringify(a); let r = PR_CNT[k];
+  if (!r) { el().innerHTML = '<span class="spin"></span>'; try { const { data, error } = await sb.rpc('pos_promo_alcance_ver', { p_alcance: a }); if (error) throw error; r = PR_CNT[k] = data; } catch (e) { if (el()) el().innerHTML = ''; return; } }
+  if (!el() || JSON.stringify(prAlcLimpio(PR.f[c])) !== k) return;
+  const n = Number(r.n) || 0, ej = (r.ejemplos || []).map(x => x.sku + ' ' + (x.descripcion || ''));
+  el().innerHTML = n ? `<span class="ok" title="${esc(ej.join('\n'))}">Entran <b>${n.toLocaleString('es-AR')}</b> ${n === 1 ? 'artículo' : 'artículos'} del catálogo</span><span class="ej">${esc(ej.slice(0, 3).join(' · '))}${n > 3 ? ' …' : ''}</span>` : '<span class="no">Con esta combinación no entra ningún artículo</span>';
+}
+const prAlcLimpio = a => { const o = {}; a = a || {}; if (a.todo) o.todo = true; for (const k of PR_ALC_K) if (k !== 'todo' && (a[k] || []).length) o[k] = a[k].slice(); return o; };
 function prParLimpios(f) { const a = Object.assign({}, f.params || {});
   if (f.tipo === 'cantidad') a.escalones = (a.escalones || []).filter(e => e.desde > 0 && e.pct > 0).map(e => ({ desde: Math.round(e.desde), pct: Number(e.pct) }));
   if (f.tipo === 'ticket') { if (Number(a.pct) > 0) a.monto = null; else a.pct = null; }
@@ -4783,6 +4823,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=210"></script>
+<script src="manual.js?v=211"></script>
 </body>
 </html>
