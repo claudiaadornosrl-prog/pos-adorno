@@ -2016,7 +2016,7 @@ function pdFicha(titulo, id, dest, sigue, wa, cerrar) {
     <button class="btn ico" onclick="${cerrar}" aria-label="Cerrar">${_i('x')}</button></div>`, 'pastilla');
   pdWaPrep(id);
 }
-// Excel del pedido para WhatsApp: el mismo que va por mail (Cantidad y SKU), armado acá para no esperar al servidor.
+// Excel del pedido para WhatsApp: el mismo que va por mail (SKU, Descripción y Cantidad), armado acá para no esperar al servidor.
 // Se prepara al abrir la ventana, así al tocar el botón se comparte en el acto (el celular no deja compartir si se demora).
 let _pdXlsLib = null;
 function pdXlsLib() { return _pdXlsLib || (_pdXlsLib = new Promise((ok, mal) => { if (window.XLSX) return ok(); const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload = () => ok(); sc.onerror = () => { _pdXlsLib = null; mal(new Error('No pude cargar el armado del Excel')); }; document.head.appendChild(sc); })); }
@@ -2026,8 +2026,8 @@ async function pdWaPrep0(id) {
   try {
     const { data: p } = await sb.rpc('pos_pedido_completo', { p_id: id });   // en la versión 2, 3…: el pedido completo ya actualizado
     const det = p && p.items; if (!p || !det || !det.length) return; await pdXlsLib(); if (window._pdFileId !== id) return;
-    const filas = [['Cantidad', 'SKU', 'Descripción']].concat(pdItemsCambios(p, det).map(d => [Number(d.cantidad), d.sku, (d.descripcion || '') + pdCambioTxt(pdCambioDe(p, d))]));   // (JP 18-nov) lo que cambió, primero   // (JP 18-nov) con la descripción
-    const ws = XLSX.utils.aoa_to_sheet(filas); ws['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 56 }]; const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
+    const filas = [['SKU', 'Descripción', 'Cantidad']].concat(pdItemsCambios(p, det).map(d => [d.sku, (d.descripcion || '') + pdCambioTxt(pdCambioDe(p, d)), Number(d.cantidad)]));   // (JP 18-nov) en este orden: SKU, Descripción y Cantidad   // (JP 18-nov) lo que cambió, primero   // (JP 18-nov) con la descripción
+    const ws = XLSX.utils.aoa_to_sheet(filas); ws['!cols'] = [{ wch: 22 }, { wch: 56 }, { wch: 12 }]; const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
     const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
     window._pdFile = new File([buf], (p.archivo || 'Pedido_' + id) + '_ClaudiaAdorno.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     // se sube a la carpeta del pedido (la misma donde el servidor deja el del mail) y el link va al final del texto
@@ -4465,6 +4465,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=203"></script>
+<script src="manual.js?v=204"></script>
 </body>
 </html>
