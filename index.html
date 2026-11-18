@@ -4027,14 +4027,15 @@ let _cT; function cDebounce() { clearTimeout(_cT); _cT = setTimeout(cargarCompro
 let COMPS = [];
 async function cargarComprobantes() {
   const d = document.getElementById('c-desde').value, h = document.getElementById('c-hasta').value, tipo = document.getElementById('c-tipo').value, q = document.getElementById('c-q').value.trim();
-  let qry = sb.from('pos_comprobantes').select('*').eq('local', LOCAL).gte('fecha', d).lte('fecha', h).order('id', { ascending: false }).limit(500);
+  let qry = sb.from('pos_comprobantes').select('*').eq('local', LOCAL).order('id', { ascending: false }).limit(500);
+  if (d) qry = qry.gte('fecha', d); if (h) qry = qry.lte('fecha', h);   // vacío = sin límite de ese lado
   if (tipo) qry = qry.eq('tipo', tipo);
   const { data, error } = await qry; if (error) { toast(error.message, 'error'); return; }
   COMPS = data || [];
   let lista = COMPS;
   if (q) { const Q = q.toUpperCase(); lista = COMPS.filter(c => (c.cliente_nombre + ' ' + (c.cliente_interno || '') + ' ' + c.numero + ' ' + (c.cliente_doc || '') + ' ' + (c.vendedora_nombre || '')).toUpperCase().includes(Q)); }
   const puedeAnular = true;   // el genérico ve todo; anular pide autorización
-  document.getElementById('c-stat').textContent = lista.length + ' comprobantes · ' + plata(lista.filter(c => c.estado === 'emitido').reduce((s, c) => s + c.signo * Number(c.total), 0));
+  document.getElementById('c-stat').textContent = lista.length + ' comprobantes · ' + plata(lista.filter(c => c.estado === 'emitido').reduce((s, c) => s + c.signo * Number(c.total), 0)) + (COMPS.length >= 500 ? ' · se muestran los 500 más nuevos: acotá las fechas para ver los anteriores' : '');
   document.getElementById('c-lista').innerHTML = lista.length ? `<table><thead><tr><th>Comprobante</th><th>Fecha</th><th>Cliente</th><th>Vendedora</th><th class="num">Total</th><th>Estado</th><th></th></tr></thead><tbody>` +
     lista.map(c => `<tr class="${c.estado === 'anulado' ? 'dim' : ''}">
       <td><b>${TIPO_NOM[c.tipo]}${c.tipo === 'RE' ? '' : ' ' + c.letra}</b> ${fmtNum(c.punto_venta, c.numero)}${c.relacionado_id ? '<div class="mini">devuelve #' + c.relacionado_id + '</div>' : ''}${c.reemplaza_id ? '<div class="mini">reemplaza a #' + c.reemplaza_id + '</div>' : ''}${c.remito_id ? '<div class="mini">sobre un remito</div>' : ''}${c.local_venta && c.local_venta !== c.local ? '<div><span class="chip viol" title="Facturada con la sucursal ' + esc(LOCALES[c.local] || c.local) + ' por ' + esc(LOCALES[c.local_venta] || c.local_venta) + ': la venta se le computa a ' + esc(LOCALES[c.local_venta] || c.local_venta) + ' (columna Fc Oficina)">venta de ' + esc(LOCALES[c.local_venta] || c.local_venta) + '</span></div>' : ''}</td>
@@ -4325,6 +4326,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=198"></script>
+<script src="manual.js?v=199"></script>
 </body>
 </html>
