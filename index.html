@@ -610,7 +610,11 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 .pd-c-tabla { border: 1px solid #e2e8f0; border-radius: 18px; overflow: hidden; } .pd-c-tabla table.pd-items { margin: 0; box-shadow: none; } .pd-c-tabla thead th { background: #f1f5f9; }
 .pd-conf .pd-nota-box { margin: 12px 0 8px; } .pd-c-mail { font-size: 13px; color: var(--muted); }
 .pd-c-pie { display: flex; align-items: center; gap: 8px; margin-top: 12px; } .pd-c-pie .btn { border-radius: 999px; padding: 9px 20px; }
-:where(table:has(> thead):not(.renglones *):not(.tk-det) > tbody > tr:nth-child(even)) > td { background: #eef6f8; }   /* (JP 18-nov) colores alternos en todas las tablas del POS */
+:where(table:has(> thead):not(.renglones *):not(.tk-det) > tbody > tr:nth-child(even)) > td { background: #eef6f8; }
+:root { --tope: 56px; }
+table:has(> thead), .pd-c-tabla { overflow: clip; }   /* (JP 18-nov) con overflow:hidden el título no puede quedar fijo; clip redondea igual */
+:where(table:has(> thead):not(.renglones *):not(.tk-det) > thead) th { position: sticky; top: var(--tope); z-index: 5; }   /* títulos fijos al bajar */
+:where(#ov, .rm-ov) :where(table > thead) th { top: 0; }   /* en las ventanas, pegados arriba de la ventana */   /* (JP 18-nov) colores alternos en todas las tablas del POS */
 .pd-avisos { display: flex; gap: 8px; margin-top: 5px; align-items: center; } .pd-av { display: inline-flex; } .pd-av svg { width: 17px; height: 17px; }
 .pd-av.ok { color: #16a34a; } .pd-av.esp { color: #cbd5e1; } .pd-av.mal { color: #dc2626; } .pd-wa-ico { display: inline-flex; color: #16a34a; } .pd-wa-ico svg { width: 19px; height: 19px; }
 .pd-t tbody tr:nth-child(odd):not(.pd-sub):not(.pd-prov):not(.pd-junto):not(.emb) > td:not(.pd-gq) { background: #fff; }
@@ -1090,6 +1094,7 @@ async function cargarModo() {
   if (MODO === 'prueba') {
     if (!f) { f = document.createElement('div'); f.id = 'franja-pos-prueba'; document.body.insertBefore(f, document.body.firstChild); }
     f.style.cssText = 'background:#B3261E;color:#fff;text-align:center;font-weight:700;font-size:12.5px;letter-spacing:.08em;padding:6px 12px;position:sticky;top:0;z-index:300';
+    setTimeout(() => { if (typeof posTope === 'function') posTope(); }, 0);
     f.innerHTML = '🧪 AMBIENTE DE PRUEBA <span style="font-weight:400;letter-spacing:0">· probá tranquila: nada de esto es real, no va a ARCA ni mueve el stock' + (/Mobi/.test(navigator.userAgent) ? '' : ' · el Point sí cobra de verdad') + '</span>';
     document.title = 'PRUEBA · POS'; pedFranja();
   } else if (f) f.remove();
@@ -1778,6 +1783,9 @@ const PD_NOM = { familia_garcia: 'Familia García Regueira', espalma: 'Espalma',
 function pdProv(p) { PD.prov = p; document.querySelectorAll('#pd-prov .pil').forEach(b => b.classList.toggle('on', b.dataset.p === p)); pdRender(); pdMarcados(); }
 function pdDebounce() { clearTimeout(_pdT); _pdT = setTimeout(() => PD.vista === 'piden' ? mpPinta() : pdRender(), 400); }
 // Oficina no pide ni tiene mínimos: en Pedidos solo ve «Me piden» (lo que le piden los locales)
+// alto de lo que queda pegado arriba (la barra del POS y la franja de prueba): ahí se pegan los títulos de las tablas
+function posTope() { let t = 0; for (const el of [document.querySelector('header'), document.getElementById('franja-pos-prueba')]) { if (!el || !el.offsetHeight) continue; const cs = getComputedStyle(el); if (cs.position !== 'sticky' && cs.position !== 'fixed') continue; t = Math.max(t, (parseFloat(cs.top) || 0) + el.offsetHeight); } document.documentElement.style.setProperty('--tope', t + 'px'); }
+window.addEventListener('resize', posTope); window.addEventListener('load', () => { posTope(); const h = document.querySelector('header'); if (h && window.ResizeObserver) new ResizeObserver(posTope).observe(h); });
 function pdOficina() { const of = LOCAL === 'oficina'; document.querySelectorAll('#pd-filtros .pil[data-v]').forEach(b => { if (b.dataset.v !== 'piden') b.style.display = of ? 'none' : ''; }); if (of) PD.vista = 'piden'; if (document.getElementById('content-pedidos').classList.contains('active')) pdVista(PD.vista); }
 function pdVista(v) { PD.vista = v; document.querySelectorAll('#pd-filtros .pil[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.getElementById('pd-solo-lb').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-prov').style.display = v === 'falta' ? 'inline-flex' : 'none'; document.getElementById('pd-armar').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-todos').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-libre').style.display = v === 'falta' ? '' : 'none'; cargarPedidosLocal(); }
 async function cargarPedidosLocal() {
@@ -4314,6 +4322,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=195"></script>
+<script src="manual.js?v=196"></script>
 </body>
 </html>
