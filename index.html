@@ -512,6 +512,32 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 #v-re-bultos-box, #v-re-loc, #v-re-prov-box, #v-re-transp-box { margin: 6px 0; padding: 6px 12px; border: 1px solid #7dd3fc; border-radius: 999px; background: #e0f2fe; color: #0369a1; } #v-re-dest { flex: 1; min-width: 0; font-size: 16px; font-family: inherit; font-weight: 600; color: var(--text); border: none !important; outline: none; background: transparent; padding: 5px 0; cursor: pointer; } #v-re-prov-box input::placeholder, #v-re-transp-box input::placeholder { color: #0369a1; opacity: .75; } #v-re-bultos-box input::placeholder { color: #0369a1; opacity: .75; } #v-re-bultos-box.falta { border-radius: 999px; border-color: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,.18); } .pos-ticket.es-re #v-descs, .pos-ticket.es-re .renglones th:nth-child(4), .pos-ticket.es-re .renglones td:nth-child(4) { display: none; } .pos-ticket.es-tr { background: #ede9fe; border-color: #c4b5fd; } .pos-ticket.es-tr .renglones table { background: white; } .pos-ticket.es-tr .rebox .sena-h b { color: #5b21b6; }
 .badge { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; background: #7c3aed; color: #fff; font-size: 11px; font-weight: 700; margin-left: 6px; text-align: center; } .pil.on .badge { background: #fff; color: #5b21b6; }
 .chip.viol { background: #ede9fe; color: #5b21b6; }
+:root { --pr-fila: #ffedd5; --pr-borde: #f97316; --pr-chip: #fed7aa; --pr-tx: #9a3412; --pr-caja: #fff7ed; }   /* (JP 18-nov) promociones en naranja */
+#v-renglones tbody tr[data-promo] > td { background: var(--pr-fila) !important; } #v-renglones tbody tr[data-promo] > td:first-child { box-shadow: inset 4px 0 0 var(--pr-borde); }
+#v-promo-fila { display: block; } .pr-det { background: var(--pr-caja); border: 1px solid var(--pr-chip); border-radius: 18px; padding: 8px 14px; margin: 4px 0; color: var(--pr-tx); }
+.pr-det-h { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; } .pr-det-h .pr-ic { width: 16px; height: 16px; }
+.pr-det-f { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0 2px 22px; } .pr-det-f b { white-space: nowrap; } .pr-det-f.tot { border-top: 1px dashed var(--pr-chip); margin-top: 3px; padding-top: 5px; font-weight: 600; } .pr-det .mini { color: var(--pr-tx); opacity: .85; }
+.pr-t .pr-que { display: flex; align-items: center; gap: 5px; color: var(--pr-tx); font-size: 13px; margin-top: 2px; } .pr-t .pr-que .pr-ic { width: 14px; height: 14px; }
+.chip.pr-act { background: #dcfce7; color: #166534; } .chip.pr-prog { background: #e0f2fe; color: #0369a1; } .chip.pr-pausa { background: #fef3c7; color: #92400e; } .chip.pr-venc { background: #e2e8f0; color: #475569; } .chip.pr-baja { background: #fee2e2; color: #b91c1c; }
+.prv { width: 900px; } .prv .sub .pr-ic { width: 18px; height: 18px; color: var(--pr-tx); flex: none; } .prv .sub { align-items: center; flex-wrap: nowrap; }
+.pr-fs { border: 0; margin: 0; padding: 0; min-width: 0; } .pr-fs[disabled] .pr-tp:not(.on), .pr-fs[disabled] .pr-sk, .pr-fs[disabled] .pr-alc input.pr-in, .pr-fs[disabled] .pf-mas, .pr-fs[disabled] .pr-chip button { display: none; }
+.pr-h { font-weight: 600; color: #075985; margin: 16px 0 6px; font-size: 14.5px; } .pr-h .mini { font-weight: 400; }
+.pr-sec { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; margin: 6px 0; } .pr-sec.apag { opacity: .4; pointer-events: none; }
+.pr-lb { font-size: 13px; color: #475569; min-width: 82px; } .pr-in { border: 1.5px solid #cbd5e1; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; background: #fff; box-sizing: border-box; } .pr-in.num { text-align: center; padding: 6px 8px; } .pr-in.chico { width: 190px; padding: 4px 12px; font-size: 13px; }
+.pr-tipos { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.pr-tp { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 22px; padding: 9px 14px; text-align: left; cursor: pointer; font: inherit; display: flex; flex-direction: column; gap: 2px; } .pr-tp b { font-size: 13.5px; color: #0f172a; font-weight: 600; } .pr-tp span { font-size: 11.5px; color: #64748b; }
+.pr-tp:hover { border-color: var(--pr-chip); } .pr-tp.on { background: var(--pr-caja); border-color: var(--pr-borde); } .pr-tp.on b { color: var(--pr-tx); }
+.pr-par { background: var(--pr-caja); border-radius: 22px; padding: 8px 16px; } .pr-par .mini { color: var(--pr-tx); }
+.pr-rap { display: inline-flex; gap: 6px; margin-left: 8px; flex-wrap: wrap; }
+.pr-alc { background: #f8fafc; border-radius: 22px; padding: 6px 16px; }
+.pr-chip { display: inline-flex; align-items: center; gap: 4px; background: #e0f2fe; color: #075985; border-radius: 999px; padding: 3px 4px 3px 11px; font-size: 13px; } .pr-chip button { background: none; border: 0; cursor: pointer; color: #0369a1; font-size: 15px; line-height: 1; padding: 0 5px; border-radius: 999px; } .pr-chip button:hover { background: #bae6fd; }
+.pr-sk { position: relative; display: inline-block; } .pr-sug { position: absolute; left: 0; top: 100%; z-index: 5; background: #fff; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.18); min-width: 320px; overflow: hidden; } .pr-sug:empty { display: none; } .pr-sug button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer; } .pr-sug button:hover { background: #f0f9ff; } .pr-sug .mini { display: block; padding: 8px 14px; }
+.pr-sw { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+.pr-hist { margin-top: 14px; font-size: 12.5px; color: #64748b; display: flex; flex-direction: column; gap: 2px; }
+@media (max-width: 700px) { .pr-lb { min-width: 0; width: 100%; } .prv .sub { flex-wrap: wrap; } }
+.chip.promo { background: var(--pr-chip); color: var(--pr-tx); display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; } .pr-ic { width: 13px; height: 13px; flex: none; }
+.dto-promo { border-radius: 999px; padding: 3px 9px; background: var(--pr-chip); color: var(--pr-tx); white-space: nowrap; } .v-dto-pr { color: var(--pr-tx); font-weight: 600; font-size: 12.5px; white-space: nowrap; }
+/* (la fila vieja de promociones se reemplazó por .pr-det) */
 .pd-prov td { background: #f8fafc; font-weight: 700; } .pd-items { margin: 10px 0 14px; } .pd-items td.num input.pd-desc { border-color: #fca5a5; } .pd-items td.num input { width: 44px; height: 34px; padding: 0 2px !important; text-align: center; border: 1px solid #cbd5e1; border-radius: 999px; background: white; font-size: 14px; font-weight: 600; box-sizing: border-box; } .pd-nota-box { margin-top: 14px; padding: 8px 14px; border: 1px solid #7dd3fc; border-radius: 999px; background: #e0f2fe; color: #0369a1; } .pd-nota-box input::placeholder { color: #0369a1; opacity: .7; } .pd-aviso { margin: 16px 0 6px; line-height: 1.7; font-size: 13px; } #ov .m-foot { margin-top: 16px; } #pd-filtros .pd-corte { flex-basis: 100%; height: 0; margin: -6px 0; } #pd-filtros .btn, #pd-filtros label { white-space: nowrap; flex: none; } #pd-filtros #pd-q { width: 170px; } #pd-filtros .stat { white-space: nowrap; } .pd-t td.num input { width: 44px; height: 34px; padding: 0 2px !important; text-align: center; border: 1px solid #cbd5e1; border-radius: 999px; background: white; font-size: 14px; font-weight: 600; box-sizing: border-box; } .pd-t td.num input:focus { border-color: #0e7490; outline: none; box-shadow: 0 0 0 2px rgba(14,116,144,.15); } .pd-t td.num input.ed { border-color: #7dd3fc; background: var(--primary-bg); } .pd-t .rojo { color: var(--red); font-weight: 700; } .pd-items { margin-top: 6px; } .pd-items td input { width: 64px; text-align: right; }
 .et-wrap { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; align-items: start; } @media (max-width: 900px) { .et-wrap { grid-template-columns: 1fr; } }
 .et-f { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; } .et-f label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 3px; } .et-f input, .et-f select { width: 96px; }
@@ -742,6 +768,7 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
       <button id="tab-pedidos" onclick="switchTab('pedidos')" title="Pedidos"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span class="lb">Pedidos</span></button>
       <button id="tab-etiquetas" onclick="switchTab('etiquetas')" title="Etiquetas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg><span class="lb">Etiquetas</span></button>
       <button id="tab-vales" onclick="switchTab('vales')" title="Vales"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg><span class="lb">Vales</span></button>
+      <button id="tab-promociones" onclick="switchTab('promociones')" title="Promociones"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg><span class="lb">Promociones</span></button>
       <button id="tab-caja" onclick="switchTab('caja')" title="Caja"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg><span class="lb">Caja</span></button>
       <button id="tab-ajustes" onclick="switchTab('ajustes')" title="Ajustes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="lb">Ajustes</span></button>
     </nav>
@@ -808,8 +835,9 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
           <div class="renglones" id="v-renglones"><div class="empty chico">Todavía no agregaste nada.</div></div>
           <div class="totales">
             <div class="fila" id="v-arts-fila" style="display:none"><span>Artículos</span><b id="v-arts"></b></div>
-            <div class="fila"><span>Subtotal</span><b id="v-subtotal">$ 0</b></div>
+            <div class="fila"><span id="v-subtotal-lb">Subtotal</span><b id="v-subtotal">$ 0</b></div>
             <div id="v-descs"></div>
+            <div class="fila" id="v-promo-fila" style="display:none"></div>
             <div class="fila" id="v-sena-fila" style="display:none"></div>
             <div class="fila" id="v-re-fila" style="display:none"></div>
             <div class="fila" id="v-mod-fila" style="display:none"></div>
@@ -901,6 +929,15 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
         <span class="stat" id="vl-stat"></span>
       </div>
       <div id="vl-lista"></div>
+    </section>
+    <section id="content-promociones" class="tab-content">
+      <div class="filters">
+        <input id="pr-q" placeholder="Buscar: nombre, artículo, categoría, local…" oninput="prRender()">
+        <select id="pr-est" onchange="prRender()"><option value="">Activas, programadas y pausadas</option><option value="act">Solo activas</option><option value="prog">Programadas</option><option value="pausa">Pausadas</option><option value="venc">Vencidas</option><option value="baja">Dadas de baja</option><option value="todas">Todas</option></select>
+        <span class="stat" id="pr-stat"></span><span class="spacer"></span>
+        <button class="btn primary" id="pr-nueva" style="display:none" onclick="prAbrir()">＋ Nueva promoción</button>
+      </div>
+      <div id="pr-lista"></div>
     </section>
     <section id="content-ajustes" class="tab-content">
       <div class="card"><h3>Ambiente de prueba</h3>
@@ -1180,13 +1217,13 @@ async function init() {
   document.getElementById('v-q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); vEscanear(); } });
   document.getElementById('v-q').focus();
 }
-const HUB_FN = { nc: 'pos.nota_credito', re: 'pos.remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo', envio: 'pos.precio_envio', precio: 'pos.precio', descuento: 'pos.descuento', caja: 'pos.caja_point_qr' };
-const HUB_TAB = { vender: 'pos.vender', vales: 'pos.vales', etiquetas: 'pos.etiquetas', caja: 'pos.caja' };
+const HUB_FN = { nc: 'pos.nota_credito', re: 'pos.remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo', envio: 'pos.precio_envio', precio: 'pos.precio', descuento: 'pos.descuento', caja: 'pos.caja_point_qr', promo: 'pos.promociones_editar' };
+const HUB_TAB = { vender: 'pos.vender', vales: 'pos.vales', etiquetas: 'pos.etiquetas', caja: 'pos.caja', promociones: 'pos.promociones' };
 // estado de una función del Hub para quien está logueado; null si el Hub no respondió (ahí vale la regla de antes)
 const hubF = f => { if (!PERFIL) return null; if (PERFIL.es_admin) return 'h'; const m = PERFIL.hub; return m && Object.keys(m).length ? (m[f] || 'o') : null; };
 const hubE = accion => (HUB_FN[accion] && hubF(HUB_FN[accion])) || (PERFIL.autoriza ? 'h' : 'a');
 const misLocales = () => PERFIL && Array.isArray(PERFIL.locales) && PERFIL.locales.length ? PERFIL.locales : [PERFIL.local];
-const TAB_AP = { vender: 'Vender', comprobantes: 'Vender', remitos: 'Mercadería', pedidos: 'Mercadería', etiquetas: 'Mercadería', vales: 'Vales', caja: 'Caja y ajustes', ajustes: 'Caja y ajustes' };
+const TAB_AP = { vender: 'Vender', comprobantes: 'Vender', remitos: 'Mercadería', pedidos: 'Mercadería', etiquetas: 'Mercadería', vales: 'Vales', promociones: 'Promociones', caja: 'Caja y ajustes', ajustes: 'Caja y ajustes' };
 const apOculto = k => !!PERFIL && Array.isArray(PERFIL.ocultos) && PERFIL.ocultos.includes(TAB_AP[k]);
 const tabOk = k => (!PERFIL || !Array.isArray(PERFIL.tabs) || PERFIL.tabs.includes(k)) && !(PERFIL && HUB_TAB[k] && hubF(HUB_TAB[k]) === 'o') && !apOculto(k);
 const soloVer = () => !!PERFIL && !PERFIL.es_admin && !PERFIL.opera_todo && !!PERFIL.ve_todo && !misLocales().includes(LOCAL);   // la oficina mirando un local: no opera
@@ -1253,7 +1290,204 @@ function pantReset() { PANT.esc = 1; PANT.izq = 30; pantPinta(); }
   d.addEventListener('pointerup', () => { drag = false; d.classList.remove('on'); });
   pantPinta();
 })();
-function onTab(k) { if (k !== 'remitos') rmModo('lista'); if (k === 'remitos') cargarRemitos(); if (k === 'etiquetas') { etRender(); setTimeout(() => document.getElementById('et-q').focus(), 50); } if (k === 'pedidos') pdVista(LOCAL === 'oficina' ? 'piden' : PD.vista); if (k === 'comprobantes') cargarComprobantes(); if (k === 'vales') cargarVales(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
+// ═══ Promociones (JP 18-nov) ═══
+// Las ven todos. Las cambian el admin y la oficina: Rivera y Contreras solas; el usuario genérico de Oficina con la autorización de ellas
+// (o del admin). Toda alta, cambio, pausa o baja queda en el historial con quién la hizo y quién la autorizó.
+// El cálculo lo hace la base (pos_promo_motor): el mismo que pone las promos en Vender y el que las controla al emitir.
+const PR_TIPOS = [
+  { k: 'nxm', t: 'Lleva N, paga M', ej: '2x1 · 3x2 · 4x3 · 4x2' },
+  { k: 'unidad_n', t: 'Unidad N con descuento', ej: '2ª al 50 % · 3ª gratis' },
+  { k: 'cantidad', t: 'Por cantidad', ej: 'desde 3 u. 10 % · desde 6 u. 20 %' },
+  { k: 'combo', t: 'Combo a precio fijo', ej: '3 por $ 100.000' },
+  { k: 'pct', t: 'Descuento directo', ej: '20 % en una línea' },
+  { k: 'monto', t: 'Pesos menos por unidad', ej: '$ 5.000 menos c/u' },
+  { k: 'precio', t: 'Precio especial', ej: 'cada uno a $ 49.900' },
+  { k: 'regalo', t: 'Lleva y se regala', ej: 'con 2 almohadones, una vela gratis' },
+  { k: 'cruzado', t: 'Lleva A, descuento en B', ej: 'con un mantel, 30 % en servilletas' },
+  { k: 'ticket', t: 'Por monto de compra', ej: 'desde $ 300.000, 10 %' },
+  { k: 'medio', t: 'Por forma de pago', ej: '15 % pagando en efectivo' }];
+const PR_DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'], PR_DIAS_L = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+const PR_IC = { pausa: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="9" y1="5" x2="9" y2="19"/><line x1="15" y1="5" x2="15" y2="19"/></svg>',
+  play: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 19 12 7 20 7 4"/></svg>',
+  copia: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="3"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>',
+  baja: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' };
+let PR = { lista: [], op: { grupos: [], categorias: [], clasificaciones: [], proveedores: [] }, hist: [], hoy: '', f: null };
+const prPuede = () => !!PERFIL && (PERFIL.es_admin || ![null, 'o'].includes(hubF('pos.promociones_editar')));   // sin respuesta del Hub, solo el admin
+const prPct = v => String(Number(v) || 0).replace('.', ',') + ' %';
+const prMedioNom = k => (MEDIOS.find(m => m.clave === k) || {}).nombre || k;
+function prEstado(p) {
+  if (p.baja_at) return { k: 'baja', t: 'Dada de baja' };
+  if (!p.activa) return { k: 'pausa', t: 'Pausada' };
+  if (p.hasta && p.hasta < PR.hoy) return { k: 'venc', t: 'Vencida' };
+  if (p.desde && p.desde > PR.hoy) return { k: 'prog', t: 'Programada' };
+  return { k: 'act', t: 'Activa' };
+}
+function prQue(p) { const a = p.params || {};
+  switch (p.tipo) {
+    case 'nxm': return `Lleva ${a.n || 'N'}, paga ${a.m || 'M'}`;
+    case 'unidad_n': return `La ${a.n || 'N'}ª unidad ${Number(a.pct) >= 100 ? 'gratis' : 'con ' + prPct(a.pct) + ' de descuento'}`;
+    case 'cantidad': return (a.escalones || []).filter(e => e.desde > 0).slice().sort((x, y) => x.desde - y.desde).map(e => `desde ${e.desde} u. ${prPct(e.pct)}`).join(' · ') || 'Por cantidad';
+    case 'combo': return `${a.n || 'N'} por ${plata(a.precio || 0)}`;
+    case 'pct': return `${prPct(a.pct)} de descuento`;
+    case 'monto': return `${plata(a.monto || 0)} menos en cada unidad`;
+    case 'precio': return `Cada unidad a ${plata(a.precio || 0)}`;
+    case 'regalo': return `Cada ${a.n || 1} que lleva, ${a.m || 1} de regalo`;
+    case 'cruzado': return `Cada ${a.n || 1} que lleva, ${a.m || 1} con ${prPct(a.pct)} de descuento`;
+    case 'ticket': return `Comprando desde ${plata(a.minimo || 0)}: ${Number(a.pct) > 0 ? prPct(a.pct) : plata(a.monto || 0)} de descuento`;
+    case 'medio': return `${prPct(a.pct)} pagando con ${(a.medios || []).filter(m => !m.endsWith('_ni')).map(prMedioNom).join(' o ') || '…'}`;
+  } return p.tipo; }
+const prAlcVacio = a => !a || !Object.keys(a).some(k => k !== 'excluir' && (a[k] === true || (Array.isArray(a[k]) && a[k].length)));
+function prAlc(a, todoSiVacio) { a = a || {}; const x = [];
+  if (a.todo || (todoSiVacio && prAlcVacio(a))) x.push('Todos los artículos');
+  else {
+    if ((a.grupos || []).length) x.push((a.grupos.length > 1 ? 'Grupos ' : 'Grupo ') + a.grupos.join(', '));
+    if ((a.categorias || []).length) x.push((a.categorias.length > 1 ? 'Categorías ' : 'Categoría ') + a.categorias.join(', '));
+    if ((a.clasificaciones || []).length) x.push((a.clasificaciones.length > 1 ? 'Clasificaciones ' : 'Clasificación ') + a.clasificaciones.join(', '));
+    if ((a.proveedores || []).length) x.push((a.proveedores.length > 1 ? 'Proveedores ' : 'Proveedor ') + a.proveedores.join(', '));
+    if ((a.skus || []).length) x.push(a.skus.length > 4 ? a.skus.length + ' artículos' : a.skus.join(', '));
+  }
+  return (x.join(' · ') || 'nada elegido') + ((a.excluir || []).length ? ' · menos ' + (a.excluir.length > 4 ? a.excluir.length + ' artículos' : a.excluir.join(', ')) : ''); }
+function prAlcT(p) { const tk = p.tipo === 'ticket' || p.tipo === 'medio'; const s = prAlc(p.alcance, tk);
+  return p.tipo === 'regalo' ? s + ' → se regala: ' + prAlc(p.alcance_b) : p.tipo === 'cruzado' ? s + ' → descuento en: ' + prAlc(p.alcance_b) : s; }
+function prCuando(p) { const x = [];
+  x.push(p.desde && p.hasta ? `Del ${fechaAR(p.desde)} al ${fechaAR(p.hasta)}` : p.desde ? `Desde el ${fechaAR(p.desde)}, sin fin` : p.hasta ? `Hasta el ${fechaAR(p.hasta)}` : 'Sin fechas');
+  if ((p.dias || []).length && p.dias.length < 7) x.push(p.dias.slice().sort().map(d => PR_DIAS_L[d - 1]).join(', '));
+  if (p.hora_desde || p.hora_hasta) x.push(`de ${String(p.hora_desde || '00:00').slice(0, 5)} a ${String(p.hora_hasta || '23:59').slice(0, 5)} h`);
+  return x.join(' · '); }
+const prLocs = p => (p.locales || []).length ? p.locales.map(l => LOCALES[l] || l).join(', ') : 'Todos los locales';
+async function cargarPromos() {
+  const box = document.getElementById('pr-lista'); if (!PR.lista.length) box.innerHTML = '<div class="empty chico"><span class="spin"></span> Cargando…</div>';
+  const { data, error } = await sb.rpc('pos_promo_datos'); if (error) { box.innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
+  PR.lista = data.promos || []; PR.op = Object.assign(PR.op, data.opciones || {}); PR.hist = data.hist || []; PR.hoy = data.hoy || hoyAR();
+  document.getElementById('pr-nueva').style.display = prPuede() ? '' : 'none';
+  prRender();
+}
+function prRender() {
+  const box = document.getElementById('pr-lista'), q = document.getElementById('pr-q').value.trim(), est = document.getElementById('pr-est').value, ed = prPuede();
+  let v = PR.lista.filter(p => { const e = prEstado(p).k; return est === 'todas' || (est ? e === est : e === 'act' || e === 'prog' || e === 'pausa'); });
+  if (q) v = v.filter(p => coincide(q, [p.nombre, prQue(p), prAlcT(p), prCuando(p), prLocs(p), p.creado_por, p.autorizado_por].join(' '), []));
+  document.getElementById('pr-stat').textContent = v.length + (v.length === 1 ? ' promoción' : ' promociones');
+  box.innerHTML = v.length ? `<table class="pr-t"><thead><tr><th>Promoción</th><th>A qué artículos</th><th>Cuándo y dónde</th><th>Estado</th><th class="num">Usos</th><th></th></tr></thead><tbody>${v.map(p => { const e = prEstado(p);
+    return `<tr><td><a href="#" onclick="prAbrir(${p.id});return false" title="Abrir la promoción"><b>${esc(p.nombre)}</b></a><div class="pr-que">${PROMO_IC}${esc(prQue(p))}</div></td>
+      <td class="mini">${esc(prAlcT(p))}</td><td class="mini">${esc(prCuando(p))}<div>${esc(prLocs(p))}</div></td>
+      <td><span class="chip pr-${e.k}">${e.t}</span></td><td class="num" title="Comprobantes emitidos con esta promoción">${p.usos || ''}</td>
+      <td class="acc">${ed && !p.baja_at ? `<button class="btn ico" onclick="prPausa(${p.id})" title="${p.activa ? 'Pausar: deja de aplicarse hasta que la reactives' : 'Reactivar'}" aria-label="${p.activa ? 'Pausar' : 'Reactivar'}">${p.activa ? PR_IC.pausa : PR_IC.play}</button>` : ''}${ed ? `<button class="btn ico" onclick="prAbrir(${p.id},true)" title="Duplicar: arma una nueva con estos datos" aria-label="Duplicar">${PR_IC.copia}</button>` : ''}${ed && !p.baja_at ? `<button class="btn ico" onclick="prBaja(${p.id})" title="Dar de baja" aria-label="Dar de baja">${PR_IC.baja}</button>` : ''}</td></tr>`; }).join('')}</tbody></table>`
+    : `<div class="empty">${PR.lista.length ? 'No hay promociones con ese filtro.' : 'Todavía no hay promociones cargadas.' + (ed ? ' Tocá «Nueva promoción».' : '')}</div>`;
+}
+// ── la ficha: ver (todos) y armar o cambiar (quien tiene permiso) ──
+function prAbrir(id, copiar) {
+  const p0 = id ? PR.lista.find(x => x.id === id) : null; if (id && !p0) return;
+  const f = p0 ? JSON.parse(JSON.stringify(p0)) : { nombre: '', tipo: 'nxm', params: { n: 2, m: 1 }, alcance: {}, alcance_b: {}, desde: PR.hoy || hoyAR(), hasta: '', dias: [], hora_desde: '', hora_hasta: '', locales: [], canales: ['local'], tope_unidades: null, activa: true };
+  if (copiar) { delete f.id; delete f.baja_at; delete f.usos; f.nombre = f.nombre + ' (copia)'; f.activa = true; }
+  f.params = f.params || {}; f.alcance = f.alcance || {}; f.alcance_b = f.alcance_b || {}; f.dias = f.dias || []; f.locales = f.locales || [];
+  PR.f = f; prForm();
+}
+function prForm() {
+  const f = PR.f, ed = prPuede() && !f.baja_at, e = f.id ? prEstado(f) : null, nuevo = !f.id;
+  const hs = f.id ? PR.hist.filter(h => h.promo_id === f.id) : [];
+  const ACC = { alta: 'La creó', cambio: 'La cambió', baja: 'La dio de baja' };
+  modal(`<div class="pv pv1 prv"><div class="cab"><div class="t"><h3>${nuevo ? 'Nueva promoción' : esc(f.nombre)}</h3>${e ? `<span class="chip pr-${e.k}">${e.t}</span>` : ''}${f.usos ? `<span class="pv-estd">usada ${f.usos} ${f.usos === 1 ? 'vez' : 'veces'}</span>` : ''}<span class="spacer"></span><button class="pv-x" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="sub" id="pr-res">${PROMO_IC}<span>${esc(prQue(f))} · ${esc(prAlcT(f))}</span></div>
+    ${!ed && !f.baja_at ? '<div class="avs">Solo para ver: las promociones las cambian el admin y la oficina (Rivera y Contreras).</div>' : ''}${ed && hubE('promo') === 'a' ? '<div class="avs">Al guardar se pide la autorización de Rivera, Contreras o el admin.</div>' : ''}</div>
+    <div class="pv-cuerpo"><fieldset class="pr-fs"${ed ? '' : ' disabled'}>
+      <div class="pr-sec"><span class="pr-lb">Nombre</span><input class="pr-in" id="pr-nom" value="${esc(f.nombre)}" placeholder="Ej: 2x1 en almohadones" maxlength="60" onchange="PR.f.nombre=this.value.trim()" style="flex:1;min-width:220px"></div>
+      <div class="pr-h">Tipo de promoción</div>
+      <div class="pr-tipos">${PR_TIPOS.map(t => `<button type="button" class="pr-tp${f.tipo === t.k ? ' on' : ''}" onclick="prTipo('${t.k}')"><b>${t.t}</b><span>${t.ej}</span></button>`).join('')}</div>
+      <div class="pr-h">Cómo funciona</div><div class="pr-par">${prParHTML()}</div>
+      <div class="pr-h">${f.tipo === 'regalo' || f.tipo === 'cruzado' ? 'Lo que tiene que llevar' : 'A qué artículos'}${f.tipo === 'ticket' || f.tipo === 'medio' ? ' <span class="mini">(si no elegís nada, vale para todo el ticket)</span>' : ''}</div>${prAlcHTML('alcance')}
+      ${f.tipo === 'regalo' || f.tipo === 'cruzado' ? `<div class="pr-h">${f.tipo === 'regalo' ? 'Lo que se regala' : 'Lo que lleva el descuento'} <span class="mini">(tiene que estar en el ticket; va lo más barato)</span></div>${prAlcHTML('alcance_b')}` : ''}
+      <div class="pr-h">Cuándo</div>
+      <div class="pr-sec"><span class="pr-lb">Desde</span><input type="date" class="pr-in" value="${f.desde || ''}" onchange="PR.f.desde=this.value;prRes()"><span class="pr-lb">Hasta</span><input type="date" class="pr-in" value="${f.hasta || ''}" onchange="PR.f.hasta=this.value;prRes()"><span class="mini">vacío = sin límite</span></div>
+      <div class="pr-sec"><span class="pr-lb">Días</span>${PR_DIAS.map((d, i) => `<button type="button" class="pil chico pr-dia${f.dias.includes(i + 1) ? ' on' : ''}" onclick="prTog('dias',${i + 1})" title="${PR_DIAS_L[i]}">${d}</button>`).join('')}<span class="mini">ninguno = todos los días</span></div>
+      <div class="pr-sec"><span class="pr-lb">Horario</span><input type="time" class="pr-in" value="${String(f.hora_desde || '').slice(0, 5)}" onchange="PR.f.hora_desde=this.value"> a <input type="time" class="pr-in" value="${String(f.hora_hasta || '').slice(0, 5)}" onchange="PR.f.hora_hasta=this.value"><span class="mini">vacío = todo el día</span></div>
+      <div class="pr-h">Dónde</div>
+      <div class="pr-sec"><span class="pr-lb">Locales</span>${Object.keys(LOCALES).map(l => `<button type="button" class="pil chico${f.locales.includes(l) ? ' on' : ''}" onclick="prTog('locales','${l}')">${esc(LOCALES[l])}</button>`).join('')}<span class="mini">ninguno = todos</span></div>
+      <div class="pr-sec"><span class="pr-lb">Tope</span>hasta <input class="pr-in num" style="width:70px" inputmode="numeric" value="${f.tope_unidades || ''}" onchange="PR.f.tope_unidades=Math.max(0,Math.round(num(this.value)))||null"> unidades por ticket<span class="mini">vacío = sin tope</span></div>
+      <div class="pr-sec"><label class="pr-sw"><input type="checkbox"${f.activa !== false ? ' checked' : ''} onchange="PR.f.activa=this.checked"> Activa</label><span class="mini">destildada queda guardada pero no se aplica</span></div>
+    </fieldset>
+    ${hs.length ? `<div class="pr-hist">${hs.map(h => `<div>${ACC[h.accion] || h.accion} <b>${esc(h.por || '')}</b>${h.autorizado_por ? ' · autorizó <b>' + esc(h.autorizado_por) + '</b>' : ''} · ${fechaAR(String(h.at).slice(0, 10))} ${String(h.at).slice(11, 16)}</div>`).join('')}</div>` : ''}
+    <div class="pv-pie">${ed && f.id ? `<button class="ib" onclick="prBaja(${f.id})" title="Dar de baja" aria-label="Dar de baja">${PR_IC.baja}</button>` : ''}<span class="spacer"></span><button class="btn" onclick="cerrarModal()">${ed ? 'Cancelar' : 'Cerrar'}</button>${ed ? `<button class="btn primary" onclick="prGuardar()">${nuevo ? 'Crear la promoción' : 'Guardar los cambios'}</button>` : ''}</div></div></div>`, 'pastilla');
+  ['pr-dl-categorias', 'pr-dl-clasificaciones', 'pr-dl-proveedores'].forEach(id => { if (!document.getElementById(id)) { const dl = document.createElement('datalist'); dl.id = id; document.body.appendChild(dl); } });
+  for (const k of ['categorias', 'clasificaciones', 'proveedores']) document.getElementById('pr-dl-' + k).innerHTML = (PR.op[k] || []).map(v => `<option value="${esc(v)}">`).join('');
+}
+function prRes() { const el = document.getElementById('pr-res'); if (el) el.innerHTML = `${PROMO_IC}<span>${esc(prQue(PR.f))} · ${esc(prAlcT(PR.f))}</span>`; }
+const PR_DEF = { nxm: { n: 2, m: 1 }, unidad_n: { n: 2, pct: 50 }, cantidad: { escalones: [{ desde: 3, pct: 10 }, { desde: 6, pct: 20 }] }, combo: { n: 3, precio: null }, pct: { pct: 20 }, monto: { monto: null }, precio: { precio: null },
+  regalo: { n: 1, m: 1 }, cruzado: { n: 1, m: 1, pct: 30 }, ticket: { minimo: null, pct: 10, monto: null }, medio: { pct: 15, medios: ['efectivo'] } };
+function prTipo(k) { const f = PR.f; f.nombre = (document.getElementById('pr-nom') || {}).value || f.nombre; if (f.tipo === k) return; f.tipo = k; f.params = JSON.parse(JSON.stringify(PR_DEF[k])); prForm(); }
+function prTog(campo, v) { const a = PR.f[campo] = PR.f[campo] || []; const i = a.indexOf(v); if (i >= 0) a.splice(i, 1); else a.push(v); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
+function prPar(k, v) { PR.f.params[k] = String(v).trim() === '' ? null : num(v); prRes(); }
+function prParHTML() {
+  const f = PR.f, a = f.params, t = f.tipo;
+  const n = (k, w, ph) => `<input class="pr-in num" style="width:${w || 64}px" inputmode="decimal" value="${a[k] ?? ''}" placeholder="${ph || ''}" onchange="prPar('${k}',this.value)">`;
+  const rap = xs => `<span class="pr-rap">${xs.map(([lb, p]) => `<button type="button" class="pil chico${Object.keys(p).every(k => a[k] == p[k]) ? ' on' : ''}" onclick='Object.assign(PR.f.params,${JSON.stringify(p)});PR.f.nombre=document.getElementById("pr-nom").value;prForm()'>${lb}</button>`).join('')}</span>`;
+  switch (t) {
+    case 'nxm': return `<div class="pr-sec">Lleva ${n('n')} y paga ${n('m')} ${rap([['2x1', { n: 2, m: 1 }], ['3x2', { n: 3, m: 2 }], ['4x3', { n: 4, m: 3 }], ['4x2', { n: 4, m: 2 }]])}</div><div class="mini">De cada ${a.n || 'N'} unidades de lo elegido se pagan las ${a.m || 'M'} más caras; las otras van sin cargo. Se pueden mezclar artículos distintos.</div>`;
+    case 'unidad_n': return `<div class="pr-sec">La unidad número ${n('n')} con ${n('pct')} % de descuento ${rap([['2ª al 50 %', { n: 2, pct: 50 }], ['2ª al 70 %', { n: 2, pct: 70 }], ['3ª gratis', { n: 3, pct: 100 }]])}</div><div class="mini">Cada ${a.n || 'N'} unidades, la de menor precio lleva el descuento (100 % = gratis).</div>`;
+    case 'cantidad': return `${(a.escalones || []).map((e, i) => `<div class="pr-sec">Desde <input class="pr-in num" style="width:64px" inputmode="numeric" value="${e.desde ?? ''}" onchange="PR.f.params.escalones[${i}].desde=Math.round(num(this.value));prRes()"> unidades: <input class="pr-in num" style="width:64px" inputmode="decimal" value="${e.pct ?? ''}" onchange="PR.f.params.escalones[${i}].pct=num(this.value);prRes()"> % <button type="button" class="btn ico chico" onclick="PR.f.params.escalones.splice(${i},1);prForm()" title="Sacar este escalón" aria-label="Sacar">${_i('x')}</button></div>`).join('')}
+      <div class="pr-sec"><button type="button" class="pf-mas chico" onclick="(PR.f.params.escalones=PR.f.params.escalones||[]).push({desde:null,pct:null});prForm()" title="Agregar escalón">+</button><span class="mini">Cuenta todas las unidades de lo elegido en el ticket: el escalón más alto que alcanza se aplica a todas.</span></div>`;
+    case 'combo': return `<div class="pr-sec">${n('n')} unidades por $ ${n('precio', 120)}</div><div class="mini">Cada ${a.n || 'N'} unidades de lo elegido pagan ese precio entre todas (el descuento se reparte en proporción).</div>`;
+    case 'pct': return `<div class="pr-sec">${n('pct')} % de descuento ${rap([['10 %', { pct: 10 }], ['20 %', { pct: 20 }], ['30 %', { pct: 30 }], ['50 %', { pct: 50 }]])}</div>`;
+    case 'monto': return `<div class="pr-sec">$ ${n('monto', 120)} menos en cada unidad</div>`;
+    case 'precio': return `<div class="pr-sec">Cada unidad a $ ${n('precio', 120)}</div><div class="mini">Si el artículo ya cuesta menos, queda a su precio.</div>`;
+    case 'regalo': return `<div class="pr-sec">Cada ${n('n')} unidades de lo que lleva, ${n('m')} de lo que se regala sin cargo</div>`;
+    case 'cruzado': return `<div class="pr-sec">Cada ${n('n')} unidades de lo que lleva, ${n('m')} de lo otro con ${n('pct')} % de descuento</div>`;
+    case 'ticket': return `<div class="pr-sec">Comprando desde $ ${n('minimo', 120)}: ${n('pct')} % <span class="mini">o</span> $ ${n('monto', 110)} de descuento</div><div class="mini">Poné el % o el monto (uno de los dos). Se calcula sobre lo que no tiene otra promoción.</div>`;
+    case 'medio': { const ms = MEDIOS.filter(m => !m.clave.endsWith('_ni'));
+      return `<div class="pr-sec">${n('pct')} % pagando con</div><div class="pr-sec">${ms.map(m => `<button type="button" class="pil chico${(a.medios || []).includes(m.clave) ? ' on' : ''}" onclick="prMedio('${m.clave}')">${esc(m.nombre)}</button>`).join('')}</div><div class="mini">Vale cuando todo el ticket se paga con ese medio (un solo medio de pago). Se calcula sobre lo que no tiene otra promoción.</div>`; }
+  } return '';
+}
+function prMedio(k) { const a = PR.f.params.medios = PR.f.params.medios || []; const on = a.includes(k);
+  for (const c of [k, k + '_ni']) { const i = a.indexOf(c); if (on && i >= 0) a.splice(i, 1); else if (!on && i < 0 && (c === k || MEDIOS.some(m => m.clave === c))) a.push(c); }
+  PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
+// alcance: todo · grupos (pastillas) · categorías / clasificaciones / proveedores (con la lista) · artículos sueltos · menos estos
+function prAlcHTML(c) {
+  const a = PR.f[c] = PR.f[c] || {}, todo = !!a.todo;
+  const chips = (k, xs) => xs.map(v => `<span class="pr-chip">${esc(v)}<button type="button" data-c="${c}" data-k="${k}" data-v="${esc(v)}" onclick="prAlcQuitar(this)" aria-label="Sacar">×</button></span>`).join('');
+  const lista = (k, lb, ph) => `<div class="pr-sec${todo ? ' apag' : ''}"><span class="pr-lb">${lb}</span>${chips(k, a[k] || [])}<input class="pr-in chico" list="pr-dl-${k}" placeholder="${ph}" data-c="${c}" data-k="${k}" onchange="prAlcAdd(this)"></div>`;
+  const sku = (k, lb) => `<div class="pr-sec${todo && k === 'skus' ? ' apag' : ''}"><span class="pr-lb">${lb}</span>${chips(k, a[k] || [])}<span class="pr-sk"><input class="pr-in chico" placeholder="SKU o descripción" data-c="${c}" data-k="${k}" oninput="prSkuBuscar(this)" autocomplete="off"><span class="pr-sug"></span></span></div>`;
+  return `<div class="pr-alc">
+    <div class="pr-sec"><label class="pr-sw"><input type="checkbox"${todo ? ' checked' : ''} onchange="PR.f['${c}'].todo=this.checked||undefined;PR.f.nombre=document.getElementById('pr-nom').value;prForm()"> Todos los artículos</label></div>
+    <div class="pr-sec${todo ? ' apag' : ''}"><span class="pr-lb">Grupo</span>${(PR.op.grupos || []).map(g => `<button type="button" class="pil chico${(a.grupos || []).includes(g) ? ' on' : ''}" data-c="${c}" data-k="grupos" data-v="${esc(g)}" onclick="prAlcTog(this)">${esc(g)}</button>`).join('')}</div>
+    ${lista('categorias', 'Categoría', 'Agregar categoría')}${lista('clasificaciones', 'Clasificación', 'Agregar clasificación')}${lista('proveedores', 'Proveedor', 'Agregar proveedor')}
+    ${sku('skus', 'Artículos')}${sku('excluir', 'Menos')}</div>`;
+}
+function prAlcTog(b) { const a = PR.f[b.dataset.c], k = b.dataset.k, v = b.dataset.v; a[k] = a[k] || []; const i = a[k].indexOf(v); if (i >= 0) a[k].splice(i, 1); else a[k].push(v); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
+function prAlcQuitar(b) { const a = PR.f[b.dataset.c], k = b.dataset.k; a[k] = (a[k] || []).filter(x => x !== b.dataset.v); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
+function prAlcAdd(inp) { const k = inp.dataset.k, a = PR.f[inp.dataset.c], v = inp.value.trim(); if (!v) return;
+  const ok = (PR.op[k] || []).find(x => x.toLowerCase() === v.toLowerCase()); if (!ok) { toast('«' + v + '» no está en la lista: elegilo de las opciones que aparecen', 'error'); inp.value = ''; return; }
+  a[k] = a[k] || []; if (!a[k].includes(ok)) a[k].push(ok); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
+function prSkuBuscar(inp) { const q = inp.value.trim(), sug = inp.nextElementSibling; if (q.length < 2) { sug.innerHTML = ''; return; }
+  const xs = ARTS.filter(x => coincide(q, x.sku + ' ' + (x.descripcion || ''), [])).slice(0, 6);
+  sug.innerHTML = xs.length ? xs.map(x => `<button type="button" data-c="${inp.dataset.c}" data-k="${inp.dataset.k}" data-v="${esc(x.sku)}" onclick="prSkuAdd(this)"><b>${esc(x.sku)}</b> ${esc(x.descripcion || '')}</button>`).join('') : '<span class="mini">No encontré ese artículo</span>'; }
+function prSkuAdd(b) { const a = PR.f[b.dataset.c], k = b.dataset.k; a[k] = a[k] || []; if (!a[k].includes(b.dataset.v)) a[k].push(b.dataset.v); PR.f.nombre = document.getElementById('pr-nom').value; prForm(); }
+const prAlcLimpio = a => { const o = {}; a = a || {}; if (a.todo) o.todo = true; for (const k of ['grupos', 'categorias', 'clasificaciones', 'proveedores', 'skus', 'excluir']) if ((a[k] || []).length) o[k] = a[k].slice(); return o; };
+function prParLimpios(f) { const a = Object.assign({}, f.params || {});
+  if (f.tipo === 'cantidad') a.escalones = (a.escalones || []).filter(e => e.desde > 0 && e.pct > 0).map(e => ({ desde: Math.round(e.desde), pct: Number(e.pct) }));
+  if (f.tipo === 'ticket') { if (Number(a.pct) > 0) a.monto = null; else a.pct = null; }
+  for (const k of Object.keys(a)) if (a[k] === null || a[k] === undefined) delete a[k];
+  return a; }
+async function prGuardar() {
+  const f = PR.f; f.nombre = document.getElementById('pr-nom').value.trim();
+  if (!f.nombre) { toast('Ponele un nombre a la promoción', 'error'); document.getElementById('pr-nom').focus(); return; }
+  const body = { id: f.id || null, nombre: f.nombre, tipo: f.tipo, params: prParLimpios(f), alcance: prAlcLimpio(f.alcance), alcance_b: f.tipo === 'regalo' || f.tipo === 'cruzado' ? prAlcLimpio(f.alcance_b) : null,
+    desde: f.desde || null, hasta: f.hasta || null, dias: f.dias || [], hora_desde: f.hora_desde || null, hora_hasta: f.hora_hasta || null, locales: f.locales || [], canales: f.canales && f.canales.length ? f.canales : ['local'], tope_unidades: f.tope_unidades || null, activa: f.activa !== false };
+  await prMandar('pos_promo_guardar', { p_promo: body }, (f.id ? 'Cambiar la promoción «' : 'Crear la promoción «') + f.nombre + '»: ' + prQue(body) + ' · ' + prAlcT(body), f.id ? 'Promoción guardada' : 'Promoción creada', true);
+}
+// pide la autorización si hace falta (Rivera, Contreras o el admin) y manda a la base; si algo falla, vuelve a la ficha con lo cargado
+async function prMandar(fn, args, resumen, ok, ficha) {
+  const aid = await autorizar('promo', resumen);
+  if (aid === null) { if (ficha) prForm(); return false; }
+  const { error } = await sb.rpc(fn, Object.assign({ p_local: LOCAL, p_autorizacion_id: aid || null }, args));
+  if (error) { if (ficha) prForm(); else cerrarModal(); toast(error.message.replace(/^.*?: /, ''), 'error'); return false; }
+  cerrarModal(); toast(ok, 'success'); _prKey = ''; await cargarPromos(); return true;
+}
+async function prPausa(id) { const p = PR.lista.find(x => x.id === id); if (!p) return;
+  const body = Object.assign({}, p, { activa: !p.activa }); ['usos', 'creado_at', 'actualizado_at', 'baja_at', 'baja_por'].forEach(k => delete body[k]);
+  await prMandar('pos_promo_guardar', { p_promo: body }, (p.activa ? 'Pausar' : 'Reactivar') + ' la promoción «' + p.nombre + '»', p.activa ? 'Promoción pausada' : 'Promoción reactivada'); }
+async function prBaja(id) { const p = PR.lista.find(x => x.id === id); if (!p) return;
+  if (!await confirmar('¿Dar de baja la promoción «' + p.nombre + '»? Deja de aplicarse y queda en el historial.')) return;
+  await prMandar('pos_promo_baja', { p_id: id }, 'Dar de baja la promoción «' + p.nombre + '»', 'Promoción dada de baja'); }
+function onTab(k) { if (k !== 'remitos') rmModo('lista'); if (k === 'remitos') cargarRemitos(); if (k === 'etiquetas') { etRender(); setTimeout(() => document.getElementById('et-q').focus(), 50); } if (k === 'pedidos') pdVista(LOCAL === 'oficina' ? 'piden' : PD.vista); if (k === 'comprobantes') cargarComprobantes(); if (k === 'vales') cargarVales(); if (k === 'promociones') cargarPromos(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
 
 // ═══ Vender · productos ════════════════════════════════════════════════
 let _vT = null;
@@ -2555,7 +2789,7 @@ function giftHTML() {
 // Comprobante ficticio con lo cargado en el ticket (para la vista previa, sin emitir)
 function vPreviewDatos() {
   const t = vTotales(); const A = T.letra === 'A'; const hoy = new Date();
-  const det = T.items.map((it, i) => { const l = r2(lineaBruta(it) * (1 - (t.imp == null ? t.pct : t.desc / (t.sub || 1) * 100) / 100)); return { nro_item: i + 1, sku: it.sku, descripcion: it.descripcion, cantidad: it.cantidad, precio_unit: it.precio_unit, descuento_pct: it.descuento_monto > 0 ? 0 : it.descuento_pct, descuento_monto: it.descuento_monto || 0, total: l, neto: r2(l / 1.21), iva: r2(l - l / 1.21) }; });
+  const det = T.items.map((it, i) => { const l = r2(lineaBruta(it) * (1 - (t.imp == null ? t.pct : t.desc / (t.sub || 1) * 100) / 100)); return { nro_item: i + 1, sku: it.sku, descripcion: it.descripcion, cantidad: it.cantidad, precio_unit: it.precio_unit, descuento_pct: it.promo ? 0 : it.descuento_monto > 0 ? 0 : it.descuento_pct, descuento_monto: it.promo ? promoU(it) : it.descuento_monto || 0, promo_nombre: it.promo ? it.promo.nombre : null, total: l, neto: r2(l / 1.21), iva: r2(l - l / 1.21) }; });
   const c = { preview: true, local: LOCAL, tipo: T.tipo, letra: T.letra, punto_venta: (PV.find(p => p.local === LOCAL && p.tipo === (T.letra === 'X' ? 'manual' : 'fiscal')) || {}).punto_venta || 0, numero: 0,
     fecha: hoy.toISOString().slice(0, 10), hora: hoy.toTimeString().slice(0, 5), vendedora_nombre: PERFIL && PERFIL.nombre, estado: 'emitido', obs: document.getElementById('v-obs').value.trim() || null, relacionado_id: T.nc_de,
     cliente_nombre: T.cliente ? T.cliente.nombre : 'Consumidor Final', cliente_doc_tipo: T.cliente && T.cliente.doc_tipo, cliente_doc: T.cliente && T.cliente.doc, cliente_cond_iva: T.cliente ? T.cliente.cond_iva : 'CF',
@@ -2686,7 +2920,7 @@ function a4HTML(x) {
   if (fiscal && c.cae_estado === 'ok') side += `<img class="qr" data-qr="${esc(qrArca(c))}" alt="QR ARCA"><div class="cae"><b>CAE ${esc(c.cae)}</b><br>Vencimiento ${fechaAR(c.cae_vto)}<br>Comprobante autorizado por ARCA</div>`;
   if (fiscal && c.preview) side += '<div class="aviso" style="margin-top:auto">Sin CAE · vista previa</div>';
   side += '</div>';
-  const item = dd => { let dto = ''; if (Number(dd.descuento_monto) > 0) dto = ` · descuento ${plata2(Number(dd.descuento_monto) * f)} por unidad`; else if (Number(dd.descuento_pct) > 0) dto = ` · descuento ${Number(dd.descuento_pct)}%`;
+  const item = dd => { let dto = ''; if (dd.promo_nombre) dto = ` · promoción ${esc(dd.promo_nombre)}` + (Number(dd.descuento_monto) > 0 ? `: - ${plata2(Number(dd.descuento_monto) * Number(dd.cantidad) * f)}` : ''); else if (Number(dd.descuento_monto) > 0) dto = ` · descuento ${plata2(Number(dd.descuento_monto) * f)} por unidad`; else if (Number(dd.descuento_pct) > 0) dto = ` · descuento ${Number(dd.descuento_pct)}%`;
     const foto = IMGS[dd.sku]; const desc = String(dd.descripcion); const descT = desc === desc.toUpperCase() ? desc.charAt(0) + desc.slice(1).toLowerCase() : desc;
     return `<div class="it">${foto ? `<img src="${esc(foto)}" alt="">` : '<div class="sinfoto"></div>'}<div>${esc(descT)}<div class="sku">${esc(dd.sku)}${dto}</div></div><div class="num">${plata2(A ? dd.neto : dd.total)}<small>${Number(dd.cantidad)} × ${plata2(Number(dd.precio_unit) * f)}</small></div></div>`; };
   let tot = '';
@@ -2742,7 +2976,7 @@ function vTipo(tipo, letra) {
 }
 // Devolver más de lo vendido no se puede: los renglones de una NC guardan el máximo
 // Importe bruto del renglón: con descuento en pesos (por unidad) o en %
-function lineaBruta(it) { return it.descuento_monto > 0 ? it.cantidad * (it.precio_unit - it.descuento_monto) : it.cantidad * it.precio_unit * (1 - it.descuento_pct / 100); }
+function lineaBruta(it) { if (it.promo) return it.cantidad * (it.precio_unit - promoU(it)); return it.descuento_monto > 0 ? it.cantidad * (it.precio_unit - it.descuento_monto) : it.cantidad * it.precio_unit * (1 - it.descuento_pct / 100); }
 const dtoTexto = it => it.descuento_monto > 0 ? plata(it.descuento_monto) : it.descuento_pct > 0 ? String(it.descuento_pct).replace('.', ',') + '%' : '';
 // Casilla Dto: "10%" = porcentaje; "1000" o "$ 1.000" = pesos por unidad
 function dtoFoco(el) { const v = el.value.trim(); if (v && !v.endsWith('%')) el.value = num(v) || ''; el.select(); }
@@ -2799,7 +3033,7 @@ function vTotales() {
   let sub = 0; for (const it of T.items) sub += r2(lineaBruta(it));
   sub = r2(sub);
   let base = sub; const filas = [];
-  for (const row of document.querySelectorAll('#v-descs .dsc')) {
+  for (const row of T.items.some(i => i.promo) ? [] : document.querySelectorAll('#v-descs .dsc')) {   // con promociones no va el descuento general
     let d;
     const v = num(row.dataset.v);
     if (row.dataset.modo === 'imp') d = Math.min(base, Math.max(0, r2(v)));
@@ -2816,17 +3050,23 @@ function vTotales() {
 function vRender() {
   const box = document.getElementById('v-renglones');
   box.innerHTML = T.items.length ? `<table><thead><tr><th>Artículo</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto</th><th class="num">Importe</th><th></th></tr></thead><tbody>` +
-    T.items.map((it, i) => `<tr${it.cantidad < 0 ? ' class="cambio" title="Cantidad negativa: el cliente lo trae para cambiar"' : it.stock <= 0 && !it.fijo ? ' class="sinstock" title="Sin stock en este local"' : ''}${it.fijo ? '' : ` ondblclick="if(!/^(INPUT|BUTTON|svg|path|line|polyline)$/.test(event.target.tagName))prodFicha('${esc(it.sku)}')"`}>
-      <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}${(ad => ad && ad !== String(it.descripcion || '').trim() ? '<div class="adic">' + esc(ad) + '</div>' : '')(String((ARTS.find(a => a.sku === it.sku) || {}).descripcion_adicional || '').trim())}${it.entregado ? ' <span class="chip amber" title="Ya salió con el remito: no vuelve a descontar stock">entregado</span>' : ''}${it.cantidad < 0 ? ' <span class="chip viol" title="' + (T.tipo === 'NC' ? 'En la nota de crédito, el negativo SALE del stock' : 'Lo trae para cambiar: ENTRA al stock') + '">cambio · ' + (T.tipo === 'NC' ? 'sale' : 'entra') + '</span>' : ''}</div></div></div></td>
+    T.items.map((it, i) => `<tr${it.promo ? ' data-promo' : ''}${it.cantidad < 0 ? ' class="cambio" title="Cantidad negativa: el cliente lo trae para cambiar"' : it.stock <= 0 && !it.fijo ? ' class="sinstock" title="Sin stock en este local"' : ''}${it.fijo ? '' : ` ondblclick="if(!/^(INPUT|BUTTON|svg|path|line|polyline)$/.test(event.target.tagName))prodFicha('${esc(it.sku)}')"`}>
+      <td><div class="art">${foto(it.sku, 'chica')}<div><b>${esc(it.sku)}</b><div class="mini">${esc(it.descripcion)}${(ad => ad && ad !== String(it.descripcion || '').trim() ? '<div class="adic">' + esc(ad) + '</div>' : '')(String((ARTS.find(a => a.sku === it.sku) || {}).descripcion_adicional || '').trim())}${it.entregado ? ' <span class="chip amber" title="Ya salió con el remito: no vuelve a descontar stock">entregado</span>' : ''}${it.promo ? ` <span class="chip promo" title="${it.promo.desc > 0 ? 'Promoción automática' : 'Participa de la promoción (es la que se paga)'}: ${esc(it.promo.nombre)}">${PROMO_IC}${esc(it.promo.nombre)}</span>` : ''}${it.cantidad < 0 ? ' <span class="chip viol" title="' + (T.tipo === 'NC' ? 'En la nota de crédito, el negativo SALE del stock' : 'Lo trae para cambiar: ENTRA al stock') + '">cambio · ' + (T.tipo === 'NC' ? 'sale' : 'entra') + '</span>' : ''}</div></div></div></td>
       <td class="num cant">${it.fijo ? '' : `<button class="btn ico chico" onclick="vCant(${i},1)" aria-label="Más">${_i('plus')}</button><input value="${it.cantidad}" onchange="vSet(${i},'cantidad',this.value)" inputmode="decimal" style="text-align:center"><button class="btn ico chico" onclick="vCant(${i},-1)" aria-label="Menos">${_i('minus')}</button>`}</td>
       <td class="num"><input class="din${it.fijo && !(it.precio_unit > 0) ? ' falta' : ''}" value="${it.fijo && !(it.precio_unit > 0) ? '' : plata(it.precio_unit)}" placeholder="${it.fijo ? (it.placeholder || 'Importe de la seña') : ''}" onfocus="dinFoco(this)" onblur="dinBlur(this)" onchange="vSet(${i},'precio_unit',this.value)" inputmode="decimal" style="width:114px" title="Precio unitario (IVA incluido)"${it.sku === 'CARDFISICA' ? ' readonly' : ''}></td>
-      <td class="num">${it.fijo ? '' : `<input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:80px;text-align:right">`}</td>
-      <td class="num"><b class="${it.descuento_monto > 0 ? 'dto-imp' : it.descuento_pct > 0 ? 'dto-pct' : ''}" title="${it.descuento_monto > 0 ? 'Con descuento en pesos' : it.descuento_pct > 0 ? 'Con descuento en %' : ''}">${plata(lineaBruta(it))}</b></td>
+      <td class="num">${it.fijo ? '' : it.promo ? (!(it.promo.desc > 0) ? '' : `<span class="v-dto-pr" title="Descuento de la promoción «${esc(it.promo.nombre)}». Un artículo en promoción no lleva otro descuento.">- ${plata(r2(it.cantidad * it.precio_unit) - r2(lineaBruta(it)))}</span>`) : `<input value="${dtoTexto(it)}" onfocus="dtoFoco(this)" onchange="vDto(${i},this.value)" onblur="vRender()" placeholder="$ o %" title="Descuento del renglón: un número son pesos por unidad; con % al final es porcentaje" style="width:80px;text-align:right">`}</td>
+      <td class="num"><b class="${it.promo ? (it.promo.desc > 0 ? 'dto-promo' : '') : it.descuento_monto > 0 ? 'dto-imp' : it.descuento_pct > 0 ? 'dto-pct' : ''}" title="${it.promo ? (it.promo.desc > 0 ? 'Con promoción' : 'Participa de la promoción') : it.descuento_monto > 0 ? 'Con descuento en pesos' : it.descuento_pct > 0 ? 'Con descuento en %' : ''}">${plata(lineaBruta(it))}</b></td>
       <td>${it.fijo && it.sku !== 'CONCEPTO' && it.sku !== TR_SKU && it.sku !== ENVIO_SKU ? '' : `<button class="btn ico chico cli-x" onclick="vQuitar(${i})" title="Sacar del ticket" aria-label="Sacar">${_i('x')}</button>`}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty chico">Todavía no agregaste nada.</div>';
   box.innerHTML += senaHTML() + giftHTML();
-  document.getElementById('v-descs').style.display = (T.sena || T.gift) ? 'none' : '';
+  document.getElementById('v-descs').style.display = (T.sena || T.gift || T.items.some(i => i.promo)) ? 'none' : '';
   const t = vTotales();
+  const prAho = r2(T.items.reduce((a, i) => a + (i.promo ? r2(i.cantidad * i.precio_unit) - r2(lineaBruta(i)) : 0), 0));
+  { const f = document.getElementById('v-promo-fila'), gs = [];
+    for (const i of T.items) { if (!i.promo) continue; let g = gs.find(x => x.id === i.promo.id); if (!g) gs.push(g = { id: i.promo.id, nombre: i.promo.nombre, u: 0, d: 0 }); g.u = r2(g.u + Number(i.cantidad)); g.d = r2(g.d + r2(i.cantidad * i.precio_unit) - r2(lineaBruta(i))); }
+    f.style.display = gs.length ? '' : 'none';
+    if (gs.length) { const dg = [...document.querySelectorAll('#v-descs .dsc')].some(r => num(r.dataset.v) > 0);
+      f.innerHTML = `<div class="pr-det"><div class="pr-det-h">${PROMO_IC}<b>Promociones aplicadas</b></div>${gs.map(g => `<div class="pr-det-f"><span>${esc(g.nombre)} <span class="mini">· ${String(g.u).replace('.', ',')} ${g.u === 1 ? 'artículo' : 'artículos'}</span></span><b>- ${plata(g.d)}</b></div>`).join('')}${gs.length > 1 ? `<div class="pr-det-f tot"><span>Ahorro total</span><b>- ${plata(prAho)}</b></div>` : ''}${dg ? '<div class="mini">El descuento general no va junto con promociones.</div>' : ''}</div>`; } }
   { const f = document.getElementById('v-re-fila'); f.style.display = T.remito ? '' : 'none'; if (T.remito) f.innerHTML = `<span>Sobre el remito ${esc(T.remito.numero)} · la mercadería ya salió <button class="btn ico chico" onclick="vRemitoNoUsar()" title="Facturar sin el remito" aria-label="Sacar el remito">${_i('x')}</button></span><span class="mini">no descuenta stock</span>`; }
   { const f = document.getElementById('v-mod-fila'), g = document.getElementById('v-mod-dev'), on = !!T.modif && T.tipo === 'FC'; document.getElementById('v-total-lb').textContent = on ? 'A COBRAR' : 'TOTAL'; f.style.display = on ? '' : 'none'; g.style.display = on && t.dev > 0 ? '' : 'none';
     if (on) { f.innerHTML = `<span><b>Modificando ${esc(T.modif.nom)}</b> · total nuevo ${plata(t.full)} · ya cobrado <button class="btn ico chico" onclick="modifCancelar()" title="Cancelar la modificación: la factura queda como estaba" aria-label="Cancelar la modificación">${_i('x')}</button></span><b class="dto-imp">- ${plata(t.ya)}</b>`;
@@ -2837,7 +3077,7 @@ function vRender() {
     const dm = f.row.querySelector('.dmonto'); dm.textContent = f.d ? '- ' + plata(f.d) : '$ 0'; dm.className = 'dmonto ' + (f.d ? (f.row.dataset.modo === 'imp' ? 'dto-imp' : 'dto-pct') : ''); }
   { const l = document.getElementById('v-dias-lb'), on = T.tipo === 'PR' || !!T.sena; if (on && l.style.display === 'none') document.getElementById('v-dias').value = ''; l.style.display = on ? '' : 'none'; }
   { const a = vArts(); document.getElementById('v-arts-fila').style.display = (a.u || a.c) ? '' : 'none'; document.getElementById('v-arts').textContent = _nArt(a.u) + (a.c ? ' · ' + String(a.c).replace('.', ',') + ' de cambio' : ''); }
-  document.getElementById('v-subtotal').textContent = plata(t.sub);
+  document.getElementById('v-subtotal').textContent = plata(r2(t.sub + prAho)); document.getElementById('v-subtotal-lb').textContent = prAho > 0 ? 'Subtotal sin promociones' : 'Subtotal';
   // Letra A: en pantalla se discrimina el IVA igual que en el comprobante (los precios son con IVA incluido; neto = total / 1,21)
   { const a = T.letra === 'A'; document.getElementById('v-iva').style.display = a ? '' : 'none';
     if (a) { const neto = r2(t.tot / 1.21); document.getElementById('v-neto').textContent = plata2(neto); document.getElementById('v-ivam').textContent = plata2(r2(t.tot - neto)); } }
@@ -3280,7 +3520,8 @@ function pMedio(sel) {
 function pSeg(btn) { const seg = btn.closest('.seg'); seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn)); pMedio(seg.closest('.medio').querySelector('.med')); }
 function pQuitar(btn) { const box = document.getElementById('v-pagos'); btn.closest('.medio').remove(); if (!box.children.length) pAgregar(); pRender(); }
 function pLimpiar() { pMontar(); }
-function emitirTicket() {
+async function emitirTicket() {
+  if (promoClave() !== _prKey || _prProm) { const antes = vTotales().tot; await promoAhora(); if (Math.abs(vTotales().tot - antes) > 0.5) { vRender(); toast('Cambiaron las promociones del ticket: revisá el total y el pago, y volvé a tocar Emitir', 'error'); return; } }
   const t = vTotales(); if (!T.items.length) return;
   if (T.items.some(i => i.sku === TR_SKU && !(i.precio_unit > 0))) { toast('Poné el importe de la tarjeta de regalo', 'error'); return; }
   const nc = T.tipo === 'NC';
@@ -3715,6 +3956,37 @@ function pRender() {
   document.getElementById('p-falta-lb').textContent = falta < 0 ? 'Vuelto' : 'Falta';
   document.getElementById('p-falta').textContent = plata(Math.abs(falta));
   document.getElementById('v-cobrar').disabled = !T.items.length || pointSinCobrar || valeSinOk || (!sinPago() && Math.abs(falta) > 1 && !(falta < 0 && pPagos().some(p => p.medio === 'efectivo' || p.medio === 'efectivo_usd')));
+  promoProg();
+}
+// ═══ Promociones automáticas (JP 18-nov) ═══
+// El POS le pregunta a la base qué promos tocan a este ticket (pos_promo_calcular: el mismo motor que controla al emitir) y las pone solas
+// por renglón. Se recalcula cuando cambian los artículos, las cantidades, los precios o el medio de pago (las promos por medio piden uno solo).
+var PROMO_IC = '<svg class="pr-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>';
+var _prKey = '', _prT = null, _prProm = null;   // var: se usan desde vRender aunque se llame antes de llegar acá
+function promoU(it) { return it.promo && Number(it.cantidad) > 0 ? Math.min(Number(it.precio_unit) || 0, r2(it.promo.desc / it.cantidad)) : 0; }   // descuento por unidad, como lo guarda la base
+function promoAplica() { return (T.tipo === 'FC' || T.tipo === 'PR' || T.tipo === 'MA') && !T.sena && !T.gift && !T.modif; }
+function promoMedio() { if (T.tipo === 'PR') return null; const ms = [...new Set(pPagos().map(p => p.medio))]; return ms.length === 1 ? ms[0] : null; }
+function promoClave() { return promoAplica() && T.items.some(i => !i.fijo && i.cantidad > 0) ? JSON.stringify([LOCAL, T.tipo, promoMedio(), T.items.map(i => [i.sku, i.cantidad, i.precio_unit])]) : ''; }
+function promoProg() { const k = promoClave(); if (k === _prKey) return; clearTimeout(_prT); if (!k) { promoAhora(); return; } _prT = setTimeout(promoAhora, 250); }
+function promoAhora() {
+  clearTimeout(_prT); const k = promoClave();
+  if (k === _prKey) return _prProm || Promise.resolve();
+  _prKey = k;
+  const items = T.items.map(i => ({ sku: i.sku, cantidad: i.cantidad, precio: i.precio_unit })), medio = promoMedio();
+  const pr = _prProm = (async () => {
+    let r = [];
+    if (k) { try { const { data, error } = await sb.rpc('pos_promo_calcular', { p_local: LOCAL, p_items: items, p_medio: medio }); if (error) throw error; r = data || []; }
+             catch (e) { if (_prKey === k) _prKey = ''; return; } }   // sin conexión: se vuelve a probar en el próximo cambio o al emitir
+    if (promoClave() !== k) return;   // el ticket cambió mientras tanto: ya viene otro cálculo
+    promoPoner(r);
+  })().finally(() => { if (_prProm === pr) _prProm = null; });
+  return pr;
+}
+function promoPoner(r) {
+  const m = {}; for (const e of r || []) { const i = Number(e.i), it = T.items[i]; if (it && !it.fijo) m[i] = { id: Number(e.promo_id), nombre: e.nombre, tipo: e.tipo, desc: r2(Number(e.desc) || 0) }; }
+  let cambio = false;
+  T.items.forEach((it, i) => { const n = m[i] || null; if (JSON.stringify(n) !== JSON.stringify(it.promo || null)) { cambio = true; if (n) it.promo = n; else delete it.promo; } });
+  if (cambio) vRender();
 }
 function pFalta() { const t = vTotales(); const rows = [...document.querySelectorAll('#v-pagos .medio')]; const vacio = rows.find(r => !num(r.querySelector('.imp').value)); if (!vacio) return; const otros = pPagos().reduce((s, p) => s + p.importe, 0); vacio.querySelector('.imp').value = plata(Math.max(0, r2(t.tot - otros))); pRender(); }
 // ─── Quién emite (JP 10-nov): con el genérico del local abierto, la cámara reconoce a quien está en la caja ───
@@ -3961,7 +4233,7 @@ async function emitir(esNC) {
         if (aid === null) { btn.disabled = false; return; }
         precioAut = aid || undefined; T.precioAut = { id: precioAut, at: Date.now(), ok: Object.fromEntries(camb.map(x => [x.sku, r2(x.precio_unit)])) }; } } }
   let dtoAut;   // descuentos (por renglón o general): cajera, encargada o admin. El que ya traía un presupuesto o remito sin tocar lo revisa la base.
-  if (!esNC && !esMod && LOCAL !== 'oficina') { const dl = r2(T.items.reduce((a, x) => a + (x.fijo ? 0 : r2(x.cantidad * x.precio_unit) - r2(lineaBruta(x))), 0)), dg = r2(t.desc || 0);
+  if (!esNC && !esMod && LOCAL !== 'oficina') { const dl = r2(T.items.reduce((a, x) => a + (x.fijo || x.promo ? 0 : r2(x.cantidad * x.precio_unit) - r2(lineaBruta(x))), 0)), dg = r2(t.desc || 0);
     if ((dl > 0 || dg > 0) && !((T.presu_id || T.remito) && !T.dtoE)) {
       const pct = dtoMaxPct(t); let forzar = false;
       if (hubE('descuento') === 'h') { try { const { data: tope } = await sb.rpc('pos_mi_tope', { p_accion: 'descuento' }); forzar = tope != null && pct > Number(tope) + 0.01; } catch (e) {} }
@@ -3981,7 +4253,8 @@ async function emitir(esNC) {
     relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? ['Bultos: ' + parseInt(document.getElementById('v-re-bultos').value, 10), document.getElementById('v-obs').value.trim()].filter(Boolean).join(' · ') : undefined,   // en el remito la observación de abajo es la nota de entrega
    
-    items: T.items.map(i => ({ sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_monto > 0 ? 0 : i.descuento_pct, descuento_monto: i.descuento_monto || 0, iva_pct: 21 })),
+    items: T.items.map(i => i.promo ? { sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: 0, descuento_monto: promoU(i), iva_pct: 21, promo_id: i.promo.id }
+                                    : { sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: i.descuento_monto > 0 ? 0 : i.descuento_pct, descuento_monto: i.descuento_monto || 0, iva_pct: 21 }),
     pagos: sinPago() ? [] : pagos };
   { const det = { tipo: p.tipo, letra: p.letra, importe: t.tot, cliente: (p.cliente && p.cliente.nombre) || null };
     const fns = [esNC ? 'pos.nota_credito' : T.tipo === 'RE' ? 'pos.remito' : T.gift ? 'pos.vales' : T.tipo === 'MA' ? 'pos.presupuesto' : 'pos.vender'];
@@ -4049,7 +4322,7 @@ let AUT = null;
 const AUT_SOLO_ENC = ['mov', 'recibir', 'precio'];
 // (JP 18-nov) el mayor % de descuento que recibe un artículo: su descuento combinado con el general (igual que pos_dto_max_pct en la base)
 function dtoMaxPct(t) {
-  const its = T.items.filter(x => !x.fijo && Number(x.precio_unit) > 0 && Number(x.cantidad) > 0);
+  const its = T.items.filter(x => !x.fijo && !x.promo && Number(x.precio_unit) > 0 && Number(x.cantidad) > 0);
   const lp = x => { const b = r2(x.cantidad * x.precio_unit); return b > 0 ? Math.min(100, Math.max(0, (b - r2(lineaBruta(x))) / b * 100)) : 0; };
   const sub = its.reduce((a, x) => a + r2(lineaBruta(x)), 0), gp = sub > 0 ? Math.min(100, Math.max(0, r2(t.desc || 0) / sub * 100)) : 0;
   return Math.round(its.reduce((m, x) => Math.max(m, 100 - (100 - lp(x)) * (100 - gp) / 100), 0) * 100) / 100;
@@ -4273,7 +4546,7 @@ function ticketHTML(x) {
     <div class="sep"></div>
     <div class="tk-cli">${cliente}</div>
     <div class="sep"></div>
-    <table class="tk-det">${det.map(d => `<tr class="it"><td colspan="2">${esc(d.descripcion)}<div class="mini">${esc(d.sku)}${Number(d.descuento_monto) > 0 ? ' · dto ' + $(d.descuento_monto) + ' c/u' : d.descuento_pct > 0 ? ' · dto ' + d.descuento_pct + '%' : ''}</div></td></tr><tr><td>${Number(d.cantidad)}${trasl ? ' u' + (d.cantidad_recibida != null && Number(d.cantidad_recibida) < Number(d.cantidad) ? ' · llegaron ' + Number(d.cantidad_recibida) : '') : ' × ' + $(d.precio_unit)}</td><td class="num">${trasl ? '' : A ? plata2(d.neto) : plata(d.total)}</td></tr>`).join('')}</table>
+    <table class="tk-det">${det.map(d => `<tr class="it"><td colspan="2">${esc(d.descripcion)}<div class="mini">${esc(d.sku)}${d.promo_nombre ? ' · ' + esc(d.promo_nombre) + (Number(d.descuento_monto) > 0 ? ' -' + $(r2(Number(d.descuento_monto) * Number(d.cantidad))) : '') : Number(d.descuento_monto) > 0 ? ' · dto ' + $(d.descuento_monto) + ' c/u' : d.descuento_pct > 0 ? ' · dto ' + d.descuento_pct + '%' : ''}</div></td></tr><tr><td>${Number(d.cantidad)}${trasl ? ' u' + (d.cantidad_recibida != null && Number(d.cantidad_recibida) < Number(d.cantidad) ? ' · llegaron ' + Number(d.cantidad_recibida) : '') : ' × ' + $(d.precio_unit)}</td><td class="num">${trasl ? '' : A ? plata2(d.neto) : plata(d.total)}</td></tr>`).join('')}</table>
     <div class="sep"></div>
     ${Number(c.descuento_monto) > 0 ? `<div class="fila"><span>Subtotal</span><span>${$(c.subtotal)}</span></div><div class="fila"><span>Descuento${c.descuento_pct > 0 ? ' ' + c.descuento_pct + '%' : ''}</span><span>- ${$(c.descuento_monto)}</span></div>` : ''}
     ${senaUso}${A ? `<div class="fila"><span>Neto gravado</span><span>${plata2(c.neto)}</span></div><div class="fila"><span>IVA 21%</span><span>${plata2(c.iva)}</span></div>` : ''}
@@ -4510,6 +4783,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=208"></script>
+<script src="manual.js?v=210"></script>
 </body>
 </html>
