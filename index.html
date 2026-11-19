@@ -699,6 +699,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 #ov .box.ficha { max-width: 940px; padding: 0; overflow: hidden; }
 #ov .box.ficha-prod { max-width: 1100px; width: 96vw; padding: 10px 12px 12px; } .prod-if { width: 100%; height: 80vh; border: none; border-radius: 12px; background: #fff; margin-top: 8px; } .pf-link { color: var(--primary-dark); white-space: nowrap; }
 #ov .box.preview { max-width: 900px; width: 96vw; } .pv-a4 { background: #cfcac0; padding: 10px; border-radius: 10px; display: block; overflow: auto; max-height: calc(100vh - 150px); } .todos-locales #c-lista td.acc .btn:not(.pg-btn) { display: none; }   /* «Todos los locales»: solo ver y pagos */
+.todos-locales #rm-nuevo, .todos-locales #rm-mov-nuevo { display: none !important; } .todos-locales #rm-lista td.acc button, .todos-locales #pd-lista td.acc button { display: none; }
 .pv-zoom { display: inline-flex; align-items: center; gap: 2px; margin-left: 10px; } .pv-a4 iframe { pointer-events: none; } .pv-a4, #pv-1.tk-wrap { cursor: grab; } .pv-a4.arrastrando, #pv-1.arrastrando { cursor: grabbing; user-select: none; } .pv-zoom .pil { min-width: 64px; justify-content: center; } #pv-1.tk-wrap { overflow: auto; max-height: calc(100vh - 150px); } .pv-a4 iframe { width: 794px; height: 1123px; border: 0; background: white; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
 .fb { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-height: 90vh; }
 .fb-side { background: var(--primary-dark); color: #fff; padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: auto; }
@@ -1176,7 +1177,7 @@ function toast(msg, tipo) { const t = document.createElement('div'); t.className
 function toggleTabsMenu(ev) { ev.stopPropagation(); document.getElementById('tabs').classList.toggle('open'); }
 function switchTab(k) {
   document.getElementById('tabs').classList.remove('open');
-  if (typeof tabOk === 'function' && !tabOk(k) && !(k === 'vender' && window._tabLibre)) { if (typeof toast === 'function') toast(typeof esTodos === 'function' && esTodos() ? 'En «Todos los locales» solo se miran los comprobantes: elegí un local arriba para emitir u operar' : 'Tu usuario no tiene esa parte del POS', 'error'); return; }
+  if (typeof tabOk === 'function' && !tabOk(k) && !(k === 'vender' && window._tabLibre)) { if (typeof toast === 'function') toast(typeof esTodos === 'function' && esTodos() ? 'En «Todos los locales» se mira todo junto: para vender, imprimir etiquetas o ver la caja, elegí un local arriba' : 'Tu usuario no tiene esa parte del POS', 'error'); return; }
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.id === 'tab-' + k));
   document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === 'content-' + k));
   if (typeof onTab === 'function') onTab(k);
@@ -1361,8 +1362,9 @@ const misLocales = () => PERFIL && Array.isArray(PERFIL.locales) && PERFIL.local
 const TAB_AP = { vender: 'Vender', comprobantes: 'Vender', remitos: 'Mercadería', pedidos: 'Mercadería', etiquetas: 'Mercadería', vales: 'Vales', promociones: 'Promociones', online: 'Online', caja: 'Caja y ajustes', ajustes: 'Caja y ajustes' };
 const apOculto = k => !!PERFIL && Array.isArray(PERFIL.ocultos) && PERFIL.ocultos.includes(TAB_AP[k]);
 const onlineOk = () => !!PERFIL && (PERFIL.es_admin || hubF('pos.online') === 'h');
-const esTodos = () => LOCAL === 'todos';   // (JP 19-nov) el admin mirando todos los locales juntos: solo Comprobantes
-const tabOk = k => (!esTodos() || k === 'comprobantes') && (k !== 'online' || onlineOk()) && (!PERFIL || !Array.isArray(PERFIL.tabs) || PERFIL.tabs.includes(k)) && !(PERFIL && HUB_TAB[k] && hubF(HUB_TAB[k]) === 'o') && !apOculto(k);
+const esTodos = () => LOCAL === 'todos';   // (JP 19-nov) el admin mirando todos los locales juntos (solo para ver)
+const TODOS_TABS = ['comprobantes', 'pedidos', 'remitos', 'vales', 'promociones', 'online', 'ajustes'];   // sin Vender, Etiquetas ni Caja
+const tabOk = k => (!esTodos() || TODOS_TABS.includes(k)) && (k !== 'online' || onlineOk()) && (!PERFIL || !Array.isArray(PERFIL.tabs) || PERFIL.tabs.includes(k)) && !(PERFIL && HUB_TAB[k] && hubF(HUB_TAB[k]) === 'o') && !apOculto(k);
 const soloVer = () => !!PERFIL && !PERFIL.es_admin && !PERFIL.opera_todo && !!PERFIL.ve_todo && !misLocales().includes(LOCAL);   // la oficina mirando un local: no opera
 const prestado = () => !!PERFIL && !PERFIL.es_admin && !PERFIL.opera_todo && LOCAL === 'oficina' && !misLocales().includes('oficina');
 function prestadoUI() {
@@ -1394,7 +1396,7 @@ function pintarLocal() {
 function todosUI() {
   const t = esTodos(); document.body.classList.toggle('todos-locales', t);
   if (PERFIL && PERFIL.es_admin) document.querySelectorAll('#tabs button[id^="tab-"]').forEach(b => { b.style.display = tabOk(b.id.slice(4)) ? '' : 'none'; });
-  if (t) { const act = document.querySelector('.tab-content.active'); if (act && act.id !== 'content-comprobantes') switchTab('comprobantes'); }
+  if (t) { const act = document.querySelector('.tab-content.active'); if (act && !TODOS_TABS.includes(act.id.replace('content-', ''))) switchTab('comprobantes'); }
 }
 async function cambiarLocal(l) { LOCAL = l; todosUI(); if (soloVer()) toast('Estás mirando ' + LOCALES[l] + ' en solo lectura: comprobantes, caja y pedidos. Para operar, volvé a ' + LOCALES[misLocales()[0]], 'success'); _fStock = {}; FICHA = null; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); pdOficina(); prestadoUI(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
 async function cargarArticulos() {
@@ -2158,7 +2160,7 @@ function rmModo(m) {
   else { if (pos.parentElement === rp) { document.getElementById('content-vender').appendChild(pos); if (T.tipo === 'RE') vVaciar(); } ov.style.display = 'none'; }
   RM.modo = m;
 }
-function rmNuevo() { rmModo('nuevo'); vVaciar(); vTipo('RE', 'X'); document.getElementById('rm-ov-tit').textContent = 'Nuevo remito'; setTimeout(() => document.getElementById('v-cli-doc').focus(), 50); }
+function rmNuevo() { if (esTodos()) { toast('Para hacer un remito, elegí el local arriba', 'error'); return; } rmModo('nuevo'); vVaciar(); vTipo('RE', 'X'); document.getElementById('rm-ov-tit').textContent = 'Nuevo remito'; setTimeout(() => document.getElementById('v-cli-doc').focus(), 50); }
 // Remito a otro local (traslado, JP 6-nov): sin cliente ni precios que importen; baja acá y queda en tránsito hasta que el destino lo reciba
 function reDestino(m) {
   const sel = document.getElementById('v-re-dest');
@@ -2196,7 +2198,9 @@ async function rmPreGuardar() {
 }
 const preDestino = r => r.modo === 'loc' ? `<span class="chip viol">Traslado → ${esc(LOCALES[r.destino_local] || r.destino_local)}</span>` : r.modo === 'prov' ? `<span class="chip amber">Proveedor · ${esc(((r.datos || {}).proveedor || {}).nombre || 'sin nombre')}</span>` : `<span class="chip naranja">Cliente · ${esc(tit(((r.datos || {}).cliente || {}).nombre || '') || 'sin cliente')}</span>`;
 async function cargarPreremitos() {
-  const { data, error } = await sb.rpc('pos_preremitos_listar', { p_local: LOCAL }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  let data = [], error = null;
+  for (const l of esTodos() ? Object.keys(LOCALES) : [LOCAL]) { const r = await sb.rpc('pos_preremitos_listar', { p_local: l }); if (r.error) { error = r.error; break; } data = data.concat(r.data || []); }   // (JP 19-nov) «Todos los locales»: los de todos
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
   const q = document.getElementById('rm-q').value.trim();
   const lista = (data || []).filter(r => !q || coincide(q, 'pre-remito ' + r.id + ' ' + (LOCALES[r.destino_local] || '') + ' ' + JSON.stringify(r.datos || {}) + ' ' + (r.items || []).map(i => i.sku + ' ' + (i.descripcion || '')).join(' '), (r.items || []).map(i => Number(i.cantidad))));
   document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' pre-remito' : ' pre-remitos') + ' sin emitir';
@@ -2204,7 +2208,7 @@ async function cargarPreremitos() {
   document.getElementById('rm-lista').innerHTML = lista.length ? `<div class="mini" style="margin:0 0 8px">Un pre-remito es una proforma: se guarda mientras se separa y se embala, sin número, sin CAI y sin mover el stock. Cuando está todo, se abre, se ponen los bultos y se emite: ahí sale el remito y empieza el tránsito.</div><table><thead><tr><th>Pre-remito</th><th>Destino</th><th>Mercadería</th><th>Estado</th><th></th></tr></thead><tbody>` +
     lista.map(r => `<tr class="tr-fila" onclick="if(!event.target.closest('button,a'))rmPreAbrir(${r.id})" title="Tocá para seguir armándolo">
       <td><b>Pre-remito N° ${r.id}</b><div class="mini">guardado ${hora(r.actualizado_at)}${r.actualizado_nombre && !String(r.actualizado_nombre).includes('@') ? ' · ' + esc(pila(r.actualizado_nombre)) : ''}</div>${r.actualizado_at !== r.creado_at ? `<div class="mini">empezado ${hora(r.creado_at)}</div>` : ''}</td>
-      <td>${preDestino(r)}${(r.datos || {}).entrega_dir ? '<div class="mini">' + esc(r.datos.entrega_dir) + '</div>' : ''}</td>
+      <td>${esTodos() ? '<span class="chip gray">' + esc(LOCALES[r.local] || r.local) + '</span> ' : ''}${preDestino(r)}${(r.datos || {}).entrega_dir ? '<div class="mini">' + esc(r.datos.entrega_dir) + '</div>' : ''}</td>
       <td class="mini">${(r.items || []).slice(0, 8).map(i => Number(i.cantidad) + ' × ' + esc(i.sku)).join(' · ')}${(r.items || []).length > 8 ? ' …' : ''}<div><b>${Number(r.unidades)}</b> ${Number(r.unidades) === 1 ? 'unidad' : 'unidades'} · ${r.articulos} ${r.articulos === 1 ? 'artículo' : 'artículos'}${(r.datos || {}).nota ? ' · «' + esc(r.datos.nota) + '»' : ''}</div></td>
       <td><span class="chip gray">Pre-remito · sin emitir</span></td>
       <td class="acc"><button class="btn primary chico" onclick="rmPreAbrir(${r.id})" title="Abrirlo para agregar o sacar mercadería, poner los bultos y emitirlo">Seguir armando</button><button class="btn ico peligro" onclick="rmPreDescartar(${r.id})" title="Descartar este pre-remito (no movió stock)" aria-label="Descartar">${_i('trash')}</button></td></tr>`).join('') + '</tbody></table>'
@@ -2212,6 +2216,7 @@ async function cargarPreremitos() {
 }
 async function rmPreAbrir(id) {
   const { data: r, error } = await sb.rpc('pos_preremito_traer', { p_id: id }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  if (esTodos()) { toast('Para seguir armando el pre-remito N° ' + id + ', elegí ' + (LOCALES[r.local] || r.local) + ' arriba', 'error'); return; }
   if (r.estado !== 'abierto') { toast('Ese pre-remito ya ' + (r.estado === 'emitido' ? 'se emitió' : 'se descartó'), 'error'); cargarRemitos(); return; }
   const d = r.datos || {};
   rmNuevo();
@@ -2337,6 +2342,7 @@ async function trDevAceptar(id) {
 function trFgrVer(id) { PD.hechos = window._PFGR || PD.hechos || []; pdVer(id); }
 function trFgrRecibir(id) { PD.hechos = window._PFGR || PD.hechos || []; const p = PD.hechos.find(x => x.id === id); if (p) pdRecibirFgr(p); }
 async function rmBadge() {
+  if (esTodos()) { for (const id of ['rm-pre-n', 'rm-tr-n', 'pd-ped-n']) { const b = document.getElementById(id); if (b) b.style.display = 'none'; } return; }   // «Todos los locales»: los contadores son de cada local
   try { const { data: pr } = await sb.rpc('pos_preremitos_listar', { p_local: LOCAL }); const b = document.getElementById('rm-pre-n'); if (b) { const n = (pr || []).length; b.textContent = n || ''; b.style.display = n ? '' : 'none'; } } catch (e) {}
   const { count } = await sb.from('pos_comprobantes').select('id', { count: 'exact', head: true }).eq('tipo', 'RE').eq('destino_local', LOCAL).eq('transito_estado', 'en_transito').eq('estado', 'emitido');
   const { count: cd } = await sb.from('pos_comprobantes').select('id', { count: 'exact', head: true }).eq('tipo', 'RE').eq('local', LOCAL).eq('dif_estado', 'pendiente');
@@ -2349,16 +2355,19 @@ async function rmBadge() {
 const puedeRecibir = () => hubE('recibir') === 'h';
 // En tránsito: lo que viene a este local y lo que este local mandó
 async function cargarTransito(aceptados) {
-  const { data, error } = await sb.from('pos_comprobantes').select('*').eq('tipo', 'RE').not('destino_local', 'is', null).or(`local.eq.${LOCAL},destino_local.eq.${LOCAL}`).order('id', { ascending: false }).limit(200);
+  let qt = sb.from('pos_comprobantes').select('*').eq('tipo', 'RE').not('destino_local', 'is', null).order('id', { ascending: false }).limit(200);
+  if (!esTodos()) qt = qt.or(`local.eq.${LOCAL},destino_local.eq.${LOCAL}`);   // (JP 19-nov) «Todos los locales»: todos los traslados
+  const { data, error } = await qt;
   if (error) { toast(error.message, 'error'); return; }
   let lista = (data || []).filter(c => c.estado === 'emitido' && (aceptados ? (c.transito_estado === 'recibido' || c.transito_estado === 'con_diferencia' || c.transito_estado === 'devuelto') : (c.transito_estado === 'en_transito' || c.transito_estado === 'rechazado' || c.dif_estado === 'pendiente'))); const dets = {};
   if (aceptados) {   // los remitos sin otra punta (a un cliente, a un proveedor) no tienen tránsito: quedan aceptados desde que se emiten
-    const { data: sd } = await sb.from('pos_comprobantes').select('*').eq('tipo', 'RE').is('destino_local', null).eq('local', LOCAL).eq('estado', 'emitido').order('id', { ascending: false }).limit(200);
+    let qs = sb.from('pos_comprobantes').select('*').eq('tipo', 'RE').is('destino_local', null).eq('estado', 'emitido').order('id', { ascending: false }).limit(200); if (!esTodos()) qs = qs.eq('local', LOCAL);
+    const { data: sd } = await qs;
     lista = lista.concat(sd || []).sort((a, b) => b.id - a.id); }
   if (lista.length) { const { data: dd } = await sb.from('pos_comprobantes_det').select('comprobante_id,sku,descripcion,cantidad,cantidad_recibida').in('comprobante_id', lista.map(c => c.id)).order('nro_item'); (dd || []).forEach(d => { (dets[d.comprobante_id] = dets[d.comprobante_id] || []).push(d); }); }
   // (JP 18-nov) los pedidos a Familia García en tránsito (ya vino su remito) se reciben acá, como los traslados
   let fgr = [];
-  if (!aceptados) { try { const { data: pf } = await sb.rpc('pos_pedidos_listar', { p_local: LOCAL }); window._PFGR = pf || []; fgr = (pf || []).filter(p => p.estado === 'en_transito' && p.destino !== 'oficina' && !p.ajuste_de); } catch (e) {} }
+  if (!aceptados && !esTodos()) { try { const { data: pf } = await sb.rpc('pos_pedidos_listar', { p_local: LOCAL }); window._PFGR = pf || []; fgr = (pf || []).filter(p => p.estado === 'en_transito' && p.destino !== 'oficina' && !p.ajuste_de); } catch (e) {} }
   const q = document.getElementById('rm-q').value.trim();
   if (q) fgr = fgr.filter(p => coincide(q, p.numero + ' ' + pdRems(p) + ' ' + (PD_NOM[p.destino] || '') + ' ' + (p.items || []).map(i => i.sku + ' ' + (i.descripcion || '')).join(' '), []));
   const vis = q ? lista.filter(c => coincide(q, cTexto(c) + ' ' + remNum(c) + ' ' + trNum(c) + ' ' + (dets[c.id] || []).map(d => d.sku + ' ' + d.descripcion).join(' '), [Number(c.total)].concat((dets[c.id] || []).map(d => Number(d.cantidad))))) : lista;
@@ -2519,13 +2528,15 @@ function pdDebounce() { clearTimeout(_pdT); _pdT = setTimeout(() => PD.vista ===
 // alto de lo que queda pegado arriba (la barra del POS y la franja de prueba): ahí se pegan los títulos de las tablas
 function posTope() { let t = 0; for (const el of [document.querySelector('header'), document.getElementById('franja-pos-prueba')]) { if (!el || !el.offsetHeight) continue; const cs = getComputedStyle(el); if (cs.position !== 'sticky' && cs.position !== 'fixed') continue; t = Math.max(t, (parseFloat(cs.top) || 0) + el.offsetHeight); } document.documentElement.style.setProperty('--tope', t + 'px'); }
 window.addEventListener('resize', posTope); window.addEventListener('load', () => { posTope(); const h = document.querySelector('header'); if (h && window.ResizeObserver) new ResizeObserver(posTope).observe(h); });
-function pdOficina() { const of = LOCAL === 'oficina'; document.querySelectorAll('#pd-filtros .pil[data-v]').forEach(b => { if (b.dataset.v !== 'piden') b.style.display = of ? 'none' : ''; }); if (of) PD.vista = 'piden'; if (document.getElementById('content-pedidos').classList.contains('active')) pdVista(PD.vista); }
+function pdOficina() { const of = LOCAL === 'oficina', td = esTodos(); document.querySelectorAll('#pd-filtros .pil[data-v]').forEach(b => { b.style.display = td ? (b.dataset.v === 'hechos' ? '' : 'none') : (b.dataset.v !== 'piden' && of ? 'none' : ''); }); if (td) PD.vista = 'hechos'; else if (of) PD.vista = 'piden'; if (document.getElementById('content-pedidos').classList.contains('active')) pdVista(PD.vista); }
 function pdVista(v) { PD.vista = v; document.querySelectorAll('#pd-filtros .pil[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.getElementById('pd-solo-lb').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-prov').style.display = v === 'falta' ? 'inline-flex' : 'none'; document.getElementById('pd-armar').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-todos').style.display = v === 'falta' ? '' : 'none'; document.getElementById('pd-libre').style.display = v === 'falta' ? '' : 'none'; cargarPedidosLocal(); }
 async function cargarPedidosLocal() {
   rmBadge();
   if (PD.vista === 'piden') return cargarPedidos();
   if (PD.vista === 'falta') { const { data, error } = await sb.rpc('pos_que_falta', { p_local: LOCAL }); if (error) { toast(error.message, 'error'); return; } PD.falta = data || []; const n = PD.falta.filter(x => Number(x.falta) > 0).length; const b = document.getElementById('pd-falta-n'); b.textContent = n || ''; b.style.display = n ? '' : 'none'; }
-  else if (PD.vista === 'hechos') { const { data, error } = await sb.rpc('pos_pedidos_listar', { p_local: LOCAL }); if (error) { toast(error.message, 'error'); return; } PD.hechos = data || []; }
+  else if (PD.vista === 'hechos') {
+    if (esTodos()) { const rs = await Promise.all(Object.keys(LOCALES).map(l => sb.rpc('pos_pedidos_listar', { p_local: l }).then(r => (r.data || []).map(p => ({ ...p, _local: l }))))); PD.hechos = rs.flat().sort((a, b) => String(b.creado_at).localeCompare(String(a.creado_at))); }   // (JP 19-nov) los de todos los locales
+    else { const { data, error } = await sb.rpc('pos_pedidos_listar', { p_local: LOCAL }); if (error) { toast(error.message, 'error'); return; } PD.hechos = data || []; } }
   else { const [{ data }, { data: dd }] = await Promise.all([sb.from('stock_minimos').select('sku,minimo,fuente,actualizado_por,actualizado_at').eq('local', LOCAL), sb.from('pos_pedir_desde').select('sku,cantidad').eq('local', LOCAL)]); PD.min = data || []; PD.desde = dd || []; }
   pdRender();
 }
@@ -2577,11 +2588,11 @@ function pdRender() {
       else if (p.estado === 'en_transito') est = pdEstTransito(p);
       else est = '<span class="chip amber">Pendiente de entrega</span>';
       if (p.estado === 'enviado' || p.estado === 'en_transito') est += pdAvisos(p);
-      return `<tr class="${p.estado === 'cancelado' ? 'dim' : ''}"><td><a href="#" onclick="pdVer(${p.id});return false" title="Abrir el pedido y ver todo lo que se pidió"><b>${esc(p.numero)}</b></a>${!p.ajuste_de && Number(p.version) > 1 ? ' <span class="chip gray">versión ' + Number(p.version) + '</span>' : ''}${p.ajuste_de ? ' <span class="chip red" title="Descuenta cantidades del pedido ' + esc(p.ajuste_de) + '">descuento de ' + esc(p.ajuste_de) + '</span>' : ''}<div class="mini">${fechaAR(String(p.creado_at).slice(0, 10))} ${new Date(p.creado_at).toTimeString().slice(0, 5)} · ${esc(pila(p.por))}</div></td><td>${esc(PD_NOM[p.destino] || p.destino)}</td>
+      return `<tr class="${p.estado === 'cancelado' ? 'dim' : ''}"><td><a href="#" onclick="pdVer(${p.id});return false" title="Abrir el pedido y ver todo lo que se pidió"><b>${esc(p.numero)}</b></a>${!p.ajuste_de && Number(p.version) > 1 ? ' <span class="chip gray">versión ' + Number(p.version) + '</span>' : ''}${p.ajuste_de ? ' <span class="chip red" title="Descuenta cantidades del pedido ' + esc(p.ajuste_de) + '">descuento de ' + esc(p.ajuste_de) + '</span>' : ''}<div class="mini">${fechaAR(String(p.creado_at).slice(0, 10))} ${new Date(p.creado_at).toTimeString().slice(0, 5)} · ${esc(pila(p.por))}</div></td><td>${p._local ? esc(LOCALES[p._local] || p._local) + ' → ' : ''}${esc(PD_NOM[p.destino] || p.destino)}</td>
         <td>${est}</td>
         <td class="acc">${p.pdf_url ? `<a class="btn ico" href="${esc(p.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF" aria-label="PDF">${_i('pdf')}</a>` : ''}${p.xlsx_url ? `<a class="btn ico" href="${esc(p.xlsx_url)}" title="Bajar el pedido en Excel" aria-label="Excel"><span class="pd-xls-ico">${XLS_ICO}</span></a>` : ''}${p.estado === 'enviado' ? `<button class="btn ico" onclick="pdWA(${p.id})" title="Abrir el WhatsApp con el pedido" aria-label="WhatsApp"><span class="pd-wa-ico">${WA_LOGO}</span></button>` : ''}
           ${p.estado === 'enviado' && !p.ajuste_de_id && !p.ajuste_de ? `<button class="btn ico" onclick="pdModificar(${p.id})" title="Modificar el pedido: cambiar cantidades, sacar o sumar artículos. Sale la versión siguiente y esta queda anulada" aria-label="Modificar">${_i('edit')}</button>` : ''}${p.estado === 'enviado' && PERFIL.es_admin && !p.ajuste_de_id ? `<button class="btn ico peligro" onclick="pdCancelar(${p.id})" title="Cancelar el pedido entero (solo admin)" aria-label="Cancelar">${_i('anular')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>'
-      : `<div class="empty">Todavía no hay pedidos de ${esc(LOCALES[LOCAL])}.</div>`;
+      : `<div class="empty">Todavía no hay pedidos${esTodos() ? '' : ' de ' + esc(LOCALES[LOCAL])}.</div>`;
   } else {
     const puede = puedeMinimos();
     let arts = ARTS.filter(a => !a.discontinuado && q && (a.sku + ' ' + a.descripcion).toUpperCase().includes(q)); const mins = Object.fromEntries(PD.min.map(m => [m.sku, m]));
@@ -3086,8 +3097,9 @@ const trNum = c => 'TR-' + String(c.id).padStart(6, '0');   // número único de
 function etDesdeMov(sku, n) { etAgregar(sku, n); switchTab('etiquetas'); }
 async function cargarMovimientos() {
   const q = document.getElementById('rm-q').value.trim().toUpperCase();
-  let qm = sb.from('stock_movimientos').select('*').eq('local', LOCAL).in('tipo', ['alta', 'baja', 'ajuste', 'inicial', 'compra', 'traslado_entrada', 'traslado_salida']).order('id', { ascending: false });
+  let qm = sb.from('stock_movimientos').select('*').in('tipo', ['alta', 'baja', 'ajuste', 'inicial', 'compra', 'traslado_entrada', 'traslado_salida']).order('id', { ascending: false });
   // con un motivo fijo elegido se trae toda la tirada de ese motivo (hasta 2.000), no solo los últimos 200
+  if (!esTodos()) qm = qm.eq('local', LOCAL);   // (JP 19-nov) «Todos los locales»: todos los movimientos
   qm = MOV_FILTRO && MOV_FILTRO !== 'Otro' && MOV_FILTRO !== 'Traslado' ? qm.like('ref', MOV_FILTRO + '%').limit(2000) : qm.limit(MOV_FILTRO ? 1000 : 200);
   const { data, error } = await qm;
   if (error) { toast(error.message, 'error'); return; }
@@ -3100,8 +3112,8 @@ async function cargarMovimientos() {
   document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' movimiento' : ' movimientos') + (MOV_FILTRO ? ' · ' + lista.reduce((t, m) => t + Number(m.cantidad), 0) + ' unidades netas' : '');
   document.getElementById('rm-lista').innerHTML = `<div class="pils mov-mot" style="margin-bottom:10px"><span class="mini" style="align-self:center;margin-right:4px">Motivo:</span>${['', ...MOV_MOTIVOS, 'Traslado'].map(t => `<button type="button" class="pil ${MOV_FILTRO === t ? 'on' : ''}" onclick="movFiltrar('${t}')">${t || 'Todos'}</button>`).join('')}</div>` + (STOCK_FUENTE === 'libro' ? '' : '<div class="mini" style="margin-bottom:8px">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</div>') +
     (lista.length ? `<table><thead><tr><th>Cuándo</th><th>Qué</th><th>Artículo</th><th class="num">Cantidad</th><th>Motivo</th><th>Quién</th><th></th></tr></thead><tbody>` +
-    lista.map(m => `<tr class="${m.anulado_at ? 'dim' : ''}"><td class="mini">${movFecha(m.creado_at)}</td><td>${esc(MOV_NOM[m.tipo] || m.tipo)}</td><td><b>${esc(m.sku)}</b><div class="mini">${esc((ARTS.find(a => a.sku === m.sku) || {}).descripcion || '')}</div></td><td class="num ${Number(m.cantidad) < 0 ? 'rojo' : ''}"><b>${Number(m.cantidad) > 0 ? '+' : ''}${Number(m.cantidad)}</b>${m.detalle ? '<div class="mini">' + esc(m.detalle) + '</div>' : ''}</td><td>${m.ref ? '<div>' + esc(m.ref) + '</div>' : ''}${m.comprobante_id ? (REM[m.comprobante_id] ? `<a href="#" onclick="verComprobante(${m.comprobante_id});return false" title="Ver el remito"><b>Remito ${esc(remNum(REM[m.comprobante_id]))}</b></a><div class="mini">Tránsito <b>${trNum(REM[m.comprobante_id])}</b> · ${esc(LOCALES[REM[m.comprobante_id].local] || '')} → ${esc(LOCALES[REM[m.comprobante_id].destino_local] || '')}</div>` : `<a href="#" onclick="verComprobante(${m.comprobante_id});return false">Ver el remito</a>`) : ''}${m.anulado_at ? '<div><span class="chip red">Anulado</span> <span class="mini">' + esc(pila(m.anulado_por)) + ' · ' + esc(m.anulado_motivo || '') + '</span></div>' : ''}</td><td class="mini">${esc((m.usuario_email || '').split('@')[0])}</td><td class="acc">${!m.anulado_at && !m.comprobante_id && ['alta', 'baja', 'ajuste'].includes(m.tipo) ? `<button class="btn ico" onclick="movCorregir(${m.id})" title="Corregir: anula este movimiento y abre uno nuevo con lo mismo para cambiarlo" aria-label="Corregir">${_i('edit')}</button><button class="btn ico peligro" onclick="movAnular(${m.id})" title="Anular: restablece el stock y deja la línea marcada" aria-label="Anular">${_i('anular')}</button>` : ''}${!m.anulado_at && Number(m.cantidad) > 0 ? `<button class="btn ico" onclick="etDesdeMov('${esc(m.sku)}', ${Number(m.cantidad)})" title="Imprimir las etiquetas de este movimiento (${Number(m.cantidad)})" aria-label="Etiquetas">${_i('print')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
-    : `<div class="empty">Todavía no hay movimientos en ${esc(LOCALES[LOCAL])}.</div>`);
+    lista.map(m => `<tr class="${m.anulado_at ? 'dim' : ''}"><td class="mini">${movFecha(m.creado_at)}</td><td>${esc(MOV_NOM[m.tipo] || m.tipo)}${esTodos() ? '<div><span class="chip gray">' + esc(LOCALES[m.local] || m.local) + '</span></div>' : ''}</td><td><b>${esc(m.sku)}</b><div class="mini">${esc((ARTS.find(a => a.sku === m.sku) || {}).descripcion || '')}</div></td><td class="num ${Number(m.cantidad) < 0 ? 'rojo' : ''}"><b>${Number(m.cantidad) > 0 ? '+' : ''}${Number(m.cantidad)}</b>${m.detalle ? '<div class="mini">' + esc(m.detalle) + '</div>' : ''}</td><td>${m.ref ? '<div>' + esc(m.ref) + '</div>' : ''}${m.comprobante_id ? (REM[m.comprobante_id] ? `<a href="#" onclick="verComprobante(${m.comprobante_id});return false" title="Ver el remito"><b>Remito ${esc(remNum(REM[m.comprobante_id]))}</b></a><div class="mini">Tránsito <b>${trNum(REM[m.comprobante_id])}</b> · ${esc(LOCALES[REM[m.comprobante_id].local] || '')} → ${esc(LOCALES[REM[m.comprobante_id].destino_local] || '')}</div>` : `<a href="#" onclick="verComprobante(${m.comprobante_id});return false">Ver el remito</a>`) : ''}${m.anulado_at ? '<div><span class="chip red">Anulado</span> <span class="mini">' + esc(pila(m.anulado_por)) + ' · ' + esc(m.anulado_motivo || '') + '</span></div>' : ''}</td><td class="mini">${esc((m.usuario_email || '').split('@')[0])}</td><td class="acc">${!m.anulado_at && !m.comprobante_id && ['alta', 'baja', 'ajuste'].includes(m.tipo) ? `<button class="btn ico" onclick="movCorregir(${m.id})" title="Corregir: anula este movimiento y abre uno nuevo con lo mismo para cambiarlo" aria-label="Corregir">${_i('edit')}</button><button class="btn ico peligro" onclick="movAnular(${m.id})" title="Anular: restablece el stock y deja la línea marcada" aria-label="Anular">${_i('anular')}</button>` : ''}${!m.anulado_at && Number(m.cantidad) > 0 ? `<button class="btn ico" onclick="etDesdeMov('${esc(m.sku)}', ${Number(m.cantidad)})" title="Imprimir las etiquetas de este movimiento (${Number(m.cantidad)})" aria-label="Etiquetas">${_i('print')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
+    : `<div class="empty">Todavía no hay movimientos${esTodos() ? '' : ' en ' + esc(LOCALES[LOCAL])}.</div>`);
 }
 let MOV = { tipo: 'alta', sku: null }, MOV_FILTRO = '';
 // Motivos fijos (JP 10-nov): así se puede filtrar, por ejemplo, toda la tirada de un inventario
@@ -4216,6 +4228,7 @@ async function cajaElegir() {
   pointAjustes();
 }
 async function pointAjustes() {
+  if (esTodos()) { for (const id of ['a-point', 'a-qr']) { const b = document.getElementById(id); if (b) b.innerHTML = '<div class="mini">El Point y el QR son de cada caja: elegí un local arriba.</div>'; } return; }
   await cargarTerminales(); qrAjustes(); const mios = TERMS.filter(t => t.local === LOCAL); const sel = miPoint();
   for (const box of [document.getElementById('a-point'), document.getElementById('c-point')]) if (box) box.innerHTML = mios.length ? mios.map(t => `<button class="pil ${sel && sel.terminal_id === t.terminal_id ? 'on' : ''}" onclick="pointElegir('${t.terminal_id}')" title="${esc(t.terminal_id)}">📱 ${esc(t.nombre)}</button>`).join('') + `<button class="pil ${sel ? '' : 'on'}" onclick="pointElegir('')">Sin Point</button>`
     : '<div class="mini">Este local no tiene terminales Point dadas de alta.</div>';
@@ -4768,7 +4781,7 @@ let REG = [];
 function regAjustes() {
   const card = document.getElementById('a-reg-card'); if (!card) return; card.style.display = PERFIL.es_admin ? '' : 'none'; if (!PERFIL.es_admin) return;
   const d = document.getElementById('reg-d'), h = document.getElementById('reg-h'), l = document.getElementById('reg-l');
-  if (!d.value) { const hoy = new Date(); const iso = x => new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 10); h.value = iso(hoy); d.value = iso(new Date(hoy.getTime() - 6 * 86400000)); l.innerHTML = '<option value="">Todos</option>' + Object.keys(LOCALES).map(k => `<option value="${k}">${esc(LOCALES[k])}</option>`).join(''); l.value = LOCAL; }
+  if (!d.value) { const hoy = new Date(); const iso = x => new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 10); h.value = iso(hoy); d.value = iso(new Date(hoy.getTime() - 6 * 86400000)); l.innerHTML = '<option value="">Todos</option>' + Object.keys(LOCALES).map(k => `<option value="${k}">${esc(LOCALES[k])}</option>`).join(''); l.value = esTodos() ? '' : LOCAL; }
   regCargar();
 }
 async function regCargar() {
@@ -4841,7 +4854,8 @@ async function caiGuardar(id) {
 }
 // Ajustes: quién tiene la cara registrada en este local
 async function caraAjustes() {
-  const box = document.getElementById('a-caras'); if (!box) return; let eq = (await caraEquipo(true)).filter(e => e.local === LOCAL || e.admin);
+  const box = document.getElementById('a-caras'); if (!box) return;
+  if (esTodos()) { box.innerHTML = '<div class="mini">Quién tiene la cara registrada se ve por local: elegí un local arriba.</div>'; return; } let eq = (await caraEquipo(true)).filter(e => e.local === LOCAL || e.admin);
   if (PERFIL.es_admin) { const vistos = new Set(eq.map(e => e.empleado_id)); for (const l of Object.keys(LOCALES)) { if (l === LOCAL) continue; const { data } = await sb.rpc('pos_equipo', { p_local: l }); (data || []).filter(e => e.local === l && !vistos.has(e.empleado_id)).forEach(e => { vistos.add(e.empleado_id); eq.push(e); }); } }
   CARA.aj = eq;
   box.innerHTML = `<div style="margin-bottom:10px"><button class="btn" onclick="caraProbar()">Probar la cámara</button> <span class="mini">Abre la misma ventana que aparece al emitir y dice a quién reconoció, sin emitir nada.</span></div><div class="aj-ver" style="display:block;margin:0 0 10px">Las caras se graban en el Hub: Mi cuenta → «Caras del equipo», o Permisos → «Personas».${eq.some(e => e.caras_activas === false) ? ' <b>El reconocimiento por cara está apagado por ahora.</b>' : ''}</div>` + (eq.length ? '<table><tbody>' + eq.map(e => `<tr><td><b>${esc(tit(e.nombre))}</b>${e.local !== LOCAL ? ' <span class="chip gray">' + (e.admin ? 'admin' : esc(LOCALES[e.local] || e.local)) + '</span>' : ''}</td><td>${(e.caras || []).length ? '<span class="chip green">' + (e.caras || []).length + (((e.caras || []).length === 1) ? ' toma' : ' tomas') + '</span> <span class="mini">' + fechaAR(String(e.cara_at).slice(0, 10)) + '</span>' : '<span class="chip gray">Sin registrar</span>'}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">No hay empleadas cargadas en este local.</div>');
@@ -5545,6 +5559,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=228"></script>
+<script src="manual.js?v=229"></script>
 </body>
 </html>
