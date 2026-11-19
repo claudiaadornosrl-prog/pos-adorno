@@ -4837,7 +4837,7 @@ async function emitir(esNC) {
   const esMod = !esNC && !!T.modif && T.tipo === 'FC' && !T.sena && !T.gift && !T.sena_usar && !T.remito, modNom = esMod ? T.modif.nom : '';
   if (esMod && t.dev > 0.5 && T.modif.efectivo < t.dev - 0.5) { toast('El total nuevo es ' + plata(t.dev) + ' menor que lo ya cobrado y la factura original no se pagó en efectivo como para devolverlo: eso es una devolución, hacé una nota de crédito por la diferencia', 'error'); btn.disabled = false; return; }
   if (!await artsCartel(esNC)) { btn.disabled = false; return; }
-  const ventaAt = !esNC && T.tipo !== 'RE';   // en las ventas: quién atendió (no en nota de crédito ni remito)
+  const ventaAt = !esNC && T.tipo !== 'RE' && LOCAL !== 'oficina';   // en las ventas: quién atendió (no en nota de crédito ni remito; JP 19-nov: en Oficina tampoco, alcanza con quién emite)
   const qe = await quienEmite(false, null, ventaAt); if (!qe) { btn.disabled = false; return; }
   let atendio;
   if (ventaAt && qe.atendio !== undefined) atendio = qe.atendio || undefined;   // 'nadie' = por su cuenta
@@ -5413,6 +5413,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=223"></script>
+<script src="manual.js?v=224"></script>
 </body>
 </html>
