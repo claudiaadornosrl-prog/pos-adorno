@@ -44,3 +44,58 @@ body { margin: 0; background: #fff; font-family: 'Jost', sans-serif; color: #1C1
 /* versión modificada de un pedido: lo que cambió va primero y en negrita, con lo que era antes */
 .it.cambio b, .it.cambio .cant { font-weight: 700; } .it.cambio .sku { color: #43464A; font-weight: 500; }
 .it .cambio-l { display: inline-block; margin-left: 2mm; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #9a3412; font-weight: 500; }
+
+/* ═══ Remito R (JP 19-nov, modelo 1 «cabecera de madera»): todo lo que pide ARCA (RG 1415 art. 14 y 27-30, anexo V) ═══ */
+.rr { width: 210mm; height: 297mm; background: #fff; display: flex; flex-direction: column; overflow: hidden; page-break-after: always; box-sizing: border-box; color: #1C1612; }
+.rr:last-child { page-break-after: auto; } .rr * { box-sizing: border-box; }
+.rr-cab { height: 46mm; flex: none; background: #4A3F35 url('https://cdn.shopify.com/s/files/1/0827/7635/9129/files/mails-fondo-teca.jpg?v=1789414736&width=900') center / cover; position: relative; padding: 0 13mm 7mm; display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; color: #fff; border-radius: 0 0 10mm 10mm; }
+.rr-cab::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(28,22,18,.08), rgba(28,22,18,.66)); }
+.rr-cab > * { position: relative; }
+.rr-logo { width: 56mm; filter: brightness(0) invert(1); display: block; }
+.rr-letra { justify-self: center; align-self: center; margin-top: 6mm; width: 20mm; height: 22mm; border: 1.6px solid rgba(255,255,255,.95); border-radius: 4mm; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,.1); }
+.rr-letra b { font-size: 34px; font-weight: 500; line-height: 1; } .rr-letra span { font-size: 7.5px; letter-spacing: .16em; margin-top: 1mm; }
+.rr-t { text-align: right; } .rr-n { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; line-height: 1; }
+.rr-nro { font-size: 10.5px; letter-spacing: .1em; margin-top: 2mm; line-height: 1.6; } .rr-nro b { font-weight: 500; font-size: 12px; letter-spacing: .06em; }
+.rr-copia { display: inline-block; margin-top: 1.5mm; border: 1px solid rgba(255,255,255,.85); border-radius: 999px; padding: .6mm 3mm; font-size: 8px; letter-spacing: .24em; text-transform: uppercase; }
+.rr-emi { margin: 3.5mm 13mm 0; font-size: 8.6px; line-height: 1.55; color: #6b5f55; text-align: center; } .rr-emi b { color: #1C1612; font-weight: 500; }
+.rr-cu { flex: 1; padding: 4mm 13mm 8mm; display: flex; flex-direction: column; min-height: 0; }
+.rr-datos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.5mm; }
+.rr-dato { background: #F6F1EA; border-radius: 5mm; padding: 3mm 4mm; font-size: 10px; line-height: 1.5; color: #43464A; } .rr-dato b { color: #1C1612; font-weight: 500; font-size: 11.5px; }
+.rr-et { font-size: 7.8px; letter-spacing: .22em; text-transform: uppercase; color: #95867B; font-weight: 500; margin-bottom: .8mm; }
+.rr-nota { margin-top: 2.5mm; font-size: 10px; color: #43464A; } .rr-nota i { color: #95867B; }
+.rr-enc { font-size: 7.8px; letter-spacing: .22em; text-transform: uppercase; color: #95867B; font-weight: 500; margin: 4mm 0 .5mm; text-align: center; }
+.rr-it { display: grid; grid-template-columns: 13mm 1fr auto; gap: 4mm; align-items: center; padding: 1.6mm 0; border-bottom: 1px solid #EDEAE4; font-size: 11.5px; }
+.rr-it img, .rr-it .sinfoto { width: 13mm; height: 13mm; object-fit: contain; display: block; }
+.rr-sku { font-size: 9px; color: #95867B; letter-spacing: .06em; margin-top: .5mm; }
+.rr-num { text-align: right; font-variant-numeric: tabular-nums; line-height: 1.5; white-space: nowrap; } .rr-num small { display: block; color: #95867B; font-size: 9.5px; }
+.rr-pie { margin-top: auto; } .rr-tots { display: flex; gap: 3mm; justify-content: flex-end; margin-top: 4mm; flex-wrap: wrap; }
+.rr-tot { border: 1px solid #D9CFC0; border-radius: 999px; padding: 1.8mm 4.5mm; font-size: 10.5px; color: #43464A; } .rr-tot b { font-weight: 500; color: #1C1612; margin-left: 2mm; }
+.rr-tot.big { background: #1C1612; color: #fff; border-color: #1C1612; } .rr-tot.big b { color: #fff; }
+.rr-firmas { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12mm; margin-top: 11mm; } .rr-firma { border-top: 1px solid #1C1612; padding-top: 1.5mm; font-size: 8.2px; letter-spacing: .12em; text-transform: uppercase; color: #95867B; }
+.rr-legal { margin-top: 5mm; display: grid; grid-template-columns: 1fr auto; gap: 4mm; align-items: center; border-top: 1.5px solid #1C1612; padding-top: 3mm; }
+.rr-nv { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; font-weight: 500; } .rr-cai { text-align: right; font-size: 10px; line-height: 1.6; color: #43464A; } .rr-cai b { color: #1C1612; font-weight: 500; letter-spacing: .04em; }
+.rr-cont { font-size: 9.5px; color: #95867B; text-align: right; margin-top: auto; letter-spacing: .1em; } .rr-hoja { font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase; color: #95867B; text-align: right; margin-top: 1.5mm; }
+.rr-anulado { margin-top: 3mm; text-align: center; color: #b91c1c; font-weight: 500; border: 2px solid #b91c1c; border-radius: 999px; padding: 1.5mm; letter-spacing: .1em; }
+/* ═══ Pedido de mercadería (JP 19-nov, modelo 6 «planilla de control»): renglones numerados y un círculo para tildar al recibir ═══ */
+.pc { width: 210mm; height: 297mm; background: #fff; padding: 12mm 13mm 10mm; display: flex; flex-direction: column; overflow: hidden; page-break-after: always; box-sizing: border-box; color: #0F172A; }
+.pc:last-child { page-break-after: auto; } .pc * { box-sizing: border-box; }
+.pc-top { display: flex; justify-content: space-between; align-items: center; background: #EEF2F6; border-radius: 8mm; padding: 6mm 7mm; }
+.pc-logo { width: 54mm; filter: brightness(0); display: block; }
+.pc-r { text-align: right; } .pc-n { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; font-weight: 500; color: #334155; }
+.pc-nn { font-size: 25px; font-weight: 500; color: #0F172A; font-variant-numeric: tabular-nums; letter-spacing: .02em; line-height: 1.15; } .pc-fe { font-size: 10px; color: #64748B; }
+.pc-g4 { display: grid; grid-template-columns: repeat(3, 1fr) 30mm; border: 1.2px solid #CBD5E1; border-radius: 6mm; margin-top: 5mm; overflow: hidden; }
+.pc-g4 > div { padding: 3mm 4mm; font-size: 10.5px; line-height: 1.5; color: #334155; } .pc-g4 > div + div { border-left: 1.2px solid #CBD5E1; }
+.pc-et { font-size: 8px; letter-spacing: .18em; text-transform: uppercase; color: #64748B; font-weight: 500; margin-bottom: .5mm; } .pc-g4 b { display: block; color: #0F172A; font-weight: 500; font-size: 11.5px; }
+.pc-g4 .pc-k { text-align: center; background: #F8FAFC; } .pc-g4 .pc-k b { font-size: 26px; line-height: 1.1; }
+.pc-nota { margin-top: 3mm; font-size: 10.5px; color: #334155; } .pc-nota b { font-weight: 500; }
+.pc-version { margin-top: 2mm; font-size: 10px; color: #9a3412; background: #FFF7ED; border-radius: 999px; padding: 1.5mm 4mm; }
+.pc-th, .pc-tr { display: grid; grid-template-columns: 7mm 10mm 1fr 16mm 16mm; gap: 3mm; align-items: center; }
+.pc-th { background: #334155; color: #fff; border-radius: 999px; padding: 2mm 4mm; font-size: 8px; letter-spacing: .14em; text-transform: uppercase; margin-top: 5mm; }
+.pc-tr { padding: 1mm 4mm; font-size: 11px; border-bottom: 1px solid #E2E8F0; } .pc-tr:nth-child(odd) { background: #F8FAFC; }
+.pc-tr img, .pc-tr .sinfoto { width: 10mm; height: 10mm; object-fit: contain; display: block; } .pc-i { color: #94A3B8; font-size: 9.5px; } .pc-sku { color: #64748B; font-size: 9px; letter-spacing: .06em; margin-top: .4mm; }
+.pc-c { text-align: center; font-weight: 500; font-size: 13px; } .pc-ck { width: 5.5mm; height: 5.5mm; border: 1.5px solid #94A3B8; border-radius: 50%; justify-self: center; }
+.pc-tr.cambio b, .pc-tr.cambio .pc-c { font-weight: 700; } .pc-cambio-l { display: inline-block; margin-left: 2mm; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #9a3412; font-weight: 500; }
+.pc-pie { margin-top: auto; } .pc-tots { display: flex; gap: 3mm; justify-content: flex-end; flex-wrap: wrap; margin-top: 4mm; } .pc-tot { border: 1.2px solid #CBD5E1; border-radius: 999px; padding: 1.8mm 4.5mm; font-size: 11px; color: #334155; } .pc-tot b { margin-left: 2mm; color: #0F172A; font-weight: 500; }
+.pc-firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 9mm; margin-top: 13mm; } .pc-firma { border-top: 1.2px solid #334155; padding-top: 1.5mm; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #64748B; }
+.pc-aviso { margin-top: 4mm; text-align: center; font-size: 8px; letter-spacing: .22em; text-transform: uppercase; color: #94A3B8; }
+.pc-cont { font-size: 9.5px; color: #94A3B8; text-align: right; margin-top: auto; letter-spacing: .1em; } .pc-hoja { font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase; color: #94A3B8; text-align: right; margin-top: 1.5mm; }

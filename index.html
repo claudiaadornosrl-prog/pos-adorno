@@ -934,10 +934,12 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
             <div class="sena-h"><b id="v-re-tit">Remito de venta</b><span class="mini" id="v-re-sub">baja el stock y no cobra · se factura después desde Vender, al cargar el cliente</span></div>
             <div class="pils re-seg"><button type="button" class="pil on" data-d="loc" onclick="reDestino('loc')" title="Traslado: baja de este local y queda en tránsito hasta que la encargada del destino la reciba">A otro local</button><span class="pil-sep"></span><button type="button" class="pil" data-d="prov" onclick="reDestino('prov')" title="Devolver mercadería al proveedor (devolución o mercadería defectuosa): baja el stock">A un proveedor</button><span class="pil-sep"></span><button type="button" class="pil" data-d="cli" onclick="reDestino(null)" title="Entrega a un cliente: baja el stock y se factura después">A un cliente</button></div>
             <div class="cli-sin" id="v-re-loc" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><select id="v-re-dest" onchange="T.re_destino=this.value;vRender()"></select></div>
-            <div class="cli-sin" id="v-re-prov-box" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-re-prov" list="v-re-provs" placeholder="Proveedor: Familia García, Espalma u otro (escribí el nombre)" autocomplete="off" oninput="vRender()"><datalist id="v-re-provs"><option value="Familia García Regueira"><option value="Espalma"></datalist></div>
+            <div class="cli-sin" id="v-re-prov-box" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input id="v-re-prov" list="v-re-provs" placeholder="Proveedor: Familia García, Espalma u otro (escribí el nombre)" autocomplete="off" oninput="vRender();reProvCuit(true)"><datalist id="v-re-provs"><option value="Familia García Regueira"><option value="Espalma"></datalist><input id="v-re-prov-cuit" inputmode="numeric" placeholder="CUIT" autocomplete="off" style="max-width:150px" oninput="reProvCuit()"></div>
+            <div class="mini" id="v-re-prov-msg" style="margin:-2px 0 4px 16px"></div>
             <div class="cli-sin" id="v-re-dir-box"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><input id="v-re-dir" placeholder="Dirección de entrega (opcional)" autocomplete="off"></div>
             <div class="cli-sin" id="v-re-bultos-box"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><input id="v-re-bultos" inputmode="numeric" placeholder="Cantidad de bultos (obligatorio)" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');this.parentElement.classList.remove('falta')"></div>
             <div class="cli-sin" id="v-re-transp-box"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><input id="v-re-transp" list="v-re-transps" placeholder="Quién lo transporta (opcional): elegí o escribí" autocomplete="off"><datalist id="v-re-transps"><option value="Familia García Regueira · Néstor Donzelli"><option value="Richard Soto · flete propio"></datalist></div>
+            <div class="cli-sin" id="v-re-cot-box"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><input id="v-re-cot" placeholder="N° de COT de ARBA o AGIP (solo si corresponde)" autocomplete="off"></div>
             <div class="cli-sin" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><input id="v-re-nota" placeholder="Nota para la entrega: horario, portería, quién recibe… (opcional)" autocomplete="off"></div>
           </div>
           <div class="cli" id="v-cli">
@@ -1214,7 +1216,7 @@ const GIFT_URL = 'https://claudiaadornosrl-prog.github.io/pos-adorno/gift/?c=';
 const TOPE = { valor: 10000000, at: null, error: null };
 const LOCALES = { alcorta: 'Alcorta', unicenter: 'Unicenter', libertador: 'Atelier Libertador', oficina: 'Oficina' };
 // Pie fiscal y contacto del comprobante. PENDIENTE: domicilios como figuran en ARCA, IIBB e inicio de actividades (los pasa JP).
-const EMPRESA = { razon: 'Claudia Adorno SRL', cuit: '30-70967311-0', cuit_num: 30709673110, cond: 'IVA Responsable Inscripto', iibb: 'CM 30-709673110902', inicio: '01/06/2006',
+const EMPRESA = { razon: 'Claudia Adorno SRL', cuit: '30-70967311-0', cuit_num: 30709673110, cond: 'IVA Responsable Inscripto', iibb: 'CM 30-709673110902', inicio: '01/06/2006', dom_fiscal: 'Paraná 3745, San Isidro, Buenos Aires',
   ig: '@claudiaadornooficial · @atelier.claudiaadorno', webs: 'claudiaadorno.com · atelierclaudiaadorno.com', mail_admin: 'administracion@claudiaadorno.com', frase: 'Lo que elegís, te acompaña.' };
 const LOCAL_INFO = {
   // logo: 'logo-ca.png' (Claudia Adorno) o 'atelier-logo-der.png' (Claudia Adorno con la firma Atelier abajo a la derecha, para el local de Libertador)
@@ -2148,7 +2150,8 @@ function reDestino(m) {
   document.getElementById('v-obs').placeholder = pv ? 'Motivo: devolución, mercadería defectuosa… (opcional)' : 'Observación (opcional)';
   document.getElementById('v-re-nota').placeholder = pv ? 'Motivo: devolución, mercadería defectuosa, quién la retira…' : tr ? 'Nota para el transporte: bultos, camión, quién lleva… (opcional)' : 'Nota para la entrega: horario, portería, quién recibe… (opcional)';
   document.querySelector('.pos-ticket').classList.toggle('es-tr', tr);
-  document.querySelector('.pos-ticket').classList.toggle('es-rc', T.re_modo === 'cli');   // (JP 19-nov) remito a cliente: naranja, distinto del de proveedor (ámbar) y del traslado (violeta)
+  document.querySelector('.pos-ticket').classList.toggle('es-rc', T.re_modo === 'cli');
+  document.getElementById('v-re-prov-msg').style.display = pv ? '' : 'none'; remDatos();   // (JP 19-nov) transportistas y CAI para la hoja del remito R   // (JP 19-nov) remito a cliente: naranja, distinto del de proveedor (ámbar) y del traslado (violeta)
   vRender();
 }
 async function cargarRemitos() {
@@ -2200,7 +2203,7 @@ async function trCorregir(id) {
   rmNuevo(); reDestino('loc'); document.getElementById('v-re-dest').value = x.c.destino_local; T.re_destino = x.c.destino_local;
   for (const d of x.det) { const a = ARTS.find(z => z.sku === d.sku); T.items.push({ sku: d.sku, descripcion: d.descripcion, cantidad: Number(d.cantidad), precio_unit: Number(d.precio_unit) || 0, descuento_pct: 0, descuento_monto: 0, stock: a ? Number(a.stock) : 0 }); }
   const m = /^Bultos: (\d+)(?: · (.*))?$/.exec(x.c.entrega_nota || ''); if (m) { document.getElementById('v-re-bultos').value = m[1]; document.getElementById('v-obs').value = m[2] || ''; }
-  document.getElementById('v-re-transp').value = x.c.transporte || '';
+  document.getElementById('v-re-transp').value = x.c.transporte || ''; document.getElementById('v-re-cot').value = x.c.cot || '';
   reDestino('loc'); vRender(); toast('Remito anulado. Quedó cargado uno nuevo con lo mismo: corregilo y emitilo.', 'success');
 }
 // Lo que no llegó en una recepción parcial queda en tránsito de vuelta al origen: el origen dice si volvió al stock o si es un faltante (con motivo)
@@ -2869,6 +2872,7 @@ function etTot() {
 const ET_WEB = 'claudiaadorno.com';   // (JP 17-nov) sin www y un poco más grande
 function etHTML(cola) {
   const r = etRollo(); const unidades = []; cola.forEach(it => { for (let k = 0; k < it.cantidad; k++) unidades.push(it.sku); });
+  if (r.girar !== 0) unidades.reverse();   // (JP 19-nov) girada, lo primero que sale queda abajo al leer la tira: se imprime de la Z a la A para que la A quede arriba
   const filas = []; for (let i = 0; i < unidades.length; i += r.cols) filas.push(unidades.slice(i, i + r.cols));
   const W = r.margen + r.cols * r.ancho + (r.cols - 1) * r.gap, H = r.alto;
   const D = 0.125, snap = v => Math.round(v / D) * D;   // un punto de la impresora (203 dpi)
@@ -2902,7 +2906,7 @@ function etPrevVivo() {
     const filas = Math.ceil(tot / r.cols); const Z = Math.max(1, Math.min(2.2, (ifr.parentElement.clientWidth - 24) / ((r.margen + r.cols * r.ancho + (r.cols - 1) * r.gap) * 3.78)));
     lb.textContent = tot + (tot === 1 ? ' etiqueta' : ' etiquetas') + ' · ' + filas + (filas === 1 ? ' fila' : ' filas') + ' de ' + r.cols + ' · ' + r.ancho + ' × ' + r.alto + ' mm';
     ifr.style.height = Math.ceil(r.alto * 3.78 * Z * Math.min(filas, 12) + 14) + 'px';
-    ifr.srcdoc = etHTML(ET.cola.slice(0, 200)).replace('</style>', '.et { transform: none !important; } body { zoom: ' + Z.toFixed(2) + '; } .fila { page-break-after: auto; break-after: auto; border-bottom: 1px dashed #cbd5e1; }</style>');
+    ifr.srcdoc = etHTML(ET.cola.slice(0, 200)).replace('</style>', (r.girar === 0 ? '.et { transform: none !important; }' : 'body { display: flex; flex-direction: column-reverse; } .fila { transform: rotate(180deg); flex: none; }') + ' body { zoom: ' + Z.toFixed(2) + '; } .fila { page-break-after: auto; break-after: auto; border-bottom: 1px dashed #cbd5e1; }</style>');   // (JP 19-nov) se ve como se lee la tira
   }, 150);
 }
 let ET_DF = [], _etDfT;
@@ -2998,7 +3002,7 @@ function etImprimirWin() {
 // Movimientos manuales (JP 6-nov): entrada, baja o ajuste con motivo; solo encargada/admin con legajo; quedan en el libro con quién y por qué
 const MOV_NOM = { alta: 'Entrada', baja: 'Baja', ajuste: 'Ajuste', traslado_entrada: 'Entró por traslado', traslado_salida: 'Salió por traslado' };
 const COD_LOCAL = { alcorta: 'ALC', unicenter: 'UNI', oficina: 'OFI', libertador: 'ATE' };
-const remNum = c => (COD_LOCAL[c.local] || String(c.local || '').slice(0, 3).toUpperCase()) + ' ' + fmtNum(c.punto_venta, c.numero);   // único: la numeración es por local
+const remNum = c => (COD_LOCAL[c.local] || String(c.local || '').slice(0, 3).toUpperCase()) + ' ' + (c.letra === 'R' ? String(c.punto_venta).padStart(5, '0') + '-' + String(c.numero).padStart(8, '0') : fmtNum(c.punto_venta, c.numero));   // único: la numeración es por local
 const trNum = c => 'TR-' + String(c.id).padStart(6, '0');   // número único de la mercadería en tránsito
 function etDesdeMov(sku, n) { etAgregar(sku, n); switchTab('etiquetas'); }
 async function cargarMovimientos() {
@@ -3166,6 +3170,13 @@ function vPreviewDatos() {
     cliente_nombre: T.cliente ? T.cliente.nombre : 'Consumidor Final', cliente_doc_tipo: T.cliente && T.cliente.doc_tipo, cliente_doc: T.cliente && T.cliente.doc, cliente_cond_iva: T.cliente ? T.cliente.cond_iva : 'CF',
     subtotal: t.sub, descuento_pct: t.imp == null ? t.pct : r2(t.pct), descuento_monto: t.desc, total: t.tot, neto: A || T.letra === 'B' ? r2(t.tot / 1.21) : t.tot, iva: A || T.letra === 'B' ? r2(t.tot - t.tot / 1.21) : 0, cae_estado: T.letra === 'X' ? 'no_aplica' : 'preview' };
   if (T.sena_usar) { c.sena_monto = t.sena; }
+  if (T.tipo === 'RE') {   // (JP 19-nov) remito R: lo del formulario, para la hoja
+    const g = id => document.getElementById(id).value.replace(/\s+/g, ' ').trim();
+    Object.assign(c, { destino_local: T.re_destino || null, transporte: g('v-re-transp') || null, entrega_dir: g('v-re-dir') || null, cot: g('v-re-cot') || null, es_prueba: MODO === 'prueba',
+      entrega_nota: ['Bultos: ' + (parseInt(g('v-re-bultos'), 10) || 0), g('v-obs')].filter(Boolean).join(' · ') });
+    if (T.re_modo === 'prov') Object.assign(c, { cliente_nombre: 'Proveedor: ' + g('v-re-prov'), cliente_doc_tipo: T.re_prov && T.re_prov.cuit ? 'CUIT' : null, cliente_doc: T.re_prov && T.re_prov.cuit ? T.re_prov.cuit.replace(/\D/g, '') : null, cliente_cond_iva: (T.re_prov && T.re_prov.cond) || 'CF', cliente_domicilio: T.re_prov && T.re_prov.dom });
+    else if (T.cliente && !T.re_destino) c.cliente_domicilio = [T.cliente.direccion, T.cliente.localidad, T.cliente.provincia].filter(Boolean).join(', ') || null;
+  }
   c.precio_dias = (T.tipo === 'PR' || T.sena) && /^\d+$/.test(document.getElementById('v-dias').value.trim()) ? diasVal() : null;
   return { c, det, pagos: T.tipo === 'PR' ? [] : pPagos(), rel: null, email: T.cliente && T.cliente.email, sena_items: T.sena ? T.sena.items : null, sena_de: T.sena_usar ? T.sena_usar.letra + ' ' + T.sena_usar.factura : null };
 }
@@ -3262,9 +3273,154 @@ body { margin: 0; background: #fff; font-family: 'Jost', sans-serif; color: #1C1
 /* versión modificada de un pedido: lo que cambió va primero y en negrita, con lo que era antes */
 .it.cambio b, .it.cambio .cant { font-weight: 700; } .it.cambio .sku { color: #43464A; font-weight: 500; }
 .it .cambio-l { display: inline-block; margin-left: 2mm; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #9a3412; font-weight: 500; }
+
+/* ═══ Remito R (JP 19-nov, modelo 1 «cabecera de madera»): todo lo que pide ARCA (RG 1415 art. 14 y 27-30, anexo V) ═══ */
+.rr { width: 210mm; height: 297mm; background: #fff; display: flex; flex-direction: column; overflow: hidden; page-break-after: always; box-sizing: border-box; color: #1C1612; }
+.rr:last-child { page-break-after: auto; } .rr * { box-sizing: border-box; }
+.rr-cab { height: 46mm; flex: none; background: #4A3F35 url('https://cdn.shopify.com/s/files/1/0827/7635/9129/files/mails-fondo-teca.jpg?v=1789414736&width=900') center / cover; position: relative; padding: 0 13mm 7mm; display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; color: #fff; border-radius: 0 0 10mm 10mm; }
+.rr-cab::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(28,22,18,.08), rgba(28,22,18,.66)); }
+.rr-cab > * { position: relative; }
+.rr-logo { width: 56mm; filter: brightness(0) invert(1); display: block; }
+.rr-letra { justify-self: center; align-self: center; margin-top: 6mm; width: 20mm; height: 22mm; border: 1.6px solid rgba(255,255,255,.95); border-radius: 4mm; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,.1); }
+.rr-letra b { font-size: 34px; font-weight: 500; line-height: 1; } .rr-letra span { font-size: 7.5px; letter-spacing: .16em; margin-top: 1mm; }
+.rr-t { text-align: right; } .rr-n { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; line-height: 1; }
+.rr-nro { font-size: 10.5px; letter-spacing: .1em; margin-top: 2mm; line-height: 1.6; } .rr-nro b { font-weight: 500; font-size: 12px; letter-spacing: .06em; }
+.rr-copia { display: inline-block; margin-top: 1.5mm; border: 1px solid rgba(255,255,255,.85); border-radius: 999px; padding: .6mm 3mm; font-size: 8px; letter-spacing: .24em; text-transform: uppercase; }
+.rr-emi { margin: 3.5mm 13mm 0; font-size: 8.6px; line-height: 1.55; color: #6b5f55; text-align: center; } .rr-emi b { color: #1C1612; font-weight: 500; }
+.rr-cu { flex: 1; padding: 4mm 13mm 8mm; display: flex; flex-direction: column; min-height: 0; }
+.rr-datos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.5mm; }
+.rr-dato { background: #F6F1EA; border-radius: 5mm; padding: 3mm 4mm; font-size: 10px; line-height: 1.5; color: #43464A; } .rr-dato b { color: #1C1612; font-weight: 500; font-size: 11.5px; }
+.rr-et { font-size: 7.8px; letter-spacing: .22em; text-transform: uppercase; color: #95867B; font-weight: 500; margin-bottom: .8mm; }
+.rr-nota { margin-top: 2.5mm; font-size: 10px; color: #43464A; } .rr-nota i { color: #95867B; }
+.rr-enc { font-size: 7.8px; letter-spacing: .22em; text-transform: uppercase; color: #95867B; font-weight: 500; margin: 4mm 0 .5mm; text-align: center; }
+.rr-it { display: grid; grid-template-columns: 13mm 1fr auto; gap: 4mm; align-items: center; padding: 1.6mm 0; border-bottom: 1px solid #EDEAE4; font-size: 11.5px; }
+.rr-it img, .rr-it .sinfoto { width: 13mm; height: 13mm; object-fit: contain; display: block; }
+.rr-sku { font-size: 9px; color: #95867B; letter-spacing: .06em; margin-top: .5mm; }
+.rr-num { text-align: right; font-variant-numeric: tabular-nums; line-height: 1.5; white-space: nowrap; } .rr-num small { display: block; color: #95867B; font-size: 9.5px; }
+.rr-pie { margin-top: auto; } .rr-tots { display: flex; gap: 3mm; justify-content: flex-end; margin-top: 4mm; flex-wrap: wrap; }
+.rr-tot { border: 1px solid #D9CFC0; border-radius: 999px; padding: 1.8mm 4.5mm; font-size: 10.5px; color: #43464A; } .rr-tot b { font-weight: 500; color: #1C1612; margin-left: 2mm; }
+.rr-tot.big { background: #1C1612; color: #fff; border-color: #1C1612; } .rr-tot.big b { color: #fff; }
+.rr-firmas { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12mm; margin-top: 11mm; } .rr-firma { border-top: 1px solid #1C1612; padding-top: 1.5mm; font-size: 8.2px; letter-spacing: .12em; text-transform: uppercase; color: #95867B; }
+.rr-legal { margin-top: 5mm; display: grid; grid-template-columns: 1fr auto; gap: 4mm; align-items: center; border-top: 1.5px solid #1C1612; padding-top: 3mm; }
+.rr-nv { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; font-weight: 500; } .rr-cai { text-align: right; font-size: 10px; line-height: 1.6; color: #43464A; } .rr-cai b { color: #1C1612; font-weight: 500; letter-spacing: .04em; }
+.rr-cont { font-size: 9.5px; color: #95867B; text-align: right; margin-top: auto; letter-spacing: .1em; } .rr-hoja { font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase; color: #95867B; text-align: right; margin-top: 1.5mm; }
+.rr-anulado { margin-top: 3mm; text-align: center; color: #b91c1c; font-weight: 500; border: 2px solid #b91c1c; border-radius: 999px; padding: 1.5mm; letter-spacing: .1em; }
+/* ═══ Pedido de mercadería (JP 19-nov, modelo 6 «planilla de control»): renglones numerados y un círculo para tildar al recibir ═══ */
+.pc { width: 210mm; height: 297mm; background: #fff; padding: 12mm 13mm 10mm; display: flex; flex-direction: column; overflow: hidden; page-break-after: always; box-sizing: border-box; color: #0F172A; }
+.pc:last-child { page-break-after: auto; } .pc * { box-sizing: border-box; }
+.pc-top { display: flex; justify-content: space-between; align-items: center; background: #EEF2F6; border-radius: 8mm; padding: 6mm 7mm; }
+.pc-logo { width: 54mm; filter: brightness(0); display: block; }
+.pc-r { text-align: right; } .pc-n { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; font-weight: 500; color: #334155; }
+.pc-nn { font-size: 25px; font-weight: 500; color: #0F172A; font-variant-numeric: tabular-nums; letter-spacing: .02em; line-height: 1.15; } .pc-fe { font-size: 10px; color: #64748B; }
+.pc-g4 { display: grid; grid-template-columns: repeat(3, 1fr) 30mm; border: 1.2px solid #CBD5E1; border-radius: 6mm; margin-top: 5mm; overflow: hidden; }
+.pc-g4 > div { padding: 3mm 4mm; font-size: 10.5px; line-height: 1.5; color: #334155; } .pc-g4 > div + div { border-left: 1.2px solid #CBD5E1; }
+.pc-et { font-size: 8px; letter-spacing: .18em; text-transform: uppercase; color: #64748B; font-weight: 500; margin-bottom: .5mm; } .pc-g4 b { display: block; color: #0F172A; font-weight: 500; font-size: 11.5px; }
+.pc-g4 .pc-k { text-align: center; background: #F8FAFC; } .pc-g4 .pc-k b { font-size: 26px; line-height: 1.1; }
+.pc-nota { margin-top: 3mm; font-size: 10.5px; color: #334155; } .pc-nota b { font-weight: 500; }
+.pc-version { margin-top: 2mm; font-size: 10px; color: #9a3412; background: #FFF7ED; border-radius: 999px; padding: 1.5mm 4mm; }
+.pc-th, .pc-tr { display: grid; grid-template-columns: 7mm 10mm 1fr 16mm 16mm; gap: 3mm; align-items: center; }
+.pc-th { background: #334155; color: #fff; border-radius: 999px; padding: 2mm 4mm; font-size: 8px; letter-spacing: .14em; text-transform: uppercase; margin-top: 5mm; }
+.pc-tr { padding: 1mm 4mm; font-size: 11px; border-bottom: 1px solid #E2E8F0; } .pc-tr:nth-child(odd) { background: #F8FAFC; }
+.pc-tr img, .pc-tr .sinfoto { width: 10mm; height: 10mm; object-fit: contain; display: block; } .pc-i { color: #94A3B8; font-size: 9.5px; } .pc-sku { color: #64748B; font-size: 9px; letter-spacing: .06em; margin-top: .4mm; }
+.pc-c { text-align: center; font-weight: 500; font-size: 13px; } .pc-ck { width: 5.5mm; height: 5.5mm; border: 1.5px solid #94A3B8; border-radius: 50%; justify-self: center; }
+.pc-tr.cambio b, .pc-tr.cambio .pc-c { font-weight: 700; } .pc-cambio-l { display: inline-block; margin-left: 2mm; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #9a3412; font-weight: 500; }
+.pc-pie { margin-top: auto; } .pc-tots { display: flex; gap: 3mm; justify-content: flex-end; flex-wrap: wrap; margin-top: 4mm; } .pc-tot { border: 1.2px solid #CBD5E1; border-radius: 999px; padding: 1.8mm 4.5mm; font-size: 11px; color: #334155; } .pc-tot b { margin-left: 2mm; color: #0F172A; font-weight: 500; }
+.pc-firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 9mm; margin-top: 13mm; } .pc-firma { border-top: 1.2px solid #334155; padding-top: 1.5mm; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #64748B; }
+.pc-aviso { margin-top: 4mm; text-align: center; font-size: 8px; letter-spacing: .22em; text-transform: uppercase; color: #94A3B8; }
+.pc-cont { font-size: 9.5px; color: #94A3B8; text-align: right; margin-top: auto; letter-spacing: .1em; } .pc-hoja { font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase; color: #94A3B8; text-align: right; margin-top: 1.5mm; }
 `;   // (JP 18-nov) sale de a4.css: el MISMO diseño que los PDF de pos_pdf.py (una sola fuente para todas las piezas)
 const A4_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+// ═══ Remito R (JP 19-nov): modelo 1 «cabecera de madera» con todo lo que pide ARCA (RG 1415 art. 14 y 27-30, anexo V).
+//     Misma hoja que armar_remito_html() de pos_pdf.py: si se cambia una, cambiar la otra. El diseño está en a4.css (.rr-*) ═══
+const REMR = { transp: null, cai: null };
+async function remDatos(forzar) {
+  if (REMR.transp && !forzar) return REMR;
+  try {
+    const [t, k] = await Promise.all([sb.from('pos_transportistas').select('*').eq('activo', true).order('orden'), sb.rpc('pos_cai_listar')]);
+    REMR.transp = t.data || []; REMR.cai = (k.data || []).filter(x => x.comprobante === 'REMITO R');
+    const dl = document.getElementById('v-re-transps'); if (dl && REMR.transp.length) dl.innerHTML = REMR.transp.map(x => `<option value="${esc(x.etiqueta)}">`).join('');
+  } catch (e) {}
+  return REMR;
+}
+const remTransp = et => (REMR.transp || []).find(t => t.etiqueta.toLowerCase() === String(et || '').trim().toLowerCase());
+const remNro = c => String(c.punto_venta || 0).padStart(c.letra === 'R' ? 5 : 4, '0') + '-' + String(c.numero || 0).padStart(8, '0');
+const fechaCorta = s => { const [a, m, d] = String(s || '').slice(0, 10).split('-'); return d ? `${d}/${m}/${a}` : ''; };
+const persona = n => { n = String(n || '').trim(); if (!n || n.includes('@')) return ''; const [a, b] = n.split(','); return b ? tit(b) + ' ' + tit(a) : tit(a); };
+const COND_IVA = { CF: 'Consumidor Final', RI: 'IVA Responsable Inscripto', MT: 'Responsable Monotributo', EX: 'IVA Exento', NR: 'No Responsable IVA', NA: 'IVA No Alcanzado' };
+const RR_POR_HOJA = 10, RR_ULTIMA = 8;   // artículos por hoja; la última lleva los totales, las firmas y el CAI
+// CUIT del proveedor: los conocidos vienen solos; con el CUIT se completan razón social, condición y domicilio con el padrón de ARCA
+const PROV_CONOCIDOS = { 'familia garcía regueira': '30710971338', 'familia garcia regueira': '30710971338', 'espalma': '30707246983' };
+let _rpT = null;
+async function reProvCuit(desdeNombre) {
+  const nomEl = document.getElementById('v-re-prov'), cuEl = document.getElementById('v-re-prov-cuit'), msg = document.getElementById('v-re-prov-msg');
+  if (desdeNombre) { const k = PROV_CONOCIDOS[nomEl.value.trim().toLowerCase()]; if (!k || cuEl.value.trim()) return; cuEl.value = k; }
+  const cuit = cuEl.value.replace(/\D/g, ''); clearTimeout(_rpT); msg.textContent = '';
+  if (cuit.length !== 11) { T.re_prov = null; if (cuit) msg.textContent = 'El CUIT tiene 11 números'; return; }
+  const fmt = cuit.replace(/^(\d{2})(\d{8})(\d)$/, '$1-$2-$3'); T.re_prov = { cuit: fmt, cond: 'CF' };
+  const pinta = r => { if (!r || !r.razon_social) return false; const d = r.domicilio || {}; const cond = { RI: 'RI', MT: 'MT', EX: 'EX' }[r.cond_iva] || 'CF';
+    T.re_prov = { cuit: fmt, cond, razon: tit(r.razon_social), dom: [d.direccion, d.localidad, d.descripcionProvincia].filter(Boolean).map(tit).join(', ') };
+    if (!nomEl.value.trim()) nomEl.value = T.re_prov.razon;
+    msg.textContent = 'ARCA: ' + r.razon_social + ' · ' + (COND_IVA[cond] || '') + (T.re_prov.dom ? ' · ' + T.re_prov.dom : ''); return true; };
+  try { const { data: ya } = await sb.from('compras_arca_consultas').select('*').eq('cuit', cuit).maybeSingle(); if (ya && pinta(ya)) return; } catch (e) {}
+  msg.textContent = 'Consultando el padrón de ARCA…';
+  { const { error } = await sb.rpc('pos_arca_pedir', { p_cuit: cuit }); if (error) { msg.textContent = 'No pude consultar ARCA: el remito sale igual con el CUIT.'; return; } }
+  let n = 0; const poll = async () => { if (document.getElementById('v-re-prov-cuit').value.replace(/\D/g, '') !== cuit) return;
+    const { data } = await sb.from('compras_arca_consultas').select('*').eq('cuit', cuit).maybeSingle();
+    if (data && data.consultado_at && Date.now() - new Date(data.consultado_at) < 5 * 60e3) { if (!pinta(data)) msg.textContent = 'ARCA no devolvió datos para ese CUIT: el remito sale igual con el CUIT.'; return; }
+    if (++n < 15) _rpT = setTimeout(poll, 2000); else msg.textContent = 'El padrón de ARCA no respondió: el remito sale igual con el CUIT.'; };
+  _rpT = setTimeout(poll, 2000);
+}
+function a4Remito(x) {
+  const { c, det } = x; const li = LOCAL_INFO[c.local] || {}; const tr = !!c.destino_local; const prov = /^Proveedor: /.test(c.cliente_nombre || '');
+  const prueba = !!(c.es_prueba || (c.preview && MODO === 'prueba')); const R = c.letra !== 'X';
+  const titulo = tr ? 'Remito de traslado' : prov ? 'Remito a proveedor' : 'Remito';
+  // CAI: el del comprobante; en la vista previa (real) el vigente del local
+  let cai = c.cai, vto = c.cai_vto, nroPrev = '';
+  if (c.preview && !prueba) { const k = (REMR.cai || []).find(k => k.local === c.local && k.dias >= 0); if (k) { cai = k.cai; vto = k.vence; nroPrev = String(k.punto_venta).padStart(5, '0') + '-' + String(Number(k.ultimo) + 1).padStart(8, '0'); } }
+  const nroH = c.preview ? 'Vista previa · sin emitir' + (nroPrev ? ` (sería el N° <b>${nroPrev}</b>)` : '') : `N° <b>${remNro(c)}</b>`;
+  // destinatario según su condición frente al IVA (anexo V, II) y lugar de entrega
+  let dest, entrega;
+  if (tr) { const ld = LOCAL_INFO[c.destino_local] || {};
+    dest = [`<b>${esc(EMPRESA.razon)}</b>`, `CUIT ${EMPRESA.cuit} · IVA Responsable Inscripto`, 'Traslado entre locales propios'];
+    entrega = [`<b>${esc(LOCALES[c.destino_local] || c.destino_local)}</b>`, esc(ld.domicilio || '')]; }
+  else {
+    const nom = esc(String(c.cliente_interno || c.cliente_nombre || '').replace(/^Proveedor: /, '')); const cond = c.cliente_cond_iva || 'CF';
+    const doc = c.cliente_doc ? esc((c.cliente_doc_tipo || '') + ' ' + c.cliente_doc) : '';
+    if (cond === 'CF' && !prov) dest = ['<b>A CONSUMIDOR FINAL</b>', [nom, doc].filter(Boolean).join(' · '), esc(c.cliente_domicilio || '')];
+    else dest = [`<b>${nom}</b>`, [doc, cond !== 'CF' ? COND_IVA[cond] || '' : ''].filter(Boolean).join(' · '), esc(c.cliente_domicilio || '')];
+    entrega = c.entrega_dir ? [`<b>${esc(c.entrega_dir)}</b>`] : prov ? [`<b>${nom}</b>`, esc(c.cliente_domicilio || '')] : ['<b>Lo retira en el local</b>', esc((LOCALES[c.local] || '') + ' · ' + (li.domicilio || ''))]; }
+  // transportista (anexo V, IV: nombre, domicilio y CUIT cuando lleva un tercero)
+  const tx = remTransp(c.transporte); let trans;
+  if (!c.transporte) trans = ['<b>Sin transporte de terceros</b>', tr ? '' : 'Lo lleva o lo retira el destinatario'];
+  else if (tx && tx.propio) trans = ['<b>Flete propio</b>', tx.chofer ? 'Maneja: ' + esc(tx.chofer) : ''];
+  else { const partes = String(c.transporte).split(' · '); const cuit = c.transporte_cuit || (tx && tx.cuit), dom = c.transporte_dom || (tx && tx.domicilio), chofer = tx ? tx.chofer : partes[1];
+    trans = [`<b>${esc(tx ? tx.nombre : partes[0])}</b>`, cuit ? 'CUIT ' + esc(cuit) : 'CUIT: falta cargarlo', esc(dom || ''), chofer ? 'Maneja: ' + esc(chofer) : '']; }
+  const caja = (et, l) => `<div class="rr-dato"><div class="rr-et">${et}</div>${l.filter(Boolean).join('<br>')}</div>`;
+  const nota = [String(c.entrega_nota || '').replace(/^Bultos: \d+(?: · )?/, ''), c.recibido_por ? 'Recibido por ' + c.recibido_por + (c.transito_estado === 'con_diferencia' ? ' · con diferencia' : '') : ''].filter(Boolean).join(' · ');
+  const item = d => { const foto = IMGS[d.sku]; const desc = String(d.descripcion || ''); const descT = desc === desc.toUpperCase() ? desc.charAt(0) + desc.slice(1).toLowerCase() : desc;
+    const lleg = d.cantidad_recibida != null && Number(d.cantidad_recibida) < Number(d.cantidad) ? ' · llegaron ' + Number(d.cantidad_recibida) : '';
+    return `<div class="rr-it">${foto ? `<img src="${esc(foto)}" alt="">` : '<div class="sinfoto"></div>'}<div>${esc(descT)}<div class="rr-sku">${esc(d.sku)}${lleg}</div></div><div class="rr-num">${plata2(Number(d.cantidad) * Number(d.precio_unit))}<small>${Number(d.cantidad)} × ${plata2(d.precio_unit)}</small></div></div>`; };
+  const mb = /^Bultos: (\d+)/.exec(c.entrega_nota || ''); const un = det.reduce((t, d) => t + Number(d.cantidad), 0), valor = det.reduce((t, d) => t + Number(d.cantidad) * Number(d.precio_unit), 0);
+  const caiH = prueba ? 'CAI: <b>PRUEBA · sin CAI</b>' : cai ? `CAI N° <b>${esc(cai)}</b> · Fecha de Vto. <b>${fechaCorta(vto)}</b>` : 'CAI: <b>falta el CAI</b>';
+  const pie = `<div class="rr-pie"><div class="rr-tots">${mb ? `<div class="rr-tot big">Bultos<b>${mb[1]}</b></div>` : ''}<div class="rr-tot">Unidades<b>${un}</b></div><div class="rr-tot">Valor de la mercadería<b>${plata2(valor)}</b></div></div>
+    ${c.estado === 'anulado' ? `<div class="rr-anulado">ANULADO · ${esc(c.anulado_motivo || '')}</div>` : ''}
+    <div class="rr-firmas"><div class="rr-firma">Entregó</div><div class="rr-firma">Recibí conforme · firma, aclaración, DNI y fecha</div></div>
+    <div class="rr-legal"><div class="rr-nv">Documento no válido como factura</div><div class="rr-cai">${caiH}<br>COT N° ${c.cot ? '<b>' + esc(c.cot) + '</b>' : '— (si corresponde)'}</div></div></div>`;
+  const pags = []; let resto = det.slice(); while (resto.length) { if (resto.length <= RR_ULTIMA) { pags.push(resto); resto = []; } else { const k = resto.length > RR_POR_HOJA ? RR_POR_HOJA : Math.ceil(resto.length / 2); pags.push(resto.slice(0, k)); resto = resto.slice(k); } } if (!pags.length) pags.push([]);   // la última hoja (con el pie) nunca pasa de RR_ULTIMA
+  const n = pags.length, logo = location.origin + location.pathname.replace(/[^/]*$/, '') + (li.logo || 'logo-ca.png');
+  const quien = persona(c.vendedora_nombre);
+  const hoja = (pg, k, copia) => { const ult = k === n;
+    return `<div class="rr"><div class="rr-cab"><img class="rr-logo" src="${logo}" alt="Claudia Adorno"><div class="rr-letra"><b>${R ? 'R' : 'X'}</b><span>${R ? 'CÓD. 091' : ''}</span></div><div class="rr-t"><div class="rr-n">${titulo}</div><div class="rr-nro">${nroH}<br>Fecha de emisión ${fechaCorta(c.fecha)} · ${String(c.hora || '').slice(0, 5)}${tr && c.id ? '<br>Tránsito ' + trNum(c) : ''}</div><div class="rr-copia">${copia}</div></div></div>
+      <div class="rr-emi"><b>${esc(EMPRESA.razon)}</b> · CUIT ${EMPRESA.cuit} · ${esc(EMPRESA.cond)} · Ingresos Brutos ${esc(EMPRESA.iibb)} · Inicio de actividades ${esc(EMPRESA.inicio)} · Domicilio fiscal ${esc(EMPRESA.dom_fiscal)}<br>Emite: local ${esc(LOCALES[c.local] || c.local)} · ${esc(li.domicilio || '')}${quien ? ' · Lo emitió ' + esc(quien) : ''}</div>
+      <div class="rr-cu">${prueba ? `<div style="${FRANJA_PRUEBA}font-size:9pt;padding:1.5mm 4mm;margin-bottom:3mm">PRUEBA · SIN VALOR FISCAL</div>` : ''}
+        ${k === 1 ? `<div class="rr-datos">${caja('Destinatario', dest)}${caja('Lugar de entrega', entrega)}${caja('Transportista', trans)}</div>${nota ? `<div class="rr-nota">Nota: <i>${esc(nota)}</i></div>` : ''}` : ''}
+        <div class="rr-enc">Mercadería${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}
+        ${ult ? pie : `<div class="rr-cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="rr-hoja">Hoja ${k} de ${n}</div>` : ''}</div></div>`; };
+  const hojas = ['Original', 'Duplicado'].map(cp => pags.map((pg, i) => hoja(pg, i + 1, cp)).join('')).join('');
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}${c.preview ? '' : ' ' + remNro(c)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><style>${A4_CSS}</style></head><body>${hojas}</body></html>`;
+}
 function a4HTML(x) {
+  if (x.c.tipo === 'RE') return a4Remito(x);   // (JP 19-nov) el remito R tiene su propia hoja
   const { c, det, pagos, rel } = x; const mp = Object.fromEntries(MEDIOS.map(m => [m.clave, m.nombre]));
   const fiscal = c.letra !== 'X', A = c.letra === 'A', nc = c.tipo === 'NC', ma = c.tipo === 'MA', pr = c.tipo === 'PR', re = c.tipo === 'RE';
   const li = LOCAL_INFO[c.local] || {}; const f = A ? 1 / 1.21 : 1;
@@ -3316,7 +3472,7 @@ function a4HTML(x) {
     return `<div class="a4"><div class="panel">${side}<div class="main">${(c.es_prueba || (c.preview && MODO === 'prueba')) ? `<div style="${FRANJA_PRUEBA}font-size:9.5pt;padding:2mm 4mm;margin-bottom:4mm">PRUEBA · SIN VALOR FISCAL</div>` : ''}<div class="n">${esc(titulo)}</div><div class="nro">${nroK}</div><div class="sep"></div><div class="et2">${esc(enc)}${k > 1 ? ' · continuación' : ''}</div>${pg.map(item).join('')}<div class="tot">${ult ? tot + contacto : ''}${ult ? '' : `<div class="cont">continúa en la hoja ${k + 1} →</div>`}${n > 1 ? `<div class="hoja">Hoja ${k} de ${n}</div>` : ''}</div></div></div></div>`; }).join('');
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(titulo)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script><style>${A4_CSS}</style></head><body>${hojas}<script>for (const img of document.querySelectorAll('img.qr')) { try { const q = qrcode(0, 'M'); q.addData(img.dataset.qr); q.make(); img.src = q.createDataURL(3, 0); } catch (e) {} }<\/script></body></html>`;
 }
-function vVaciar() { T.sinMail = false; T.ncOrd = null; T.ncMp = null; T.dtoE = false; T.precioAut = undefined; T.envioAut = undefined; T.envioAutP = 0; T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.modif = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
+function vVaciar() { T.sinMail = false; T.ncOrd = null; T.ncMp = null; T.dtoE = false; T.precioAut = undefined; T.envioAut = undefined; T.envioAutP = 0; T.items = []; T.pend = 0; vPend(); T.cliente = null; T.canal = 'mail'; T.presu_id = null; T.modif = null; T.sin_cliente = false; T.nc_de = null; T.sena = null; T.sena_usar = null; T.gift = null; T.remito = null; T.re_destino = null; T.re_modo = null; T.re_pedidos = null; const rd = document.getElementById('v-re-dir'); if (rd) { rd.value = ''; document.getElementById('v-re-prov').value = ''; document.getElementById('v-re-prov-cuit').value = ''; document.getElementById('v-re-prov-msg').textContent = ''; document.getElementById('v-re-cot').value = ''; T.re_prov = null; document.getElementById('v-re-bultos').value = ''; document.getElementById('v-re-transp').value = ''; document.getElementById('v-re-nota').value = ''; } dMontar(); document.getElementById('v-obs').value = ''; pLimpiar(); vTipo('FC', 'B'); }
 // Pastillas: una por tipo; la letra (B/A) sale sola del cliente o de la factura que se devuelve y se muestra en el texto
 function vPils() {
   // Manual vive adentro de la pastilla Presupuesto: abajo, junto a la observación, el tilde "Presupuesto" (sin tildar = manual)
@@ -3330,7 +3486,7 @@ function vPils() {
 function vTipo(tipo, letra) {
   const eraNC = T.tipo === 'NC';
   if (T.gift && tipo !== 'FC') { toast('La gift card sale siempre con factura: saqué la gift card del ticket', 'error'); T.gift = null; T.items = T.items.filter(i => i.sku !== 'GIFT' && i.sku !== 'CARDFISICA'); }
-  T.tipo = tipo; T.letra = letra;
+  T.tipo = tipo; T.letra = tipo === 'RE' ? 'R' : letra;   // (JP 19-nov) el remito es R (con CAI); el X solo vale dentro de un mismo predio
   vPils();
   const nc = tipo === 'NC';
   document.getElementById('v-nc').style.display = nc ? '' : 'none';
@@ -4551,7 +4707,7 @@ async function caiAjustes() {
   CAI = data || []; const adm = !!PERFIL.es_admin;
   box.innerHTML = (CAI.length ? `<table><thead><tr><th>Comprobante</th><th class="num">Punto de venta</th><th>CAI</th><th>Numeración</th><th>Vence</th><th>Estado</th><th></th></tr></thead><tbody>` + CAI.map(c => `<tr class="${c.activo ? '' : 'dim'}">
     <td>${esc(c.comprobante)}${c.local ? '<div class="mini">' + esc(LOCALES[c.local] || c.local) + '</div>' : ''}</td><td class="num"><b>${String(c.punto_venta).padStart(4, '0')}</b></td><td><b>${esc(c.cai)}</b>${c.nota ? '<div class="mini">' + esc(c.nota) + '</div>' : ''}</td>
-    <td class="mini">${c.desde != null ? c.desde + ' a ' + c.hasta : ''}</td><td>${fechaAR(c.vence)}</td>
+    <td class="mini">${c.desde != null ? c.desde + ' a ' + c.hasta : ''}${c.desde != null && c.local ? '<div>va por el ' + c.ultimo + ' · quedan ' + c.quedan + '</div>' : ''}</td><td>${fechaAR(c.vence)}</td>
     <td>${!c.activo ? '<span class="chip gray">No se avisa</span>' : c.dias < 0 ? '<span class="chip red">Vencido hace ' + (-c.dias) + ' días</span>' : c.dias <= 14 ? '<span class="chip amber">Vence en ' + c.dias + ' días</span>' : '<span class="chip green">Vigente · faltan ' + c.dias + ' días</span>'}</td>
     <td class="acc">${adm ? `<button class="btn chico" onclick="caiEditar(${c.id})">Cargar el nuevo</button>` : ''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty chico">No hay CAI cargados.</div>')
     + (adm ? `<div style="margin-top:10px"><button class="btn" onclick="caiEditar(0)">${_i('plus')} Otro punto de venta</button></div>` : '');
@@ -4561,7 +4717,7 @@ function caiEditar(id) {
   const f = (i, l, v, extra) => `<label class="cai-l">${l}<input id="${i}" value="${esc(v == null ? '' : v)}" ${extra || ''}></label>`;
   modal(`<div class="m-head"><h3>CAI · ${esc(c.comprobante)}${c.punto_venta ? ' · punto de venta ' + String(c.punto_venta).padStart(4, '0') : ''}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="cai-f">${f('cai-pv', 'Punto de venta', c.punto_venta, 'inputmode="numeric"' + (id ? ' disabled' : ''))}${f('cai-n', 'Número de CAI (14 dígitos)', c.cai, 'inputmode="numeric"')}${f('cai-v', 'Vence', c.vence, 'type="date"')}
-      ${f('cai-d', 'Numeración desde', c.desde, 'inputmode="numeric"')}${f('cai-h', 'Numeración hasta', c.hasta, 'inputmode="numeric"')}
+      ${f('cai-d', 'Numeración desde', c.desde, 'inputmode="numeric"')}${f('cai-h', 'Numeración hasta', c.hasta, 'inputmode="numeric"')}${f('cai-u', 'Último número que usó el Dragonfish (el POS sigue desde el siguiente)', c.ultimo_externo, 'inputmode="numeric"')}
       <label class="cai-l">Local<select id="cai-loc"><option value="">(sin asignar)</option>${Object.keys(LOCALES).map(l => `<option value="${l}"${c.local === l ? ' selected' : ''}>${esc(LOCALES[l])}</option>`).join('')}</select></label>
       <label class="cai-l" style="grid-column:1/-1">Nota<input id="cai-nota" value="${esc(c.nota || '')}"></label>
       <label class="mini cli-chk" style="grid-column:1/-1"><input type="checkbox" id="cai-act"${c.activo ? ' checked' : ''}> Avisar cuando esté por vencer (destildalo si ese punto de venta ya no se usa)</label></div>
@@ -4569,7 +4725,7 @@ function caiEditar(id) {
 }
 async function caiGuardar(id) {
   const g = i => document.getElementById(i).value.trim(); const c = CAI.find(x => x.id === id) || { comprobante: 'REMITO R' };
-  const p = { comprobante: c.comprobante, punto_venta: g('cai-pv'), cai: g('cai-n'), vence: g('cai-v'), desde: g('cai-d'), hasta: g('cai-h'), local: g('cai-loc'), nota: g('cai-nota'), activo: document.getElementById('cai-act').checked };
+  const p = { comprobante: c.comprobante, punto_venta: g('cai-pv'), cai: g('cai-n'), vence: g('cai-v'), desde: g('cai-d'), hasta: g('cai-h'), local: g('cai-loc'), nota: g('cai-nota'), ultimo_externo: g('cai-u'), activo: document.getElementById('cai-act').checked };
   if (!p.punto_venta || p.cai.replace(/[^0-9]/g, '').length !== 14 || !p.vence) { toast('Completá el punto de venta, el CAI de 14 dígitos y el vencimiento', 'error'); return; }
   const { error } = await sb.rpc('pos_cai_guardar', { p }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
   cerrarModal(); toast('CAI guardado', 'success'); caiAjustes();
@@ -4664,8 +4820,8 @@ async function emitir(esNC) {
   const valeCont = esNC ? ((document.querySelector('#v-pagos .vale-cont') || {}).value || '').trim() || valeWaN || null : (T.gift ? T.gift.contacto : null);
   if (T.gift && T.gift.card_on && !T.gift.card) { toast('Cargá el código de la card física, o destildá «Se lleva la card física»', 'error'); btn.disabled = false; const i = document.getElementById('gift-card'); if (i) i.focus(); return; }
   if (T.gift && !(t.tot - (T.gift.card ? CARD_PRECIO : 0) > 0)) { toast('Cargá el importe de la gift card', 'error'); btn.disabled = false; return; }
-  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, envio_autorizacion_id: T.envioAut, precio_autorizacion_id: precioAut, descuento_autorizacion_id: dtoAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio === 'nadie' ? undefined : atendio, atendio_nadie: atendio === 'nadie' || undefined, canal_envio: waEnv ? 'wa' : (T.sinMail && T.canal !== 'wa') ? 'no' : undefined, modifica_id: esMod ? T.modif.id : undefined, devolver: esMod && t.dev > 0 ? t.dev : undefined, precio_dias: (T.tipo === 'PR' || T.sena) ? diasVal() : undefined, presupuesto_id: (!esNC && T.presu_id) || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
-    relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: 'CF' } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
+  const p = { local: LOCAL, transporte: T.tipo === 'RE' ? document.getElementById('v-re-transp').value.replace(/\s+/g, ' ').trim() || undefined : undefined, cot: T.tipo === 'RE' ? document.getElementById('v-re-cot').value.trim() || undefined : undefined, cobro_autorizacion_id: cobroAut, efectivo_autorizacion_id: efAut, envio_autorizacion_id: T.envioAut, precio_autorizacion_id: precioAut, descuento_autorizacion_id: dtoAut, emitio_empleado_id: qe.id || undefined, atendio_empleado_id: atendio === 'nadie' ? undefined : atendio, atendio_nadie: atendio === 'nadie' || undefined, canal_envio: waEnv ? 'wa' : (T.sinMail && T.canal !== 'wa') ? 'no' : undefined, modifica_id: esMod ? T.modif.id : undefined, devolver: esMod && t.dev > 0 ? t.dev : undefined, precio_dias: (T.tipo === 'PR' || T.sena) ? diasVal() : undefined, presupuesto_id: (!esNC && T.presu_id) || undefined, emitio_modo: qe.id ? qe.modo : undefined, tipo: esNC ? 'NC' : T.tipo, letra: T.letra, descuento_pct: t.imp == null ? t.pct : null, descuento_monto: t.imp, sena_items: T.sena ? T.sena.items : undefined, sena_id: T.sena_usar ? T.sena_usar.id : undefined, gift: T.gift || undefined, vale_contacto: valeCont || undefined, obs: T.tipo === 'RE' && !esNC ? null : document.getElementById('v-obs').value.trim() || null,
+    relacionado_id: esNC ? T.nc_de : null, cliente: T.re_destino ? { nombre: 'Traslado a ' + LOCALES[T.re_destino], cond_iva: 'CF' } : T.tipo === 'RE' && T.re_modo === 'prov' ? { nombre: 'Proveedor: ' + document.getElementById('v-re-prov').value.replace(/\s+/g, ' ').trim(), cond_iva: (T.re_prov && T.re_prov.cond) || 'CF', doc_tipo: T.re_prov && T.re_prov.cuit ? 'CUIT' : undefined, doc: T.re_prov && T.re_prov.cuit ? T.re_prov.cuit.replace(/\D/g, '') : undefined, domicilio: (T.re_prov && T.re_prov.dom) || undefined } : cliPayload(), destino_local: T.tipo === 'RE' ? T.re_destino || undefined : undefined, pedidos: T.tipo === 'RE' && T.re_destino && T.re_pedidos ? T.re_pedidos : undefined, autorizacion_id: T.autorizacion_id, remito_id: !esNC && T.remito ? T.remito.id : undefined,
     entrega_dir: T.tipo === 'RE' ? document.getElementById('v-re-dir').value.trim() || null : undefined, entrega_nota: T.tipo === 'RE' ? ['Bultos: ' + parseInt(document.getElementById('v-re-bultos').value, 10), document.getElementById('v-obs').value.trim()].filter(Boolean).join(' · ') : undefined,   // en el remito la observación de abajo es la nota de entrega
    
     items: T.items.map(i => i.promo ? { sku: i.sku, descripcion: i.descripcion, cantidad: i.cantidad, precio_unit: i.precio_unit, descuento_pct: 0, descuento_monto: promoU(i), iva_pct: 21, promo_id: i.promo.id }
@@ -4683,6 +4839,7 @@ async function emitir(esNC) {
   for (const pg of pagos) if (pg.detalle && pg.detalle.order_id) mpLlamar('vincular', { order_id: pg.detalle.order_id, comprobante_id: data.id }).catch(() => {});
   if (esNC) await mpDevolverNC(data.id, pagos);
   toast((esNC ? 'Nota de crédito ' : T.tipo === 'RE' ? (T.re_destino ? 'Remito de traslado ' : 'Remito ') : T.tipo === 'PR' ? 'Presupuesto ' : (T.tipo === 'MA' ? 'Comprobante ' : 'Factura ' + T.letra + ' ')) + data.numero_fmt + (T.tipo === 'PR' || T.tipo === 'MA' || T.tipo === 'RE' ? ' emitido' : ' emitida'), 'success');
+  if (data.cai_aviso) setTimeout(() => toast(data.cai_aviso, 'error'), 1800);   // (JP 19-nov) el CAI de remitos está por vencer o se acaban los números
   const eraRE = T.tipo === 'RE'; stockAplicarTicket(esNC);
   const giftInfo = T.gift ? { ...T.gift } : null; const ncPara = esNC && T.cliente ? T.cliente.nombre : null; const valeImp = esNC ? (pagos.find(x => x.medio === 'vale') || {}).importe : r2(t.tot - (giftInfo && giftInfo.card ? CARD_PRECIO : 0));
   vVaciar(); if (eraRE) cargarRemitos();
@@ -5024,7 +5181,7 @@ async function verComprobante(id, recien) {
   if (x.c.letra !== 'X' && x.c.cae_estado === 'pendiente') vigilarCAE(id);
 }
 async function imprimir(id) {
-  if (window._ultimoTicket && window._ultimoTicket.c.id === id && window._ultimoTicket.c.letra === 'X') { toast('Los comprobantes manuales y presupuestos no se imprimen en la comandera', 'error'); return; }
+  if (window._ultimoTicket && window._ultimoTicket.c.id === id && (window._ultimoTicket.c.letra === 'X' || window._ultimoTicket.c.tipo === 'RE')) { toast('Los remitos, los comprobantes manuales y los presupuestos no se imprimen en la comandera: van en hoja A4', 'error'); return; }
   const x = (window._ultimoTicket && window._ultimoTicket.c.id === id) ? window._ultimoTicket : await traerComprobante(id);
   document.getElementById('print-area').innerHTML = ticketHTML(x);
   await pintarQR(document.getElementById('print-area'));
@@ -5198,6 +5355,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=221"></script>
+<script src="manual.js?v=222"></script>
 </body>
 </html>
