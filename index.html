@@ -3514,7 +3514,8 @@ async function cliBuscar(txt) {
   if (error) { toast(error.message, 'error'); return; }
   if (data && data.length) {
     usarCliente(data[0]);
-    if (dni && data[0].email && (!data[0].fecha_nacimiento || !data[0].sexo)) completarFicha(data[0], dni);  // el DNI escaneado completa lo que falte
+    // (JP 19-nov) el DNI escaneado completa SIEMPRE lo que le falte a la ficha (antes solo si tenía mail); nunca pisa lo que ya está
+    if (dni && ((!data[0].fecha_nacimiento && dni.fecha_nacimiento) || (!data[0].sexo && dni.sexo) || (!data[0].apellido && dni.apellido) || (!data[0].nombre && dni.nombre))) completarFicha(data[0], dni);
     return;
   }
   if (dig.length === 11) { abrirFichaCliente({ doc: dig, doc_tipo: 'CUIT' }, false); return; }
@@ -3563,6 +3564,8 @@ function clienteListo() {   // antes de emitir: un cliente nuevo necesita al men
 async function completarFicha(c, dni) {
   const { data } = await sb.rpc('pos_cliente_guardar', { p: { globalid: c.globalid, local: LOCAL, doc_tipo: 'DNI', doc: dni.doc, apellido: c.apellido || dni.apellido, nombre: c.nombre || dni.nombre, email: c.email, celular: c.celular, fecha_nacimiento: c.fecha_nacimiento || dni.fecha_nacimiento, sexo: c.sexo || dni.sexo, cond_iva: c.cond_iva || 'CF' } });
   if (data && T.cliente && T.cliente.globalid === data.globalid) T.cliente.ficha = data;
+  if (data) { const q = [!c.fecha_nacimiento && dni.fecha_nacimiento && 'la fecha de nacimiento', !c.sexo && dni.sexo && 'el sexo', (!c.apellido || !c.nombre) && (dni.apellido || dni.nombre) && 'el nombre'].filter(Boolean);
+    if (q.length) toast('Con el DNI completé ' + q.join(', ').replace(/, ([^,]*)$/, ' y $1') + ' en la ficha de ' + pila(data.nombre_completo || ''), 'success'); }
 }
 function editarCliente() {
   if (!T.cliente) return; const c = T.cliente;
@@ -5161,6 +5164,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=218"></script>
+<script src="manual.js?v=219"></script>
 </body>
 </html>
