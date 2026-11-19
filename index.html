@@ -636,6 +636,34 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .on-nc-f .c { font-weight: 600; min-width: 90px; } .on-nc-f .d { flex: 1; font-size: 13px; } .on-nc-tot { margin-top: 10px; text-align: right; font-size: 15px; }
 .onv .on-pie { justify-content: flex-start; gap: 30px; } .on-t td .rojo { color: #b91c1c; white-space: normal; max-width: 220px; }
 .on-atelier { line-height: 1.6; }
+/* (JP 19-nov) títulos de tabla como en Excel */
+th.xl-th { cursor: pointer; user-select: none; white-space: nowrap; } th.xl-th:hover, th.xl-oon { color: #0369a1; }
+th.xl-th .xl-o { font-size: 10px; margin-left: 4px; color: #0369a1; }
+.xl-f { background: none; border: 0; padding: 2px 3px; margin-left: 2px; cursor: pointer; vertical-align: middle; opacity: .3; line-height: 0; color: inherit; }
+.xl-f svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+th.xl-th:hover .xl-f { opacity: .8; } th.xl-fon .xl-f { opacity: 1; color: #0369a1; } th.xl-fon .xl-f svg { fill: currentColor; }
+.xl-oculta { display: none !important; }
+.xl-aviso { display: flex; align-items: center; gap: 10px; background: #e0f2fe; color: #075985; border-radius: 999px; padding: 4px 6px 4px 14px; margin: 0 0 8px; font-size: 13px; width: fit-content; }
+.xl-aviso svg { width: 13px; height: 13px; fill: currentColor; vertical-align: -2px; } .xl-aviso .xl-q { background: #fff; border: 0; border-radius: 999px; padding: 3px 12px; cursor: pointer; color: #075985; font: inherit; font-size: 12.5px; }
+.xl-pop { position: absolute; z-index: 10000; background: #fff; border-radius: 20px; box-shadow: 0 10px 30px rgba(15,23,42,.22); padding: 12px; width: 310px; font-size: 13px; font-weight: 400; color: #0f172a; text-align: left; }
+.xl-ord { display: flex; gap: 6px; margin-bottom: 8px; } .xl-ord button { flex: 1; background: #f1f5f9; border: 0; border-radius: 999px; padding: 6px 8px; cursor: pointer; font: inherit; font-size: 12.5px; } .xl-ord button:hover { background: #e0f2fe; }
+.xl-bus { width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: 999px; padding: 6px 12px; font: inherit; margin-bottom: 6px; }
+.xl-vals { max-height: 240px; overflow: auto; overscroll-behavior: contain; }
+.xl-v { display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 999px; cursor: pointer; } .xl-v:hover { background: #f8fafc; } .xl-v span:first-of-type { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .xl-v .n { color: #94a3b8; font-size: 11.5px; }
+.xl-pie { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.xl-r { position: absolute; top: 0; right: 0; width: 8px; height: 100%; cursor: col-resize; z-index: 2; touch-action: none; }
+.xl-r::after { content: ''; position: absolute; right: 2px; top: 22%; bottom: 22%; width: 2px; border-radius: 2px; background: transparent; }
+th:hover > .xl-r::after { background: #cbd5e1; } .xl-r:hover::after, body.xl-arrastra .xl-r:hover::after { background: #0369a1; }
+body.xl-arrastra, body.xl-arrastra * { cursor: col-resize !important; user-select: none !important; }
+table.xl-fijo { table-layout: fixed; } table.xl-fijo th { box-sizing: border-box; } table.xl-fijo th, table.xl-fijo td { overflow: hidden; text-overflow: ellipsis; }
+.xl-col-oculta { display: none !important; }
+.xl-cols { display: flex; gap: 6px; margin-top: 8px; } .xl-cols button { flex: 1; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: #f1f5f9; border: 0; border-radius: 999px; padding: 6px 8px; cursor: pointer; font: inherit; font-size: 12.5px; } .xl-cols button:hover { background: #e0f2fe; }
+.xl-cols svg, .xl-aviso svg.ojo { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.xl-aviso { flex-wrap: wrap; } .xl-aviso .xl-hs { margin-left: 4px; } .xl-aviso .xl-mos { background: #fff; border: 0; border-radius: 999px; padding: 3px 12px; cursor: pointer; color: #075985; font: inherit; font-size: 12.5px; }
+@media print { .xl-f, .xl-o, .xl-aviso, .xl-r { display: none !important; } }
+.gw-pil { margin-left: 10px; } .chip.gw-c { background: #f5ede3; color: #7c5a2e; font-family: ui-monospace, Consolas, monospace; letter-spacing: .04em; }
+.gw-t td { white-space: nowrap; vertical-align: top; } .gw-t td:nth-child(2) { white-space: normal; } .gw-t td.gw-us { white-space: normal; font-size: 12.5px; color: #475569; min-width: 190px; max-width: 320px; } .gw-t .rojo { color: #b91c1c; }
+.gw-f { display: flex; align-items: center; gap: 10px; margin: 8px 0; } .gw-f label { min-width: 64px; } .gw-f input { flex: 1; } .gw-pr { display: flex; gap: 8px; align-items: center; margin: 6px 0 2px; cursor: pointer; }
 .on-ct { display: inline-flex; align-items: center; gap: 5px; color: #0369a1; text-decoration: none; border-radius: 999px; padding: 2px 10px; background: #e0f2fe; margin: 2px 4px 2px 0; white-space: nowrap; }
 .on-ct:hover { background: #bae6fd; } .on-ct.wa { color: #15803d; background: #dcfce7; } .on-ct.wa:hover { background: #bbf7d0; } .on-ct svg { width: 15px; height: 15px; } @media (max-width: 760px) { .on-res { grid-template-columns: 1fr; } }
 .on-luz { display: inline-block; border-radius: 999px; padding: 3px 11px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
@@ -1064,7 +1092,7 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
       <div id="pr-lista"></div>
     </section>
     <section id="content-online" class="tab-content">
-      <div class="pils on-tiendas" id="on-tiendas"><button class="pil on" data-t="claudiaadorno" onclick="onTienda('claudiaadorno')">claudiaadorno.com</button><button class="pil" data-t="atelier" onclick="onTienda('atelier')">atelier.claudiaadorno.com</button></div>
+      <div class="pils on-tiendas" id="on-tiendas"><button class="pil on" data-t="claudiaadorno" onclick="onTienda('claudiaadorno')">claudiaadorno.com</button><button class="pil" data-t="atelier" onclick="onTienda('atelier')">atelier.claudiaadorno.com</button><button class="pil gw-pil" data-t="gift" onclick="onGift()" title="Las gift cards compradas en la web: el código de Familia García, el saldo y dónde se usaron">🎁 Gift cards web</button></div>
       <div class="filters" id="on-filtros">
         <input id="on-q" placeholder="Pedido, cliente, mail, DNI o CUIT" oninput="onDebounce()">
         <select id="on-emp" onchange="cargarOnline()"><option value="">Las dos empresas</option><option value="Claudia Adorno">Claudia Adorno</option><option value="Familia Garcia Regueira">Familia García</option></select>
@@ -1692,7 +1720,8 @@ let ON = { lista: [], robot: null, hoy: '', tienda: 'claudiaadorno', abiertos: n
 let _onT = null; function onDebounce() { clearTimeout(_onT); _onT = setTimeout(cargarOnline, 350); }
 const ON_LUZ = { 'Recibido': ['az', 'Recibido'], 'En proceso': ['am', 'En proceso'], 'Terminado': ['ve', 'Terminado'], 'Cancelado': ['ro', 'Cancelado'] };
 const onEsCA = w => w.empresa === 'Claudia Adorno';
-const onFacturable = w => onEsCA(w) && !w.comprobante && !w.nro_factura && w.estado !== 'Cancelado' && !(Number(w.descuento) || 0);
+const gwEsp = w => !!(w.gift && !(w.gift.vales || []).length);   // (JP 19-nov) pedido con gift card que todavía no tiene el código de Familia García
+const onFacturable = w => onEsCA(w) && !w.comprobante && !w.nro_factura && w.estado !== 'Cancelado' && !(Number(w.descuento) || 0) && !gwEsp(w);
 const onMedio = w => /transfer/i.test(w.pago_metodo || '') ? 'Transferencia' : /mercado/i.test(w.pago_metodo || '') ? 'Mercado Pago' : (w.pago_metodo || '—');
 const onMedioC = w => ({ 'Transferencia': 'Transf.', 'Mercado Pago': 'MP' })[onMedio(w)] || onMedio(w);   // (JP 19-nov) corto en la lista
 const onEmpC = w => onEsCA(w) ? 'CA' : 'FGR';
@@ -1718,25 +1747,27 @@ function onFact(w) { const c = w.comprobante;
   if (c) {
     const st = c.cae_estado === 'ok' ? (c.mail_enviado_at ? 'mail enviado' : c.mail_error ? '⚠ ' + c.mail_error : 'mail en camino') : c.cae_estado === 'error' ? '⚠ CAE con error' : 'esperando CAE';
     const ncs = (c.ncs || []).map(n => `<a class="on-nc" href="#" onclick="verComprobante(${n.id});return false" title="Nota de crédito parcial">${esc(onCompNom({ ...n, tipo: 'NC' }))} · ${plata(n.total)}</a>`).join('');
-    return `<a class="on-fa" href="#" onclick="verComprobante(${c.id});return false" title="Abrir la factura">${esc(onCompNom(c))}</a><div class="mini">${esc(st)}${c.es_prueba ? ' · de prueba' : ''}</div>${ncs}${onNcResta(c) > 0 && c.estado !== 'anulado' ? `<div><button class="btn chico on-b" onclick="onNC(${w.nro})" title="Faltó mercadería: nota de crédito por lo que no se manda">NC parcial</button></div>` : ''}`; }
+    return `<a class="on-fa" href="#" onclick="verComprobante(${c.id});return false" title="Abrir la factura">${esc(onCompNom(c))}</a>${onGiftCods(w)}<div class="mini">${esc(st)}${c.es_prueba ? ' · de prueba' : ''}</div>${ncs}${onNcResta(c) > 0 && c.estado !== 'anulado' ? `<div><button class="btn chico on-b" onclick="onNC(${w.nro})" title="Faltó mercadería: nota de crédito por lo que no se manda">NC parcial</button></div>` : ''}`; }
   if (!onEsCA(w)) return `<span class="mini">${w.nro_factura ? 'FGR · ' + esc(w.nro_factura) : 'la factura FGR'}</span>`;
   if (w.nro_factura) return `<span class="mini" title="Ya tiene la factura cargada en la web (hecha en el Dragon)">facturado · ${esc(w.nro_factura)}</span>`;
   if (w.estado === 'Cancelado') return '<span class="mini">cancelado</span>';
+  if (gwEsp(w)) return gwSolHtml(w.gift.sol, w);   // la factura espera el código de la gift card
   if (Number(w.descuento) || 0) return `<span class="chip amber" title="Trae una promoción o gift card de la web (${esc(w.cupon || '')}): se factura a mano desde Vender">facturar a mano</span>`;
-  return `${w.online_error ? `<div class="mini rojo" title="${esc(w.online_error)}">⚠ no salió: ${esc(w.online_error.slice(0, 60))}</div>` : ''}<button class="btn chico on-b" onclick="onFacturar(${w.nro})" title="Emitir ya la factura de este pedido desde el POS">Facturar</button>`; }
+  return `${onGiftCods(w)}${w.online_error ? `<div class="mini rojo" title="${esc(w.online_error)}">⚠ no salió: ${esc(w.online_error.slice(0, 60))}</div>` : ''}<button class="btn chico on-b" onclick="onFacturar(${w.nro})" title="Emitir ya la factura de este pedido desde el POS">Facturar</button>`; }
 // Envío: lo que dice la web (más adelante, el estado de OCA automático)
 function onEnvio(w) {
   const m = w.envio_metodo || '', t = /OCA/i.test(m) ? 'Sucursal OCA' : /domicilio/i.test(m) ? 'Domicilio' : /take/i.test(m) ? 'Retira' : (m || '—');
   return `<span title="${esc([m, w.envio_sucursal, w.envio_localidad].filter(Boolean).join(' · '))}">${esc(t)}</span>${w.tracking_id ? `<div class="mini" title="Seguimiento de OCA">OCA ${esc(String(w.tracking_id).slice(-8))}</div>` : ''}`;
 }
 async function cargarOnline() {
+  if (ON.gift) return cargarGift();   // (JP 19-nov) la vista de gift cards de la web
   const box = document.getElementById('on-lista'); if (!ON.lista.length) box.innerHTML = '<div class="empty chico"><span class="spin"></span> Cargando…</div>';
   const { data, error } = await sb.rpc('pos_online_listar', { p_tienda: ON.tienda, p_q: document.getElementById('on-q').value.trim() || null, p_empresa: document.getElementById('on-emp').value || null, p_estado: null, p_dias: 60 });
   if (error) { box.innerHTML = `<div class="empty">${esc(error.message.replace(/^.*?: /, ''))}</div>`; return; }
   ON.lista = data.pedidos || []; ON.robot = data.robot || null; ON.ultimo = data.ultimo_robot; ON.pend = data.robot_pendiente || null; ON.hoy = data.hoy; onRender();
 }
 // (JP 19-nov) la división principal: las dos tiendas (la del Atelier todavía no opera: queda preparada)
-function onTienda(t) { ON.tienda = t; ON.abiertos.clear(); document.querySelectorAll('#on-tiendas .pil').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+function onTienda(t) { ON.gift = false; document.getElementById('on-filtros').style.display = ''; ON.tienda = t; ON.abiertos.clear(); document.querySelectorAll('#on-tiendas .pil').forEach(b => b.classList.toggle('on', b.dataset.t === t));
   const at = t === 'atelier'; document.getElementById('on-emp').style.display = at ? 'none' : ''; document.getElementById('on-robot-btn').style.display = at ? 'none' : '';
   ON.lista = []; cargarOnline(); }
 // «Correr el robot»: deja el pedido en la base; el robot del servidor lo atiende en segundos y la lista se actualiza sola
@@ -1801,6 +1832,7 @@ function onResumen(w) {
       <div>${PV_IC.cam} ${esc(envio || '—')}${w.tracking_id ? '<br><span class="mini">Seguimiento ' + esc(w.tracking_id) + '</span>' : ''}${w.es_regalo && /s[ií]/i.test(w.es_regalo) ? '<br><span class="mini">🎁 es un regalo</span>' : ''}</div>
       <div>${PV_IC.per} ${onContacto(w)}${cc && cc.n ? `<br><span class="mini">${cc.n} ${cc.n === 1 ? 'compra' : 'compras'} en la web · ${plata(cc.total)}${cc.primera ? ' · desde ' + fechaAR(String(cc.primera).slice(0, 10)) : ''}</span>` : ''}</div>
       <div>💳 ${esc(w.pago_metodo || '')}${w.pago_ok_at ? `<br><span class="mini on-ok">✓ verificado por ${esc(w.pago_ok_por || '')} · ${onFechaC(w.pago_ok_at)}${w.pago_ref ? ' · op. ' + esc(w.pago_ref) : ''}</span>` : ''}</div>
+      ${w.gift ? '<div>' + gwResumen(w) + '</div>' : ''}
     </div></div></td></tr>`;
 }
 function onVer(nro) {
@@ -1823,15 +1855,16 @@ function onDlgRef(titulo, cuerpo, ph, boton) {
 const onFactTxt = w => { const a = w.condicion === 'Factura A'; return `la <b>Factura ${a ? 'A' : 'B'}</b> desde Oficina a <b>${esc(onCli(w) || '')}</b> (${a ? 'CUIT ' + esc(w.cuit || '') : 'DNI ' + esc(w.dni || '')}) y se manda a <b>${esc(w.email || 'su mail')}</b>`; };
 async function onPagoOk(nro) {
   const w = ON.lista.find(x => x.nro === nro); if (!w) return;
-  const mp = onMedio(w) === 'Mercado Pago', fact = !w.comprobante && !w.nro_factura && !(Number(w.descuento) || 0);
+  const mp = onMedio(w) === 'Mercado Pago', fact = !w.comprobante && !w.nro_factura && !(Number(w.descuento) || 0) && !gwEsp(w), gesp = gwEsp(w) && !w.nro_factura;
   const ref = await onDlgRef(`Pago del pedido web ${w.nro} · ${plata(w.total)} · ${mp ? 'Mercado Pago' : 'transferencia'}`,
-    `Queda verificado, el pedido pasa a amarillo en la web para que lo preparen${fact ? ' y se emite ' + onFactTxt(w) : ''}.`,
+    `Queda verificado, el pedido pasa a amarillo en la web para que lo preparen${fact ? ' y se emite ' + onFactTxt(w) : gesp ? '. Además le pedimos por mail a <b>Andrea Farías</b> (Familia García) que emita la gift card: cuando responde con el código, se asocia solo y sale ' + onFactTxt(w) + ', con el código' : ''}.`,
     mp ? 'Nº de operación de Mercado Pago (opcional)' : 'Referencia de la transferencia (opcional)', 'Pago verificado');
   if (ref === null) return;
   const { data, error } = await sb.rpc('pos_online_pago_ok', { p_nro: nro, p_ref: ref || null, p_facturar: true });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); cargarOnline(); return; }
   cerrarModal();
-  if (data.factura) toast('Pago verificado · Factura ' + data.factura.letra + ' ' + data.factura.numero_fmt + (data.factura.prueba ? ' (de prueba)' : '') + ' emitida: el mail sale cuando tenga el CAE', 'success');
+  if (data.gift_espera) toast('Pago verificado · le pedimos el código de la gift card a Familia García por mail: cuando responde, la factura sale sola con el código', 'success');
+  else if (data.factura) toast('Pago verificado · Factura ' + data.factura.letra + ' ' + data.factura.numero_fmt + (data.factura.prueba ? ' (de prueba)' : '') + ' emitida: el mail sale cuando tenga el CAE', 'success');
   else if (data.factura_error) toast('Pago verificado, pero la factura no salió: ' + data.factura_error + '. Probá con «Facturar».', 'error');
   else toast('Pago verificado', 'success');
   cargarOnline();
@@ -1875,7 +1908,264 @@ async function onNC(nro) {
 function onNcTot() { const its = window._onNcIts || []; let t = 0;
   document.querySelectorAll('.on-nc-q').forEach(q => { const x = its[q.dataset.i]; if (!x) return; let n = Math.round(num(q.value)); if (n > x.max) { n = x.max; q.value = n; } if (n > 0) t += n * Number(x.precio_unit); });
   const el = document.getElementById('on-nc-tot'); if (el) el.textContent = plata(t); }
+// ═══ Gift cards de la web (JP 19-nov) ═══
+// El cliente compra GIFTCARD1..6 en claudiaadorno.com. Al verificar el pago, el servidor le pide el código por mail a Andrea Farías (Familia García)
+// desde claudiaadornosrl@gmail.com; su respuesta se lee sola, el código se asocia (queda como gift card en Vales) y la factura sale con el código.
+// Se usa en la web y en los locales: el uso en la web lo detecta el robot (cupón del pedido) y el uso en un local le avisa por mail a Andrea.
+let GW = { lista: [] };
+const GW_EST = { falta: ['amber', 'Falta el código'], saldo: ['green', 'Con saldo'], usada: ['blue', 'Usada'], cancelado: ['gray', 'Pedido cancelado'] };
+const onGiftCods = w => w.gift && (w.gift.vales || []).length ? w.gift.vales.map(v => `<div><span class="chip gw-c" title="Gift card web · saldo ${plata(v.saldo)}${v.es_prueba ? ' · de prueba' : ''}">🎁 ${esc(v.codigo)}</span></div>`).join('') : '';
+function gwResumen(w) { const vs = (w.gift && w.gift.vales) || [];
+  return '🎁 ' + (vs.length ? 'Gift card web ' + vs.map(v => '<b>' + esc(v.codigo) + '</b> · saldo ' + plata(v.saldo) + (v.es_prueba ? ' (prueba)' : '')).join(' · ') : 'Gift card web por ' + plata(w.gift.total) + ': todavía sin el código de Familia García'); }
+// en la lista de Online: en qué está el código de un pedido con gift card
+function gwSolHtml(s, w) {
+  const t = !s ? (w.pago_ok_at ? '🎁 falta el código' : '🎁 el código se pide al verificar el pago')
+    : s.estado === 'pendiente' ? (s.error ? '⚠ no salió el pedido del código' : '⏳ pidiendo el código…')
+    : s.estado === 'enviada' ? '⏳ código pedido a Andrea · ' + onFechaC(s.enviado_at)
+    : s.estado === 'sin_codigo' ? '⚠ respondió sin código' : '⚠ ' + (s.error || s.estado);
+  const tit = s ? (s.error || 'Se le pidió por mail a ' + (s.enviado_a || 'Familia García') + ': cuando responde con el código, se asocia y la factura sale sola') : 'Gift card de la web: hace falta el código de Familia García para facturarla';
+  return `<div class="mini${s && (s.error || s.estado === 'sin_codigo') ? ' rojo' : ''}" title="${esc(tit)}">${esc(t)}${s && s.es_prueba ? ' · prueba' : ''}</div><div><button class="btn chico on-b" onclick="gwAsociar(${w.nro})" title="Cargar a mano el código que mandó Familia García">Asociar código</button></div>`;
+}
+function onGift() { ON.gift = true; document.querySelectorAll('#on-tiendas .pil').forEach(b => b.classList.toggle('on', b.dataset.t === 'gift')); document.getElementById('on-filtros').style.display = 'none'; cargarGift(); }
+async function cargarGift() {
+  const box = document.getElementById('on-lista'); if (!GW.lista.length) box.innerHTML = '<div class="empty chico"><span class="spin"></span> Cargando…</div>';
+  const { data, error } = await sb.rpc('pos_giftweb_listar', { p_dias: 900 });
+  if (error) { box.innerHTML = `<div class="empty">${esc(error.message.replace(/^.*?: /, ''))}</div>`; return; }
+  GW.lista = data || []; gwRender();
+}
+function gwEstado(g) { if (g.estado === 'Cancelado') return 'cancelado'; const vs = (g.vales || []).filter(v => v.estado !== 'anulado');
+  return !vs.length ? ((g.cupones_web || []).length ? 'usada' : 'falta') : vs.some(v => v.estado === 'vigente' && Number(v.saldo) > 0) ? 'saldo' : 'usada'; }
+function gwRender() {
+  const box = document.getElementById('on-lista');
+  if (!document.getElementById('gw-lista')) box.innerHTML = `<div class="filters"><input id="gw-q" placeholder="Pedido, cliente, mail o código" oninput="gwRender()"><select id="gw-f" onchange="gwRender()"><option value="">Todas</option><option value="falta">Falta el código</option><option value="saldo">Con saldo</option><option value="usada">Usadas</option><option value="cancelado">Pedido cancelado</option></select><span class="stat" id="gw-stat"></span></div><div id="gw-lista"></div>`;
+  const f = document.getElementById('gw-f').value, q = document.getElementById('gw-q').value.trim().toLowerCase();
+  const v = GW.lista.filter(g => (!f || gwEstado(g) === f) && (!q || [g.nro, g.nombre, g.email, ...(g.vales || []).map(x => x.codigo)].join(' ').toLowerCase().includes(q)));
+  const saldo = GW.lista.reduce((t, g) => t + (g.vales || []).filter(x => x.estado === 'vigente').reduce((u, x) => u + Number(x.saldo), 0), 0), faltan = GW.lista.filter(g => gwEstado(g) === 'falta').length;
+  document.getElementById('gw-stat').textContent = v.length + (v.length === 1 ? ' pedido' : ' pedidos') + ' con gift card · saldo vigente ' + plata(saldo) + (faltan ? ' · ' + faltan + ' sin código' : '');
+  document.getElementById('gw-lista').innerHTML = v.length ? `<table class="gw-t"><thead><tr><th>Pedido</th><th>Cliente</th><th>Gift cards</th><th>Código</th><th>Saldo</th><th>Usos</th><th>Pedido del código</th><th></th></tr></thead><tbody>${v.map(gwFila).join('')}</tbody></table>`
+    : `<div class="empty">${GW.lista.length ? 'No hay gift cards con ese filtro.' : 'Todavía no hay compras de gift cards en la web.'}</div>`;
+}
+function gwFila(g) {
+  const e = gwEstado(g), vs = (g.vales || []).filter(x => x.estado !== 'anulado'), [cc, ct] = GW_EST[e];
+  const sal = vs.reduce((t, x) => t + (x.estado === 'vigente' ? Number(x.saldo) : 0), 0), asoc = vs.reduce((t, x) => t + Number(x.importe), 0);
+  const fch = f => f ? ' · ' + fechaAR(String(f).slice(0, 10)) : '';
+  const usos = vs.flatMap(x => [...(x.usos_web || []).map(u => `🌐 web · pedido ${u.nro}${fch(u.fecha)} · <b>${plata(u.importe)}</b>`), ...(x.usos_local || []).map(u => `🏬 ${esc(LOCALES[u.local] || u.local)} · ${esc(u.comprobante || '')}${fch(u.fecha)} · <b>${plata(u.importe)}</b>`)]);
+  if (!vs.length) (g.cupones_web || []).forEach(c => usos.push(`🌐 en la web se usó el cupón <b>${esc(c.cupon)}</b> · pedido ${c.nro}${fch(c.fecha)}${Number(c.importe) ? ' · ' + plata(c.importe) : ''}`));
+  return `<tr><td><b>${g.nro}</b><div class="mini">${onFechaC(g.fecha)} · ${esc(g.estado || '')}${g.facturada ? ' · facturado' + (g.nro_factura ? ' ' + esc(g.nro_factura) : '') : ''}</div></td>
+    <td>${esc(g.nombre || '')}<div class="mini">${esc(g.email || '')}</div></td>
+    <td>${(g.items || []).map(i => `<div>${Number(i.cant)} × ${plata(i.precio)}</div>`).join('')}<div class="mini">total <b>${plata(g.total)}</b></div></td>
+    <td>${vs.length ? vs.map(x => `<div><span class="chip gw-c">${esc(x.codigo)}</span>${x.es_prueba ? ' <span class="chip gray">prueba</span>' : ''}</div>`).join('') : '<span class="mini">—</span>'}</td>
+    <td><span class="chip ${cc}">${e === 'saldo' ? plata(sal) : ct}</span></td>
+    <td class="gw-us">${usos.length ? usos.join('<br>') : '<span class="mini">sin usar</span>'}</td>
+    <td class="gw-us">${gwSolTxt(g.sol)}</td>
+    <td class="acc">${e !== 'cancelado' && e !== 'usada' && asoc < Number(g.total) - 0.01 ? `<button class="btn chico on-b" onclick="gwAsociar(${g.nro})" title="Cargar el código que mandó Familia García">Asociar</button>` : ''}</td></tr>`;
+}
+function gwSolTxt(s) {
+  if (!s) return '<span class="mini">—</span>';
+  const p = s.es_prueba ? ' <span class="chip gray">prueba</span>' : '';
+  if (s.estado === 'pendiente') return (s.error ? `<span class="rojo" title="${esc(s.error)}">⚠ no salió el mail</span>` : '⏳ mandando el pedido…') + p;
+  const env = s.enviado_at ? `<span title="Se le pidió por mail a ${esc(s.enviado_a || 'Familia García')}">pedido ${onFechaC(s.enviado_at)}</span>` : '';
+  if (s.estado === 'enviada') return `⏳ ${env} · esperando la respuesta${p}`;
+  if (s.estado === 'asociada') return `✓ ${s.respondido_at ? 'respondió ' + onFechaC(s.respondido_at) : 'código cargado'}${p}`;
+  if (s.estado === 'sin_codigo') return `<span class="chip amber" title="${esc((s.respuesta ? 'Respondió: «' + s.respuesta + '» · ' : '') + (s.error || ''))}">respondió sin código</span><br>asocialo a mano${p}`;
+  return `<span class="rojo">${esc(s.error || s.estado)}</span>${p}`;
+}
+function gwDatos(nro) {
+  const g = GW.lista.find(x => x.nro === nro), w = ON.lista.find(x => x.nro === nro); if (!g && !w) return null;
+  const its = g ? (g.items || []) : (w.items || []).filter(i => /^GIFTCARD/i.test(i.codigo || ''));
+  const tipos = [...new Set(its.map(i => String(i.codigo || '').toUpperCase().replace('GIFTCARD', '')))];
+  const vales = (g ? (g.vales || []) : ((w.gift || {}).vales || [])).filter(v => v.estado !== 'anulado');
+  return { nro, nombre: g ? g.nombre : onCli(w), estado: (g || w).estado, total: Number(g ? g.total : (w.gift || {}).total) || 0, asociado: vales.reduce((t, v) => t + Number(v.importe), 0),
+    sugerido: nro + 'GC' + (tipos.length === 1 ? tipos[0] : ''), factura: !!(g || w).pago_ok_at && !(g ? g.facturada : (w.comprobante || w.nro_factura)) };
+}
+// «Asociar código»: el código que mandó Familia García (si no llegó por mail o la respuesta no se entendió)
+async function gwAsociar(nro) {
+  const g = gwDatos(nro); if (!g) return;
+  if (g.estado === 'Cancelado') { toast('El pedido ' + nro + ' está cancelado en la web: no lleva gift card', 'error'); return; }
+  const falta = Math.max(0, g.total - g.asociado);
+  const res = await new Promise(res => { const d = _dlg(`<div class="dlg-msg"><b>Asociar el código · pedido web ${nro}</b><br>${esc(g.nombre || '')} · gift cards por <b>${plata(g.total)}</b>${g.asociado ? ' · ya asociado ' + plata(g.asociado) : ''}.<br>Escribí el código que mandó Familia García: queda como gift card (en Vales), se usa en la web y en los locales${g.factura ? ' y <b>sale la factura del pedido con el código</b>' : ''}.</div>
+      <div class="gw-f"><label class="mini" for="gw-cod">Código</label><input id="gw-cod" class="pr-in" value="${esc(g.asociado ? '' : g.sugerido)}" autocomplete="off" style="text-transform:uppercase"></div>
+      <div class="gw-f"><label class="mini" for="gw-imp">Importe</label><input id="gw-imp" class="pr-in num" inputmode="decimal" value="${plata(falta)}"></div>
+      ${MODO === 'prueba' ? '<label class="mini gw-pr"><input type="checkbox" id="gw-pru"> De prueba: para probarla en la caja con el POS en prueba (no es un código real)</label>' : ''}
+      <div class="m-foot"><button class="btn" id="dlg-no">Cancelar</button><span class="spacer"></span><button class="btn primary" id="dlg-si">Asociar</button></div>`);
+    const fin = v => { d.style.display = 'none'; d.innerHTML = ''; res(v); };
+    d.querySelector('#dlg-no').onclick = () => fin(null);
+    d.querySelector('#dlg-si').onclick = () => { const c = d.querySelector('#gw-cod').value.trim(), i = num(d.querySelector('#gw-imp').value);
+      if (!c) { toast('Escribí el código', 'error'); return; } if (!(i > 0)) { toast('Poné el importe', 'error'); return; } fin({ c, i, p: !!(d.querySelector('#gw-pru') || {}).checked }); };
+    setTimeout(() => { const x = d.querySelector('#gw-cod'); x.focus(); x.select(); }, 50); });
+  if (!res) return;
+  const { data, error } = await sb.rpc('pos_giftweb_asociar', { p_nro: nro, p_codigo: res.c, p_importe: res.i, p_prueba: res.p });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  const f = data.factura;
+  toast('Gift card ' + data.codigo + ' asociada' + (data.estado === 'usado' ? ' · ya estaba usada en la web' : Number(data.saldo) < Number(data.importe) ? ' · saldo ' + plata(data.saldo) + ' (ya se usó una parte en la web)' : '')
+    + (f && f.numero_fmt ? ' · Factura ' + f.letra + ' ' + f.numero_fmt + (f.prueba ? ' (de prueba)' : '') + ' emitida con el código' : f && f.error ? ' · la factura no salió: ' + f.error : ''), f && f.error ? 'error' : 'success');
+  if (ON.gift) cargarGift(); else cargarOnline();
+}
 function onTab(k) { if (k !== 'remitos') rmModo('lista'); if (k === 'remitos') cargarRemitos(); if (k === 'etiquetas') { etRender(); setTimeout(() => document.getElementById('et-q').focus(), 50); } if (k === 'pedidos') pdVista(LOCAL === 'oficina' ? 'piden' : PD.vista); if (k === 'comprobantes') cargarComprobantes(); if (k === 'vales') cargarVales(); if (k === 'promociones') cargarPromos(); if (k === 'online') cargarOnline(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
+
+// ═══ Títulos de tabla como en Excel (JP 19-nov) ═══
+// Tocar el título ordena (▲ menor a mayor, ▼ mayor a menor, otra vez sin orden). El embudo abre el filtro: ordenar, buscar y tildar valores.
+// Vale para todas las tablas del módulo menos los comprobantes impresos, el ticket y las que se editan. El orden y los filtros de cada
+// tabla quedan mientras no se recargue el POS, aunque la tabla se vuelva a dibujar (al buscar, cambiar de fecha, etc.).
+const XL = {}, XL_COL = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
+const XL_FUERA = '.a4, .hoja, .ticket, .tk-det, .no-xl, #dlg, #xl-pop';
+const XL_EMB = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>';
+const XL_OJO = '<svg class="ojo" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg>';
+let XL_ARR = 0;   // cuándo terminó el último arrastre de un borde (para que no ordene al soltar)
+const xlTit = th => th.dataset.xlT != null ? th.dataset.xlT : th.textContent.replace(/\s+/g, ' ').trim();
+function xlClave(t) { const c = t.parentElement && t.parentElement.closest('[id]'); return (c ? c.id : '') + '|' + [...t.tHead.rows[0].cells].map(xlTit).join('|'); }
+// el valor de una celda: su texto principal (sin la línea chica de abajo ni los botones)
+function xlValor(td) { if (!td) return ''; if (td.dataset.sort != null) return td.dataset.sort; const c = td.cloneNode(true); c.querySelectorAll('.mini, button, .xl-no').forEach(x => x.remove());
+  return ((c.textContent || '').trim() ? c.textContent : td.textContent).replace(/\s+/g, ' ').trim(); }
+// fechas (dd/mm/aaaa, dd/mm hh:mm) y números o plata ($ 1.234,50) se ordenan por su valor; el resto, alfabético con los números en orden
+function xlNum(v) {
+  const m = v.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (m) return Number((m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : '0000') + m[2].padStart(2, '0') + m[1].padStart(2, '0') + (m[4] || '0').padStart(2, '0') + (m[5] || '00'));
+  const x = v.replace(/US\$|\$|\s/g, ''); if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$|^-?\d+(,\d+)?$/.test(x)) return Number(x.replace(/\./g, '').replace(',', '.'));
+  return null;
+}
+function xlCmp(a, b) { const na = xlNum(a), nb = xlNum(b); return na != null && nb != null ? na - nb : XL_COL.compare(a, b); }
+// los renglones de la tabla agrupados: el renglón y su detalle desplegado van juntos; los totales quedan abajo
+function xlGrupos(t) { const g = [], pie = [];
+  for (const r of t.tBodies[0].rows) {
+    if (/\b(nivel1|tot|total|xl-pie)\b/.test(r.className)) { pie.push(r); continue; }
+    const det = /\b(tr-det|on-det)\b/.test(r.className) || (r.cells.length === 1 && r.cells[0].colSpan > 1);
+    if (det && g.length) g[g.length - 1].push(r); else g.push([r]);
+  }
+  return { g, pie }; }
+function xlAplicar(t) {
+  const tb = t.tBodies[0]; if (!tb) return; const st = XL[t.dataset.xlK] || { f: {} }; const { g, pie } = xlGrupos(t);
+  let n = 0; g.forEach(gr => { if (gr[0].dataset.xlI == null) gr[0].dataset.xlI = n; n++; });   // el orden en que llegó (para «sin orden»)
+  const fs = Object.keys(st.f);
+  for (const gr of g) { const ok = fs.every(i => st.f[i].has(xlValor(gr[0].cells[i]))); gr.forEach(x => x.classList.toggle('xl-oculta', !ok)); }
+  if (st.o != null) g.sort((a, b) => { const va = xlValor(a[0].cells[st.o]), vb = xlValor(b[0].cells[st.o]); if (!va !== !vb) return va ? -1 : 1; return st.d * xlCmp(va, vb) || a[0].dataset.xlI - b[0].dataset.xlI; });
+  else g.sort((a, b) => a[0].dataset.xlI - b[0].dataset.xlI);
+  const fr = document.createDocumentFragment(); g.forEach(gr => gr.forEach(x => fr.appendChild(x))); pie.forEach(x => fr.appendChild(x)); tb.appendChild(fr);
+  const hs = st.h || new Set(), nc = t.tHead.rows[0].cells.length;   // columnas ocultas
+  for (const r of [t.tHead.rows[0], ...tb.rows]) if (r.cells.length === nc) for (let j = 0; j < nc; j++) r.cells[j].classList.toggle('xl-col-oculta', hs.has(j));
+  xlAnchos(t, st);
+  t._xlN = tb.rows.length; t._xlA = tb.rows[0];
+}
+// anchos a mano: la tabla pasa a anchos fijos (la suma de las columnas que se ven)
+function xlAnchos(t, st) {
+  const ths = [...t.tHead.rows[0].cells];
+  if (!st.w || !Object.keys(st.w).length) { if (t.classList.contains('xl-fijo')) { t.classList.remove('xl-fijo'); t.style.width = ''; t.style.minWidth = ''; ths.forEach(th => { th.style.width = ''; }); } return; }
+  t.classList.add('xl-fijo'); let tot = 0;
+  ths.forEach(th => { const i = +th.dataset.xlCol, px = Math.max(40, st.w[i] || 120); th.style.width = px + 'px'; if (!(st.h && st.h.has(i))) tot += px; });
+  t.style.width = tot + 'px'; t.style.minWidth = '0';
+}
+function xlFijar(t, st) {   // la primera vez que se cambia un ancho se toman los que tiene ahora
+  if (st.w && Object.keys(st.w).length) return;
+  st.w = {}; [...t.tHead.rows[0].cells].forEach(th => { const w = th.getBoundingClientRect().width; st.w[+th.dataset.xlCol] = w ? Math.ceil(w) + 6 : 120; });
+}
+function xlAncho(e, t, i, th) {
+  e.preventDefault(); e.stopPropagation(); const k = t.dataset.xlK, st = XL[k] = XL[k] || { f: {} };
+  xlFijar(t, st); const x0 = e.clientX, w0 = st.w[i] || th.getBoundingClientRect().width; document.body.classList.add('xl-arrastra');
+  const mov = ev => { st.w[i] = Math.max(40, Math.round(w0 + ev.clientX - x0)); xlAnchos(t, st); };
+  const fin = () => { document.removeEventListener('pointermove', mov); document.removeEventListener('pointerup', fin); document.body.classList.remove('xl-arrastra'); XL_ARR = Date.now(); xlGuardar(); xlTodas(k); };
+  document.addEventListener('pointermove', mov); document.addEventListener('pointerup', fin);
+}
+function xlAjustar(t, i) {   // doble clic en el borde: la columna al ancho de su contenido
+  const k = t.dataset.xlK, st = XL[k] = XL[k] || { f: {} }; xlFijar(t, st); const nc = t.tHead.rows[0].cells.length; let m = 40;
+  for (const r of [t.tHead.rows[0], ...t.tBodies[0].rows]) if (r.cells.length === nc && !r.classList.contains('xl-oculta')) m = Math.max(m, r.cells[i].scrollWidth + 6);
+  st.w[i] = Math.min(700, m); XL_ARR = Date.now(); xlGuardar(); xlTodas(k);
+}
+// los anchos y las columnas ocultas se recuerdan en esta PC
+const XL_LS = 'pos_xl_columnas';
+function xlGuardar() { try { const g = {}; Object.keys(XL).forEach(k => { const st = XL[k], w = st.w && Object.keys(st.w).length ? st.w : null, h = st.h && st.h.size ? [...st.h] : null; if (w || h) g[k] = { w, h }; }); localStorage.setItem(XL_LS, JSON.stringify(g)); } catch (e) {} }
+try { const g = JSON.parse(localStorage.getItem(XL_LS) || '{}'); Object.keys(g).forEach(k => { XL[k] = { f: {}, w: g[k].w || null, h: new Set(g[k].h || []) }; }); } catch (e) {}
+function xlPintar(t) {
+  const st = XL[t.dataset.xlK] || { f: {} };
+  t.tHead.querySelectorAll('th.xl-th').forEach(th => { const i = +th.dataset.xlC; th.classList.toggle('xl-fon', !!st.f[i]); th.classList.toggle('xl-oon', st.o === i); th.querySelector('.xl-o').textContent = st.o === i ? (st.d === 1 ? '▲' : '▼') : ''; });
+  let av = t.previousElementSibling; if (!(av && av.classList.contains('xl-aviso'))) av = null;
+  const k = t.dataset.xlK, nf = Object.keys(st.f).length, hs = st.h ? [...st.h].sort((a, b) => a - b) : [];
+  if (!nf && !hs.length) { if (av) av.remove(); return; }
+  const ths = [...t.tHead.rows[0].cells], nom = i => { const th = ths.find(x => +x.dataset.xlCol === i); return (th && th.dataset.xlT) || 'columna ' + (i + 1); };
+  let h = '';
+  if (nf) { const { g } = xlGrupos(t), vis = g.filter(gr => !gr[0].classList.contains('xl-oculta')).length;
+    h += `<span>${XL_EMB} Filtrado: se ven <b>${vis}</b> de ${g.length}</span><button type="button" class="xl-q">✕ Quitar filtros</button>`; }
+  if (hs.length) h += `<span class="xl-hs">${XL_OJO} Columnas ocultas:</span>${hs.map(i => `<button type="button" class="xl-mos" data-i="${i}" title="Volver a mostrar la columna «${esc(nom(i))}»">${esc(nom(i))} · mostrar</button>`).join('')}${hs.length > 1 ? '<button type="button" class="xl-mos" data-i="todas">Mostrar todas</button>' : ''}`;
+  if (!av) { av = document.createElement('div'); av.className = 'xl-aviso'; t.before(av); }
+  av.innerHTML = h;
+  const q = av.querySelector('.xl-q'); if (q) q.onclick = () => { st.f = {}; xlTodas(k); };
+  av.querySelectorAll('.xl-mos').forEach(b => { b.onclick = () => { if (b.dataset.i === 'todas') st.h.clear(); else st.h.delete(+b.dataset.i); xlGuardar(); xlTodas(k); }; });
+}
+function xlTodas(k) { document.querySelectorAll('table[data-xl]').forEach(t => { if (t.dataset.xlK === k) { xlAplicar(t); xlPintar(t); } }); }
+function xlOrden(t, i, d) { const k = t.dataset.xlK, st = XL[k] = XL[k] || { f: {} };
+  if (d === undefined) d = st.o !== i ? 1 : st.d === 1 ? -1 : 0;
+  if (d) { st.o = i; st.d = d; } else { st.o = null; st.d = 0; }
+  xlTodas(k); }
+function xlArmar(t) {
+  t.dataset.xl = '1'; let col = 0;
+  [...t.tHead.rows[0].cells].forEach(th => { const i = col; col += th.colSpan || 1; const tx = xlTit(th); th.dataset.xlT = tx; th.dataset.xlCol = i;
+    if ((th.colSpan || 1) === 1) {   // el borde derecho del título: arrastrar agranda o achica la columna
+      if (getComputedStyle(th).position === 'static') th.style.position = 'relative';
+      const g = document.createElement('span'); g.className = 'xl-r'; g.title = 'Arrastrá para agrandar o achicar la columna · doble clic: al ancho de lo que tiene';
+      g.addEventListener('pointerdown', e => xlAncho(e, t, i, th)); g.addEventListener('dblclick', e => { e.stopPropagation(); xlAjustar(t, i); }); g.addEventListener('click', e => e.stopPropagation());
+      th.appendChild(g);
+    }
+    if (!tx || th.colSpan > 1 || th.querySelector('input, button, select')) return;
+    th.classList.add('xl-th'); th.dataset.xlC = i;
+    th.insertAdjacentHTML('beforeend', `<span class="xl-o" aria-hidden="true"></span><button type="button" class="xl-f" title="Filtrar u ordenar por «${esc(tx)}»" aria-label="Filtrar ${esc(tx)}">${XL_EMB}</button>`);
+    th.addEventListener('click', e => { if (e.target.closest('.xl-r')) return; if (e.target.closest('.xl-f')) { e.stopPropagation(); xlPop(t, i, th); return; } if (Date.now() - XL_ARR < 400) return; xlOrden(t, i); });
+  });
+  t.dataset.xlK = xlClave(t); xlAplicar(t); xlPintar(t);
+}
+// el filtro de una columna, como el de Excel
+function xlPop(t, i, th) {
+  xlCerrar(); const k = t.dataset.xlK, st = XL[k] = XL[k] || { f: {} };
+  const otros = Object.keys(st.f).filter(j => +j !== i), cnt = new Map();   // como en Excel: los valores de lo que dejan ver los otros filtros
+  xlGrupos(t).g.forEach(gr => { if (!otros.every(j => st.f[j].has(xlValor(gr[0].cells[j])))) return; const v = xlValor(gr[0].cells[i]); cnt.set(v, (cnt.get(v) || 0) + 1); });
+  const vals = [...cnt.keys()].sort(xlCmp), sel = st.f[i], MAX = 400;
+  const p = document.createElement('div'); p.id = 'xl-pop'; p.className = 'xl-pop';
+  p.innerHTML = `<div class="xl-ord"><button type="button" data-d="1">▲ Menor a mayor</button><button type="button" data-d="-1">▼ Mayor a menor</button></div>
+    <input class="xl-bus" placeholder="Buscar en «${esc(th.dataset.xlT)}»" autocomplete="off">
+    <label class="xl-v xl-todo"><input type="checkbox"> <b>Seleccionar todo</b></label>
+    <div class="xl-vals">${vals.slice(0, MAX).map((v, j) => `<label class="xl-v"><input type="checkbox" data-j="${j}"${!sel || sel.has(v) ? ' checked' : ''}> <span>${esc(v || '(vacías)')}</span><span class="n">${cnt.get(v)}</span></label>`).join('')}${vals.length > MAX ? '<div class="mini">… y ' + (vals.length - MAX) + ' más: usá el buscador</div>' : ''}</div>
+    <div class="xl-cols"><button type="button" class="xl-ocu">${XL_OJO} Ocultar columna</button>${st.w && Object.keys(st.w).length ? '<button type="button" class="xl-anc">↔ Anchos de siempre</button>' : ''}</div>
+    <div class="xl-pie"><button type="button" class="btn chico xl-limpiar">Quitar filtro</button><span class="spacer"></span><button type="button" class="btn chico primary xl-ok">Aplicar</button></div>`;
+  document.body.appendChild(p);
+  const r = th.getBoundingClientRect(); p.style.top = (r.bottom + window.scrollY + 4) + 'px';
+  p.style.left = Math.max(window.scrollX + 8, Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - p.offsetWidth - 8)) + 'px';
+  const bus = p.querySelector('.xl-bus'), todo = p.querySelector('.xl-todo input'), cajas = [...p.querySelectorAll('.xl-vals input')];
+  const visibles = () => cajas.filter(c => c.closest('.xl-v').style.display !== 'none');
+  const sync = () => { const v = visibles(); todo.checked = v.length > 0 && v.every(c => c.checked); todo.indeterminate = !todo.checked && v.some(c => c.checked); };
+  bus.oninput = () => { const q = bus.value.trim().toLowerCase(); cajas.forEach(c => { const hay = !q || String(vals[c.dataset.j]).toLowerCase().includes(q); c.closest('.xl-v').style.display = hay ? '' : 'none'; if (q) c.checked = hay; }); sync(); };
+  todo.onchange = () => { visibles().forEach(c => { c.checked = todo.checked; }); sync(); };
+  cajas.forEach(c => { c.onchange = sync; }); sync();
+  p.querySelectorAll('.xl-ord button').forEach(b => { b.onclick = () => { xlOrden(t, i, Number(b.dataset.d)); xlCerrar(); }; });
+  p.querySelector('.xl-limpiar').onclick = () => { delete st.f[i]; xlTodas(k); xlCerrar(); };
+  p.querySelector('.xl-ocu').onclick = () => { st.h = st.h || new Set(); const vis = [...t.tHead.rows[0].cells].filter(x => !st.h.has(+x.dataset.xlCol) && x.dataset.xlT).length;
+    if (vis <= 1) { toast('Tiene que quedar al menos una columna a la vista', 'error'); return; } st.h.add(i); xlGuardar(); xlTodas(k); xlCerrar(); };
+  const anc = p.querySelector('.xl-anc'); if (anc) anc.onclick = () => { st.w = null; xlGuardar(); xlTodas(k); xlCerrar(); };
+  p.querySelector('.xl-ok').onclick = () => { const q = bus.value.trim();
+    const ok = new Set(visibles().filter(c => c.checked).map(c => vals[c.dataset.j]));
+    if (!q) vals.slice(MAX).forEach(v => { if (!sel || sel.has(v)) ok.add(v); });
+    if (ok.size === vals.length) delete st.f[i]; else st.f[i] = ok;
+    xlTodas(k); xlCerrar(); };
+  bus.onkeydown = e => { if (e.key === 'Enter') p.querySelector('.xl-ok').click(); };
+  setTimeout(() => bus.focus(), 30);
+}
+function xlCerrar() { const p = document.getElementById('xl-pop'); if (p) p.remove(); }
+document.addEventListener('mousedown', e => { const p = document.getElementById('xl-pop'); if (p && !p.contains(e.target) && !e.target.closest('.xl-f')) xlCerrar(); }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') xlCerrar(); });
+// cada tabla nueva que se dibuja recibe los títulos de Excel (y su orden y filtros, si ya tenía)
+function xlEscanear(cambiadas) {
+  document.querySelectorAll('table:not([data-xl])').forEach(t => {
+    if (!t.tHead || t.tHead.rows.length !== 1 || t.tBodies.length !== 1 || t.tHead.rows[0].cells.length < 2 || t.closest(XL_FUERA)) return;
+    if (t.tBodies[0].querySelector('input:not([type=checkbox]):not([type=radio]), select, textarea')) return;   // las que se editan, no
+    if (t.tBodies[0].rows.length < 2 && !XL[xlClave(t)]) return;
+    xlArmar(t);
+  });
+  (cambiadas || []).forEach(t => { const tb = t.tBodies[0]; if (t.isConnected && tb && (t._xlN !== tb.rows.length || t._xlA !== tb.rows[0])) { xlAplicar(t); xlPintar(t); } });
+}
+let _xlRaf = 0; const _xlCamb = new Set();
+function xlObservar() {
+  new MutationObserver(recs => { for (const r of recs) { const t = r.target.closest && r.target.closest('table[data-xl]'); if (t) _xlCamb.add(t); }
+    if (!_xlRaf) _xlRaf = requestAnimationFrame(() => { _xlRaf = 0; const ts = [..._xlCamb]; _xlCamb.clear(); xlEscanear(ts); }); }).observe(document.body, { childList: true, subtree: true });
+  xlEscanear();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', xlObservar); else xlObservar();
 
 // ═══ Vender · productos ════════════════════════════════════════════════
 let _vT = null;
@@ -4426,14 +4716,16 @@ function valeNorm(c) { const x = String(c || '').toUpperCase().replace(/[^A-Z0-9
 async function valeConsultar(row) {
   const ref = row.querySelector('.ref'); const cod = valeNorm(ref.value); delete row.dataset.vale; delete row.dataset.valeErr;
   const esCard = /^\d{8}$/.test(cod);   // el código de 8 números de la card física
-  if (cod.length < 14 && !esCard) { pRender(); return; }
+  const esWeb = /^\d{6,9}GC[A-Z0-9]{0,3}$/.test(cod);   // (JP 19-nov) gift card de la web: nro de pedido + GC + tipo
+  if (cod.length < 14 && !esCard && !esWeb && cod.length < 6) { pRender(); return; }
   ref.value = cod;
   const { data, error } = await sb.rpc('pos_vale_consultar', { p_codigo: cod });
   if (error) { row.dataset.valeErr = error.message.replace(/^.*?: /, ''); pRender(); return; }
+  if (!data.ok && cod.length < 14 && !esCard && !esWeb) { pRender(); return; }   // otro formato (de la web): si no existe, no se marca mientras tipea
   if (!data.ok) { row.dataset.valeErr = esCard ? 'Esa card física no está asociada a ninguna gift card vigente' : (data.motivo || 'No existe ese código'); sonar('menos'); pRender(); return; }
   if (esCard) { ref.value = data.codigo; return valeConsultar(row); }   // sigue con el código de la gift card
   if (data.estado === 'anulado') { row.dataset.valeErr = `${cod} está anulado${data.anulado_motivo ? ' (' + data.anulado_motivo + ')' : ''}`; sonar('menos'); pRender(); return; }
-  if ((data.estado === 'usado' || Number(data.saldo) <= 0) && !data.card_pendiente) { const u = data.ultimo_uso; row.dataset.valeErr = `${cod} ya se usó entero${u ? ' el ' + fechaAR(u.fecha) + ' en ' + (LOCALES[u.local] || u.local) + ' (Factura ' + u.letra + ' ' + u.numero + ')' : ''}`; sonar('menos'); pRender(); return; }
+  if ((data.estado === 'usado' || Number(data.saldo) <= 0) && !data.card_pendiente) { const u = data.ultimo_uso, uw = data.web_uso; row.dataset.valeErr = `${cod} ya se usó entero${u ? ' el ' + fechaAR(u.fecha) + ' en ' + (LOCALES[u.local] || u.local) + ' (Factura ' + u.letra + ' ' + u.numero + ')' : uw ? ' en la web (pedido ' + uw.nro + (uw.fecha ? ' del ' + fechaAR(uw.fecha) : '') + ')' : ''}`; sonar('menos'); pRender(); return; }
   // ya hay otro renglón con el mismo código → no se usa dos veces en el mismo ticket
   if ([...document.querySelectorAll('#v-pagos .medio')].some(r => r !== row && r.dataset.m === 'vale' && valeNorm(r.querySelector('.ref').value) === cod)) { row.dataset.valeErr = 'Ese código ya está en otro renglón'; pRender(); return; }
   row.dataset.vale = JSON.stringify(data);
@@ -4484,11 +4776,11 @@ function valeZonas() {
     }
     const imp = r.querySelector('.imp');
     if (r.dataset.valeErr) { z.innerHTML = `<span class="chip red">✖ ${esc(r.dataset.valeErr)}</span>`; continue; }
-    if (!r.dataset.vale) { z.innerHTML = (c => c.length >= 14 || /^\d{8}$/.test(c))(valeNorm(r.querySelector('.ref').value)) ? '<span class="mini">consultando…</span>' : '<span class="mini">Tipeá o escaneá el código de la gift card o del vale, o el de la card física</span>'; continue; }
+    if (!r.dataset.vale) { z.innerHTML = (c => c.length >= 14 || /^\d{8}$/.test(c) || /^\d{6,9}GC[A-Z0-9]{0,3}$/.test(c))(valeNorm(r.querySelector('.ref').value)) ? '<span class="mini">consultando…</span>' : '<span class="mini">Tipeá o escaneá el código de la gift card o del vale (también el de una gift card de la web), o el de la card física</span>'; continue; }
     const d = JSON.parse(r.dataset.vale); const v = r2(num(imp.value));
     if (v > Number(d.saldo) + 0.01) { imp.value = plata(Number(d.saldo)); toast('El vale tiene saldo ' + plata(d.saldo), 'error'); }
     const queda = r2(Number(d.saldo) - r2(num(imp.value)));
-    z.innerHTML = `${d.card_pendiente ? `<button type="button" class="btn chico" onclick="valeCardDev(this)" title="Si entrega la card física ${esc(d.card)}, se le suman ${plata(d.card_deposito)} al saldo">Devuelve la card física · suma ${plata(d.card_deposito)}</button>` : ''}<span class="chip green">✔ ${d.tipo === 'gift' ? 'Gift card' : 'Vale de cambio'} vigente · saldo ${plata(d.saldo)}</span><span class="mini">${d.para ? 'para ' + esc(d.para) + (d.de_parte ? ' de parte de ' + esc(d.de_parte) : '') + ' · ' : ''}${fechaAR(d.fecha)} · ${esc(LOCALES[d.local] || d.local)}${queda > 0 ? ' · quedan <b>' + plata(queda) + '</b> en el mismo código' : ' · se usa entero'}</span>`;
+    z.innerHTML = `${d.card_pendiente ? `<button type="button" class="btn chico" onclick="valeCardDev(this)" title="Si entrega la card física ${esc(d.card)}, se le suman ${plata(d.card_deposito)} al saldo">Devuelve la card física · suma ${plata(d.card_deposito)}</button>` : ''}<span class="chip green">✔ ${d.origen === 'web' ? 'Gift card web' : d.tipo === 'gift' ? 'Gift card' : 'Vale de cambio'} vigente · saldo ${plata(d.saldo)}</span><span class="mini">${d.para ? 'para ' + esc(d.para) + (d.de_parte ? ' de parte de ' + esc(d.de_parte) : '') + ' · ' : ''}${d.origen === 'web' ? 'pedido web ' + d.web_nro + ' · al usarla le avisamos por mail a Familia García' : fechaAR(d.fecha) + ' · ' + esc(LOCALES[d.local] || d.local)}${queda > 0 ? ' · quedan <b>' + plata(queda) + '</b> en el mismo código' : ' · se usa entero'}</span>`;
   }
 }
 async function valeCardDev(btn) {
@@ -4983,18 +5275,20 @@ async function cargarVales() {
   document.getElementById('vl-stat').textContent = lista.length + (lista.length === 1 ? ' vale' : ' vales') + ' · saldo vigente ' + plata(lista.filter(v => v.estado === 'vigente').reduce((s, v) => s + Number(v.saldo), 0));
   document.getElementById('vl-lista').innerHTML = lista.length ? `<table><thead><tr><th>Código</th><th>Para</th><th>Nace de</th><th class="num">Importe</th><th class="num">Saldo</th><th>Envío</th><th></th></tr></thead><tbody>` +
     lista.map(v => { const c = v.comprobante; return `<tr class="${v.estado === 'anulado' ? 'dim' : ''}">
-      <td><span class="code">${esc(v.codigo)}</span><div class="mini">${v.tipo === 'gift' ? '🎁 Gift card' : '🎟 Vale de cambio'} · ${esc(LOCALES[v.local] || v.local)} · ${new Date(v.creado_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div></td>
+      <td><span class="code">${esc(v.codigo)}</span><div class="mini">${v.origen === 'web' ? '🌐 Gift card web' : v.tipo === 'gift' ? '🎁 Gift card' : '🎟 Vale de cambio'} · ${v.origen === 'web' ? 'claudiaadorno.com' : esc(LOCALES[v.local] || v.local)} · ${new Date(v.creado_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div></td>
       <td>${esc(v.para_nombre || '')}${v.de_parte ? '<div class="mini">de parte de ' + esc(v.de_parte) + '</div>' : ''}${v.mensaje ? '<div class="mini" title="' + esc(v.mensaje) + '">«' + esc(v.mensaje.slice(0, 40)) + (v.mensaje.length > 40 ? '…' : '') + '»</div>' : ''}</td>
-      <td class="mini">${c ? `<a href="#" onclick="verComprobante(${v.comprobante_id});return false">${TIPO_NOM[c.tipo]} ${c.letra} ${fmtNum(c.punto_venta, c.numero)}</a>` : ''}</td>
+      <td class="mini">${v.origen === 'web' ? 'Pedido web ' + v.web_nro : c ? `<a href="#" onclick="verComprobante(${v.comprobante_id});return false">${TIPO_NOM[c.tipo]} ${c.letra} ${fmtNum(c.punto_venta, c.numero)}</a>` : ''}</td>
       <td class="num">${plata(v.importe)}</td>
       <td class="num">${v.estado === 'anulado' ? '<span class="chip red" title="' + esc(v.anulado_motivo || '') + '">Anulado</span>' : v.estado === 'usado' ? '<span class="chip blue">Usado</span>' : '<span class="chip green">' + plata(v.saldo) + '</span>'}</td>
-      <td class="mini">${v.contacto ? esc(v.contacto) + '<br>' : ''}${v.canal === 'mail' ? (v.mail_enviado_at ? '✔ mail enviado' : v.mail_error ? '<span class="chip red" title="' + esc(v.mail_error) + '">mail no salió</span>' : 'mail pendiente') : v.canal === 'wa' ? 'por WhatsApp' : 'sin envío'}</td>
-      <td class="acc"><button class="btn ico" onclick="vlUsos(${v.id},'${v.codigo}')" title="En qué compras se usó" aria-label="Usos">${_i('ver')}</button><button class="btn ico" onclick="vlReenviar('${v.codigo}','${esc(v.contacto || '')}')" title="Reenviar (mail o WhatsApp)" aria-label="Reenviar">${_i('mail')}</button><a class="btn ico" href="${GIFT_URL}${v.codigo}" target="_blank" rel="noopener" title="Ver la tarjeta" aria-label="Tarjeta">${_i('pdf')}</a>${puedeAnular && v.estado === 'vigente' ? `<button class="btn ico" onclick="vlAnular('${v.codigo}')" title="Anular este vale" aria-label="Anular">${_i('x')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>' : '<div class="empty">No hay vales con ese filtro.</div>';
+      <td class="mini">${v.contacto ? esc(v.contacto) + '<br>' : ''}${v.origen === 'web' ? 'el código lo manda la web' : v.canal === 'mail' ? (v.mail_enviado_at ? '✔ mail enviado' : v.mail_error ? '<span class="chip red" title="' + esc(v.mail_error) + '">mail no salió</span>' : 'mail pendiente') : v.canal === 'wa' ? 'por WhatsApp' : 'sin envío'}</td>
+      <td class="acc"><button class="btn ico" onclick="vlUsos(${v.id},'${v.codigo}')" title="En qué compras se usó" aria-label="Usos">${_i('ver')}</button>${v.origen === 'web' ? '' : `<button class="btn ico" onclick="vlReenviar('${v.codigo}','${esc(v.contacto || '')}')" title="Reenviar (mail o WhatsApp)" aria-label="Reenviar">${_i('mail')}</button><a class="btn ico" href="${GIFT_URL}${v.codigo}" target="_blank" rel="noopener" title="Ver la tarjeta" aria-label="Tarjeta">${_i('pdf')}</a>`}${puedeAnular && v.estado === 'vigente' ? `<button class="btn ico" onclick="vlAnular('${v.codigo}')" title="Anular este vale" aria-label="Anular">${_i('x')}</button>` : ''}</td></tr>`; }).join('') + '</tbody></table>' : '<div class="empty">No hay vales con ese filtro.</div>';
 }
 async function vlUsos(id, codigo) {
-  const { data } = await sb.from('pos_vales_usos').select('importe,usado_at,local,comprobante_id,comprobante:comprobante_id(tipo,letra,punto_venta,numero,fecha)').eq('vale_id', id).order('id');
+  const [{ data }, { data: web }] = await Promise.all([sb.from('pos_vales_usos').select('importe,usado_at,local,comprobante_id,comprobante:comprobante_id(tipo,letra,punto_venta,numero,fecha)').eq('vale_id', id).order('id'),
+    sb.rpc('pos_giftweb_usos_de', { p_vale_id: id })]);   // (JP 19-nov) la gift card de la web: también sus usos en la web
+  const enWeb = (web || []).map(u => `<tr><td>${u.fecha ? fechaAR(String(u.fecha).slice(0, 10)) + ' · ' : ''}🌐 en la web</td><td>pedido web ${u.nro}</td><td class="num"><b>${plata(u.importe)}</b></td></tr>`).join('');
   modal(`<div class="m-head"><h3>Usos de ${esc(codigo)}</h3><span class="spacer"></span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    ${(data || []).length ? `<table><tbody>${data.map(u => `<tr><td>${fechaAR(u.comprobante.fecha)} · ${esc(LOCALES[u.local] || u.local)}</td><td><a href="#" onclick="cerrarModal();verComprobante(${u.comprobante_id});return false">${TIPO_NOM[u.comprobante.tipo]} ${u.comprobante.letra} ${fmtNum(u.comprobante.punto_venta, u.comprobante.numero)}</a></td><td class="num"><b>${plata(u.importe)}</b></td></tr>`).join('')}</tbody></table>` : '<div class="empty chico">Todavía no se usó.</div>'}`);
+    ${(data || []).length || enWeb ? `<table><tbody>${enWeb}${(data || []).map(u => `<tr><td>${fechaAR(u.comprobante.fecha)} · ${esc(LOCALES[u.local] || u.local)}</td><td><a href="#" onclick="cerrarModal();verComprobante(${u.comprobante_id});return false">${TIPO_NOM[u.comprobante.tipo]} ${u.comprobante.letra} ${fmtNum(u.comprobante.punto_venta, u.comprobante.numero)}</a></td><td class="num"><b>${plata(u.importe)}</b></td></tr>`).join('')}</tbody></table>` : '<div class="empty chico">Todavía no se usó.</div>'}`);
 }
 async function vlReenviar(codigo, contacto) {
   const k = await pedirTexto('Mail o WhatsApp al que se reenvía ' + codigo + ':', contacto || ''); if (k === null) return;
@@ -5559,6 +5853,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=229"></script>
+<script src="manual.js?v=230"></script>
 </body>
 </html>
