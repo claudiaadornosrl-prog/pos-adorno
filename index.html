@@ -94,6 +94,25 @@ window.ADORNO_ASISTENTE = (function () {
     els.forEach((el) => { const lb = limpiar(el.getAttribute('title') || (el.querySelector('.lb') && el.querySelector('.lb').textContent) || el.textContent); if (lb && !out.some((o) => o.lb === lb)) out.push({ lb, el }); });
     return out;
   }
+  // (19-nov-2026, charla de Clodi) «llevame a…» entre módulos: el servidor manda ir_modulo {nombre, ruta, pestana?, llevar?}
+  function irUrl(m) {
+    if (!m || !/^\/[a-z0-9-]+\/$/.test(String(m.ruta || ''))) return '';
+    if (location.pathname.replace(/index\.html$/, '') === m.ruta) return '';   // ya está en ese módulo
+    return m.ruta + (m.pestana ? '#clodi-ir=' + encodeURIComponent(String(m.pestana).slice(0, 60)) : '');
+  }
+  function irModulo(m) {   // solo cuando pidió que la lleven: espera a que termine de hablar y va
+    const u = irUrl(m); if (!u) return; let n = 0;
+    const t = setInterval(() => { n++; let habla = false; try { habla = 'speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending); } catch (_) {} if ((n > 3 && !habla) || n > 60) { clearInterval(t); location.href = u; } }, 400);
+  }
+  function llegar() {   // al entrar desde el botón de Clodi: abre la pestaña que venía pedida (espera a que el módulo arme sus pestañas)
+    const m = /[#&]clodi-ir=([^&]+)/.exec(location.hash || ''); if (!m) return;
+    let q = ''; try { q = decodeURIComponent(m[1]).toLowerCase(); } catch (_) { return; }
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
+    let n = 0; const t = setInterval(() => {
+      const ps = pestanas(); const p = ps.find((x) => x.lb.toLowerCase() === q) || ps.find((x) => x.lb.toLowerCase().includes(q) || q.includes(x.lb.toLowerCase()));
+      if (p) { clearInterval(t); irA(p.lb); } else if (++n > 40) clearInterval(t);
+    }, 500);
+  }
   function irA(nombre) {
     const p = pestanas().find((x) => x.lb.toLowerCase() === String(nombre).toLowerCase());
     if (!p) return;
@@ -146,7 +165,7 @@ window.ADORNO_ASISTENTE = (function () {
   .asist-card{align-self:stretch;border:1px solid var(--accent,#d97757);border-radius:12px;padding:9px 11px;background:var(--surface,#fff);line-height:1.4}
   .asist-bts{display:flex;gap:8px;margin-top:9px} .asist-bt{border:0;border-radius:999px;padding:7px 16px;font:inherit;font-weight:600;cursor:pointer}
   .asist-bt.si{background:var(--accent,#d97757);color:#fff} .asist-bt.no{background:transparent;color:var(--muted,#5f5e5a);border:0.5px solid var(--border,#d3d1c7)}
-  .asist-bt:disabled{opacity:.6;cursor:default} .asist-fin{margin-top:8px;font-size:13px} .asist-fin.ok{color:#166534} .asist-fin.mal{color:#991b1b}
+  .asist-bt:disabled{opacity:.6;cursor:default} a.asist-bt{text-decoration:none;display:inline-block} .asist-fin{margin-top:8px;font-size:13px} .asist-fin.ok{color:#166534} .asist-fin.mal{color:#991b1b}
   .asist-resalta{outline:3px solid var(--accent,#d97757)!important;outline-offset:2px;border-radius:8px;transition:outline-color 1.2s}
   @media (max-width:600px){.asist-panel{right:calc(8px + env(safe-area-inset-right,0px));left:calc(8px + env(safe-area-inset-left,0px));width:auto;bottom:calc(92px + env(safe-area-inset-bottom,0px));max-height:66vh;max-height:66dvh}}
   /* (28-oct, JP) en celular y tablet: cara redonda flotante, despegada del borde (en iPhone la barra de Safari se achica abajo y tapaba el busto) */
@@ -362,7 +381,7 @@ window.ADORNO_ASISTENTE = (function () {
     if (tipo === 'q') { d.className = 'asist-q'; d.textContent = texto; }
     else if (tipo === 'err') { d.className = 'asist-err'; d.textContent = texto; }
     else if (tipo === 'wait') { d.className = 'asist-fila'; d.innerHTML = `<span class="asist-av">${CLODI('cara')}</span><div class="asist-a asist-wait"><i>Clodi está buscando en el manual…</i></div>`; d.querySelector('.clodi').classList.add('piensa'); }
-    else { d.className = 'asist-fila'; d.innerHTML = `<span class="asist-av">${CLODI('cara')}</span><div class="asist-a"></div>`; d.lastChild.innerHTML = esc(texto.respuesta) + (texto.pestana ? `<br><i>→ pestaña <b>${esc(texto.pestana)}</b></i>` : '') + ('speechSynthesis' in window ? ` <button class="asist-ib" title="Escuchar la respuesta" data-a="leer" data-t="${esc(texto.respuesta)}">${ICO.voz}</button>` : ''); }
+    else { d.className = 'asist-fila'; d.innerHTML = `<span class="asist-av">${CLODI('cara')}</span><div class="asist-a"></div>`; d.lastChild.innerHTML = esc(texto.respuesta) + (texto.pestana ? `<br><i>→ pestaña <b>${esc(texto.pestana)}</b></i>` : '') + (irUrl(texto.ir_modulo) ? `<div class="asist-bts"><a class="asist-bt si asist-ir" href="${esc(irUrl(texto.ir_modulo))}">Ir a ${esc(texto.ir_modulo.nombre || 'ese módulo')} →</a></div>` : '') + ('speechSynthesis' in window ? ` <button class="asist-ib" title="Escuchar la respuesta" data-a="leer" data-t="${esc(texto.respuesta)}">${ICO.voz}</button>` : ''); }
     l.appendChild(d); l.scrollTop = l.scrollHeight; return d;
   }
   async function prepararAccion(acc, porVoz) {   // completa el formulario del módulo; se envía SOLO con el botón Enviar
@@ -402,12 +421,14 @@ window.ADORNO_ASISTENTE = (function () {
       if (!r.ok || !j.ok) throw new Error(j.error || ('Error ' + r.status));
       hist.push({ q, a: j.respuesta }); log('a', j);
       if (j.pestana && !j.accion) irA(j.pestana);
+      if (j.ir_modulo && j.ir_modulo.llevar && !j.accion) irModulo(j.ir_modulo);
       if (porVoz || siempreVoz()) leer(j.respuesta);
       if (j.accion) await prepararAccion(j.accion, porVoz);
     } catch (e) { w.remove(); log('err', e.message || String(e)); }
     finally { ocupado = false; ta.focus(); }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', armar); else armar();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', llegar); else llegar();
   return { abrir, cerrar, preguntar: (q) => { abrir(); panel.querySelector('textarea').value = q; enviar(false); },
     // para soporte: qué voz y ajustes usa Clodi en este equipo
     decir: (t) => { armar(); leer(String(t || '')); },   // para probar la voz y la boca
@@ -710,6 +731,7 @@ table.xl-fijo { table-layout: fixed; } table.xl-fijo th { box-sizing: border-box
 .cli { margin: 10px 0; padding: 8px 10px; border: 2px solid var(--primary); border-radius: 10px; background: var(--primary-bg); color: var(--text); } .cli.con { border: 1px solid var(--border); background: white; }
 .pd-t td.pd-otros { white-space: nowrap; } .pd-t td.pd-otros .chip { margin-right: 3px; }
 .pd-t td.pd-gq { vertical-align: middle; background: #fff7ed; } .pd-t td.pd-gq .mini { margin-top: 2px; }
+.pd-bor { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 7px 8px 7px 16px; border: 1px solid #fcd34d; border-radius: 999px; background: #fffbeb; color: #78350f; font-size: 13px; } .pd-bor .pd-bor-tx { flex: 1; min-width: 0; } .pd-bor .mini { color: #92400e; } .pd-bor-ico { display: inline-flex; color: #b45309; } .pd-bor-ico svg { width: 18px; height: 18px; } .pd-bor .btn { flex: none; font-size: 12px; padding: 5px 12px; } #pd-prov .pil.con-bor::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 5px; border-radius: 50%; background: #f59e0b; vertical-align: middle; }
 .pd-t tr.pd-sub > td { background: var(--gray-light); font-size: 12px; font-weight: 600; color: var(--muted); padding: 5px 10px; text-transform: none; } .pd-t tr.pd-junto > td { background: #fff7ed; } .pd-t tr.pd-junto > td:first-child { box-shadow: inset 4px 0 0 #f59e0b; } .pd-t tr.pd-junto-h > td { background: #ffedd5; color: #9a3412; font-size: 12px; font-weight: 600; padding: 4px 10px; } .pd-t tr.pd-junto-h > td:first-child { box-shadow: inset 4px 0 0 #f59e0b; }
 .cli-sin, .cli-con { display: flex; align-items: center; gap: 8px; } .cli .ico { color: var(--muted); flex: none; }
 .cli-sin input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 16px; font-family: inherit; padding: 4px 0; color: var(--text); }
@@ -2831,7 +2853,7 @@ function pdVista(v) { PD.vista = v; document.querySelectorAll('#pd-filtros .pil[
 async function cargarPedidosLocal() {
   rmBadge();
   if (PD.vista === 'piden') return cargarPedidos();
-  if (PD.vista === 'falta') { const { data, error } = await sb.rpc('pos_que_falta', { p_local: LOCAL }); if (error) { toast(error.message, 'error'); return; } PD.falta = data || []; const n = PD.falta.filter(x => Number(x.falta) > 0).length; const b = document.getElementById('pd-falta-n'); b.textContent = n || ''; b.style.display = n ? '' : 'none'; }
+  if (PD.vista === 'falta') { const [{ data, error }] = await Promise.all([sb.rpc('pos_que_falta', { p_local: LOCAL }), pdBorCargar()]); if (error) { toast(error.message, 'error'); return; } PD.falta = data || []; const n = PD.falta.filter(x => Number(x.falta) > 0).length; const b = document.getElementById('pd-falta-n'); b.textContent = n || ''; b.style.display = n ? '' : 'none'; }
   else if (PD.vista === 'hechos') {
     if (esTodos()) { const rs = await Promise.all(Object.keys(LOCALES).map(l => sb.rpc('pos_pedidos_listar', { p_local: l }).then(r => (r.data || []).map(p => ({ ...p, _local: l }))))); PD.hechos = rs.flat().sort((a, b) => String(b.creado_at).localeCompare(String(a.creado_at))); }   // (JP 19-nov) los de todos los locales
     else { const { data, error } = await sb.rpc('pos_pedidos_listar', { p_local: LOCAL }); if (error) { toast(error.message, 'error'); return; } PD.hechos = data || []; } }
@@ -2856,21 +2878,21 @@ function pdRender() {
   if (PD.vista === 'falta') {
     const solo = document.getElementById('pd-solo').checked;
     const gFalta = new Set(PD.falta.filter(x => x.grupo && Number(x.falta) > 0).map(x => x.grupo));   // grupos de desglose con algún faltante
-    let lista = PD.falta.filter(x => !solo || Number(x.falta) > 0 || (x.grupo && gFalta.has(x.grupo)));
+    let lista = PD.falta.filter(x => !solo || Number(x.falta) > 0 || (x.grupo && gFalta.has(x.grupo)) || !!pdBor(PD_K(x)).m[x.sku]);   // lo tildado se sigue viendo aunque ya no falte
     for (const [k, id] of [['fg', 'pd-prov-fg'], ['espalma', 'pd-prov-es'], ['oficina', 'pd-prov-of']]) { const n = lista.filter(x => PD_K(x) === k).length; const b = document.getElementById(id); b.textContent = n || ''; b.style.display = n ? '' : 'none'; }
     if (PD.prov) lista = lista.filter(x => PD_K(x) === PD.prov);
     if (q) lista = lista.filter(x => (x.sku + ' ' + (x.descripcion || '') + ' ' + (x.proveedor || '')).toUpperCase().includes(q));
     { const nb = lista.filter(x => Number(x.falta) > 0).length, nc = lista.filter(pdChico).length; document.getElementById('pd-stat').textContent = (solo ? nb + (nb === 1 ? ' artículo' : ' artículos') + ' bajo mínimo' : lista.length + ' artículos con mínimo') + (nc ? ' · ' + nc + ' no ' + (nc === 1 ? 'llega' : 'llegan') + ' a la cantidad para pedir' : ''); }
-    if (!lista.length) { box.innerHTML = `<div class="empty">${PD.falta.length ? 'Nada bajo mínimo en ' + esc(LOCALES[LOCAL]) + (PD.prov ? ' para ' + PD_NOM[PD_DEST[PD.prov]] : '') + '.' : 'Todavía no hay mínimos cargados para ' + esc(LOCALES[LOCAL]) + ': cargalos en la pestaña Mínimos.'}</div>`; pdMarcados(); return; }
+    if (!lista.length) { box.innerHTML = pdBorBanner() + `<div class="empty">${PD.falta.length ? 'Nada bajo mínimo en ' + esc(LOCALES[LOCAL]) + (PD.prov ? ' para ' + PD_NOM[PD_DEST[PD.prov]] : '') + '.' : 'Todavía no hay mínimos cargados para ' + esc(LOCALES[LOCAL]) + ': cargalos en la pestaña Mínimos.'}</div>`; pdMarcados(); return; }
     const grupos = []; for (const x of lista) { const k = PD_K(x); let g = grupos.find(z => z.k === k); if (!g) { g = { k, items: [] }; grupos.push(g); } g.items.push(x); }
-    box.innerHTML = `<table class="pd-t"><thead><tr><th></th><th>Artículo</th><th>Otras sucursales</th><th class="num">Stock</th><th class="num">En tránsito</th><th class="num">Ya pedido</th><th class="num">Mínimo</th><th class="num" title="Se pide solo si lo que falta llega a este número (chiquitaje). Vacío = se pide siempre.">Pedir desde</th><th class="num">Falta</th><th class="num">Pedir</th></tr></thead><tbody>` +
+    box.innerHTML = pdBorBanner() + `<table class="pd-t"><thead><tr><th></th><th>Artículo</th><th>Otras sucursales</th><th class="num">Stock</th><th class="num">En tránsito</th><th class="num">Ya pedido</th><th class="num">Mínimo</th><th class="num" title="Se pide solo si lo que falta llega a este número (chiquitaje). Vacío = se pide siempre.">Pedir desde</th><th class="num">Falta</th><th class="num">Pedir</th></tr></thead><tbody>` +
       grupos.map(g => `<tr class="pd-prov"><td colspan="10">${g.k === 'oficina' ? 'Oficina (depósito) · lo que Oficina ya compró · ordenado por proveedor' : PD_NOM[PD_DEST[g.k]] + ' · se le pide directo al proveedor'} · ${g.items.filter(x => Number(x.falta) > 0).length} bajo mínimo</td></tr>` +
         g.items.map((x, i) => { const junto = x.grupo ? g.items.filter(z => z.grupo === x.grupo && z.sku !== x.sku).map(z => z.sku) : []; const prim = junto.length && (i === 0 || g.items[i - 1].grupo !== x.grupo);
           const pv = (x.proveedor || 'Sin proveedor cargado'); const sub = g.k === 'oficina' && (i === 0 || (g.items[i - 1].proveedor || 'Sin proveedor cargado').toUpperCase() !== pv.toUpperCase());
-          return `${sub ? `<tr class="pd-sub"><td></td><td colspan="9">${esc(tit(pv))} · ${g.items.filter(z => (z.proveedor || 'Sin proveedor cargado').toUpperCase() === pv.toUpperCase()).length} artículos</td></tr>` : ''}${prim ? `<tr class="pd-junto-h"><td></td><td colspan="9">Vienen juntos del proveedor · ${esc(tit(x.grupo))} · miralos como un solo artículo</td></tr>` : ''}<tr class="${junto.length ? 'pd-junto' : ''}${!junto.length && pdChico(x) ? ' pd-chico' : ''}"><td><input type="checkbox" data-sku="${esc(x.sku)}" data-k="${g.k}" data-g="${esc(junto.length ? x.grupo : '')}"${!junto.length && pdChico(x) ? ' data-chico="1"' : ''} onchange="pdJunto(this);pdMarcados()"></td>
+          return `${sub ? `<tr class="pd-sub"><td></td><td colspan="9">${esc(tit(pv))} · ${g.items.filter(z => (z.proveedor || 'Sin proveedor cargado').toUpperCase() === pv.toUpperCase()).length} artículos</td></tr>` : ''}${prim ? `<tr class="pd-junto-h"><td></td><td colspan="9">Vienen juntos del proveedor · ${esc(tit(x.grupo))} · miralos como un solo artículo</td></tr>` : ''}<tr class="${junto.length ? 'pd-junto' : ''}${!junto.length && pdChico(x) ? ' pd-chico' : ''}"><td><input type="checkbox" data-sku="${esc(x.sku)}" data-k="${g.k}" data-g="${esc(junto.length ? x.grupo : '')}"${!junto.length && pdChico(x) ? ' data-chico="1"' : ''}${pdBor(g.k).m[x.sku] ? ' checked' : ''} onchange="pdJunto(this);pdBorM(this);pdMarcados()"></td>
           <td><div class="art">${foto(x.sku, 'chica')}<div><b>${esc(x.sku)}</b><div class="mini">${esc(x.descripcion || '')}${Number(x.desde) > 1 ? ` <span class="chip ${pdChico(x) ? 'amber' : 'gray'}" title="Se pide solo si son ${Number(x.desde)} o más (se cambia en Mínimos)">se pide desde ${Number(x.desde)}</span>` : ''}${junto.length ? ' · <b>va con ' + esc(junto.join(', ')) + '</b>' + (Number(x.falta) > 0 ? '' : Number(x.minimo) ? ' · este tiene stock' : ' · sin mínimo cargado') : ''}</div></div></div></td>
           <td class="pd-otros">${pdOtros(x)}</td><td class="num ${Number(x.stock) < Number(x.minimo) ? 'rojo' : ''}">${Number(x.stock)}</td><td class="num">${Number(x.transito) || ''}</td><td class="num">${Number(x.pedido) || ''}</td><td class="num"><input class="pd-min" value="${Number(x.minimo)}" inputmode="numeric" data-min="${esc(x.sku)}" onchange="pdMinEnFalta('${esc(x.sku)}', this.value)" onfocus="this.select()" title="Mínimo de este artículo: cambialo acá y se recalcula lo que falta"></td><td class="num"><input class="pd-min" value="${Number(x.desde) > 1 ? Number(x.desde) : ''}" placeholder="—" inputmode="numeric" onchange="pdDesdeEnFalta('${esc(x.sku)}', this.value)" onfocus="this.select()" title="Se pide solo si lo que falta llega a este número. Vacío = se pide siempre."></td><td class="num ${Number(x.falta) > 0 ? 'rojo' : ''}">${Number(x.falta)}</td>
-          ${junto.length ? (prim ? `<td class="num pd-gq" rowspan="${junto.length + 1}"><input value="${Math.max(...g.items.filter(z => z.grupo === x.grupo).map(z => Number(z.falta)))}" inputmode="numeric" data-gq="${esc(x.grupo)}" title="Cantidad del juego: se pide esta cantidad de cada uno" oninput="this.classList.add('ed')"><div class="mini">de cada uno</div></td>` : '') : `<td class="num"><input value="${Number(x.falta)}" inputmode="numeric" data-sku="${esc(x.sku)}" oninput="this.classList.add('ed')"></td>`}</tr>`; }).join('')).join('') + '</tbody></table>' +
+          ${junto.length ? (prim ? `<td class="num pd-gq" rowspan="${junto.length + 1}"><input value="${pdBor(g.k).g[x.grupo] != null ? esc(pdBor(g.k).g[x.grupo]) : Math.max(...g.items.filter(z => z.grupo === x.grupo).map(z => Number(z.falta)))}"${pdBor(g.k).g[x.grupo] != null ? ' class="ed"' : ''} inputmode="numeric" data-gq="${esc(x.grupo)}" data-k="${g.k}" title="Cantidad del juego: se pide esta cantidad de cada uno" oninput="this.classList.add('ed');pdBorG(this.dataset.k,this.dataset.gq,this.value)"><div class="mini">de cada uno</div></td>` : '') : `<td class="num"><input value="${pdBor(g.k).q[x.sku] != null ? esc(pdBor(g.k).q[x.sku]) : Number(x.falta)}"${pdBor(g.k).q[x.sku] != null ? ' class="ed"' : ''} inputmode="numeric" data-sku="${esc(x.sku)}" data-k="${g.k}" oninput="this.classList.add('ed');pdBorQ(this.dataset.k,this.dataset.sku,this.value)"></td>`}</tr>`; }).join('')).join('') + '</tbody></table>' +
       '<div class="mini" style="margin-top:6px">Falta = mínimo − stock − en tránsito − ya pedido (nunca menos de 0). «Otras sucursales» muestra cuánto hay del mismo artículo en los otros locales y en el depósito. Lo de Familia García y lo de Espalma se le pide directo al proveedor; lo demás, al depósito de Oficina (ordenado por proveedor). "Pedir" viene con lo que falta y se puede cambiar. El mínimo también se cambia acá mismo, en su casilla.' + (puedePedir() ? '' : ' <b>Con este usuario, al enviar el pedido se le pide autorización al celu de la encargada o la cajera que esté en el local.</b>') + ' Los que están en gris no llegan a su cantidad para pedir («se pide desde …», se carga en la columna Pedir desde): «Marcar todos» los saltea, pero se pueden tildar a mano.' + ' Los artículos que vienen juntos del proveedor (desglose) se muestran juntos aunque a uno solo le falte: tienen una sola casilla de cantidad para todo el juego, y al marcar uno se marcan todos.</div>';
     pdMarcados();
   } else if (PD.vista === 'hechos') {
@@ -2906,12 +2928,12 @@ function pdRender() {
 function pdJunto(cb) {   // el juego se marca y se desmarca entero; la cantidad es una sola para todos (pastilla del grupo)
   const g = cb.dataset.g; if (!g) return;
   for (const c of document.querySelectorAll('#pd-lista input[type=checkbox]')) if (c.dataset.g === g) c.checked = cb.checked;
-  if (cb.checked) { const i = [...document.querySelectorAll('#pd-lista input[data-gq]')].find(z => z.dataset.gq === g); if (i && !(Math.round(num(i.value)) > 0)) { i.value = 1; i.classList.add('ed'); } }
+  if (cb.checked) { const i = [...document.querySelectorAll('#pd-lista input[data-gq]')].find(z => z.dataset.gq === g); if (i && !(Math.round(num(i.value)) > 0)) { i.value = 1; i.classList.add('ed'); pdBor(cb.dataset.k).g[g] = '1'; } }
 }
 // no llega a la cantidad mínima para pedirlo (chiquitaje): falta algo, pero menos de lo que conviene pedir
 function pdChico(x) { return Number(x.desde) > 1 && Number(x.falta) > 0 && Number(x.falta) < Number(x.desde); }
-function pdMarcarTodos() { const cbs = [...document.querySelectorAll('#pd-lista input[type=checkbox]:not([data-chico])')]; const todos = cbs.length && cbs.every(c => c.checked); cbs.forEach(c => { c.checked = !todos; }); if (!todos) cbs.forEach(pdJunto); pdMarcados(); }
-function pdMarcados() { const nx = (PD.extras[PD.prov || 'fg'] || []).length; { const bl = document.getElementById('pd-libre'); if (bl) bl.innerHTML = _i('plus') + ' Fuera de lista' + (nx ? ' (' + nx + ')' : ''); } const n = document.querySelectorAll('#pd-lista input[type=checkbox]:checked').length + nx; const b = document.getElementById('pd-armar'); b.disabled = !n; b.title = puedePedir() ? '' : 'Al enviar el pedido se le pide autorización a la encargada o la cajera'; b.innerHTML = _i('plus') + ' Armar pedido' + (n ? ' (' + n + ')' : ''); }
+function pdMarcarTodos() { const cbs = [...document.querySelectorAll('#pd-lista input[type=checkbox]:not([data-chico])')]; const todos = cbs.length && cbs.every(c => c.checked); cbs.forEach(c => { c.checked = !todos; }); if (!todos) cbs.forEach(pdJunto); cbs.forEach(c => pdBorM(c, true)); pdBorCambio(PD.prov || 'fg'); }
+function pdMarcados() { const nx = (PD.extras[PD.prov || 'fg'] || []).length; { const bl = document.getElementById('pd-libre'); if (bl) bl.innerHTML = _i('plus') + ' Fuera de lista' + (nx ? ' (' + nx + ')' : ''); } const n = pdBorTild(PD.prov || 'fg') + nx; pdBorPintar(); const b = document.getElementById('pd-armar'); b.disabled = !n; b.title = puedePedir() ? '' : 'Al enviar el pedido se le pide autorización a la encargada o la cajera'; b.innerHTML = _i('plus') + ' Armar pedido' + (n ? ' (' + n + ')' : ''); }
 // Cambiar el mínimo desde «Qué falta»: guarda, recalcula lo que falta de ese artículo y deja como estaban los tildes y las cantidades ya tocadas
 // Cambiar el «pedir desde» desde Qué falta: guarda y redibuja dejando los tildes y las cantidades ya tocadas
 async function pdDesdeEnFalta(sku, v) {
@@ -2963,14 +2985,103 @@ async function pdDesde(sku, v) {
 }
 // Armar: los marcados, separados por destino (Oficina / Familia García); cada grupo es un pedido
 function pdArmar() {
-  const marc = [...document.querySelectorAll('#pd-lista input[type=checkbox]:checked')]; const kx = PD.prov || 'fg'; if (!marc.length && !PD.extras[kx].length) return;
-  const items = marc.map(c => { const inp = document.querySelector(`#pd-lista input[data-sku="${CSS.escape(c.dataset.sku)}"]:not([type=checkbox])`) || (c.dataset.g ? [...document.querySelectorAll('#pd-lista input[data-gq]')].find(i => i.dataset.gq === c.dataset.g) : null); const x = PD.falta.find(z => z.sku === c.dataset.sku); return { sku: c.dataset.sku, descripcion: x ? x.descripcion : '', cantidad: Math.max(0, Math.round(num(inp ? inp.value : x.falta))) || Number(x.falta) || 1, k: c.dataset.k, deposito: x ? Number(x.deposito) : 0 }; });
+  const kx = PD.prov || 'fg', bx = pdBor(kx); const marc = PD.falta.filter(x => PD_K(x) === kx && bx.m[x.sku]); if (!marc.length && !PD.extras[kx].length) return;   // (JP 19-nov) sale de lo preguardado: entra todo lo tildado, aunque la búsqueda lo esconda
+  const items = marc.map(x => ({ sku: x.sku, descripcion: x.descripcion || '', cantidad: pdBorCant(x, kx), k: kx, deposito: Number(x.deposito) || 0 }));
   for (const e of PD.extras[kx]) { const ya = !e.libre && items.find(i => i.sku === e.sku); if (ya) ya.cantidad += e.cantidad; else items.push({ ...e }); }
-  PD.cola = []; for (const k of ['fg', 'espalma', 'oficina']) { const its = items.filter(i => i.k === k); if (its.length) PD.cola.push({ destino: PD_DEST[k], items: its }); }
+  PD.cola = []; for (const k of ['fg', 'espalma', 'oficina']) { const its = items.filter(i => i.k === k); if (its.length) PD.cola.push({ destino: PD_DEST[k], items: its, nota: pdBor(k).n || '' }); }
   pdModal();
 }
 // (JP 10-nov) «Fuera de lista»: lo que no está en Qué falta se suma acá, antes de armar el pedido (queda guardado por proveedor hasta que se envía)
 PD.extras = { fg: [], espalma: [], oficina: [] };
+// (JP 19-nov) «Qué falta» se preguarda solo, por local y por destino (Familia García, Oficina, Espalma): lo tildado, las cantidades
+// tocadas, lo de fuera de lista y la nota. Queda al instante en esta compu (por si se corta la luz o internet) y al segundo en la base,
+// así cualquier compu del local lo encuentra y lo sigue. Se borra solo al enviar el pedido, o con «Empezar de cero».
+// Si otra compu lo cambió o ya lo envió, no se pisa: se trae cómo quedó (así nunca se manda dos veces lo mismo).
+const PDB = { l: {}, leido: {}, t: null, re: null, ocupado: false, otra: false, est: '', estAt: null };
+const PDB_K = ['fg', 'espalma', 'oficina'];
+function pdBorLsKey(l) { return 'pos_pd_bor_' + (pedPrueba() ? 'prueba_' : '') + l; }
+function pdBor(k, l) { l = l || LOCAL; const L = PDB.l[l] || (PDB.l[l] = {}); return L[k] || (L[k] = { m: {}, q: {}, g: {}, x: [], n: '', at: null }); }
+function pdBorDatos(b) { const d = {}; if (Object.keys(b.m).length) d.m = b.m; if (Object.keys(b.q).length) d.q = b.q; if (Object.keys(b.g).length) d.g = b.g; if (b.x.length) d.x = b.x; if (String(b.n || '').trim()) d.n = String(b.n).trim(); return Object.keys(d).length ? d : null; }
+function pdBorVacio(b) { return !pdBorDatos(b); }
+function pdBorAlias() { for (const k of PDB_K) PD.extras[k] = pdBor(k).x; }   // «Fuera de lista» vive adentro de lo preguardado de cada destino
+function pdBorPoner(b, f) {   // deja lo preguardado como vino de la base (o de esta compu); el arreglo de fuera de lista se cambia en el lugar
+  const d = (f && f.datos) || {};
+  b.m = Object.assign({}, d.m || {}); b.q = Object.assign({}, d.q || {}); b.g = Object.assign({}, d.g || {}); b.x.length = 0; for (const e of (d.x || [])) b.x.push(e); b.n = d.n || '';
+  b.at = f ? f.at || null : null; b.por = f ? f.por || '' : ''; b.desde = f ? f.desde || null : null; b.empezo = f ? f.empezo || '' : ''; b.sucio = false;
+}
+function pdBorLS(l) { l = l || LOCAL; try { const L = PDB.l[l] || {}, o = {}; for (const k of Object.keys(L)) { const b = L[k]; if (pdBorVacio(b) && !b.sucio && !b.borrar) continue; o[k] = { d: pdBorDatos(b), at: b.at, por: b.por, desde: b.desde, empezo: b.empezo, sucio: !!b.sucio, borrar: !!b.borrar, ts: b.ts || 0 }; } if (Object.keys(o).length) localStorage.setItem(pdBorLsKey(l), JSON.stringify(o)); else localStorage.removeItem(pdBorLsKey(l)); } catch (e) {} }
+function pdBorEstTxt() { return PDB.est === 'guardando' ? 'Guardando…' : PDB.est === 'sin' ? '<b>Sin conexión:</b> quedó guardado en esta compu y se sube solo cuando vuelva internet' : PDB.est === 'ok' && PDB.estAt ? 'Guardado ' + PDB.estAt.toTimeString().slice(0, 5) : 'Se guarda solo'; }
+function pdBorEstado(s) { PDB.est = s; if (s === 'ok') PDB.estAt = new Date(); const el = document.getElementById('pd-bor-est'); if (el) el.innerHTML = pdBorEstTxt(); }
+function pdBorCambio(k) { if (soloVer()) { pdMarcados(); return; } const b = pdBor(k); b.sucio = true; b.ts = Date.now(); pdBorLS(); pdBorEstado('guardando'); clearTimeout(PDB.t); PDB.t = setTimeout(pdBorSubir, 800); pdMarcados(); }
+function pdBorM(cb, sin) { const k = cb.dataset.k, b = pdBor(k); const ss = cb.dataset.g ? PD.falta.filter(z => z.grupo === cb.dataset.g && PD_K(z) === k).map(z => z.sku) : [cb.dataset.sku]; for (const s of ss) { if (cb.checked) b.m[s] = 1; else delete b.m[s]; } if (!sin) pdBorCambio(k); }
+function pdBorQ(k, sku, v) { pdBor(k).q[sku] = String(v).trim(); pdBorCambio(k); }
+function pdBorG(k, g, v) { pdBor(k).g[g] = String(v).trim(); pdBorCambio(k); }
+function pdBorNota(k, v) { pdBor(k).n = v; pdBorCambio(k); }
+function pdBorTild(k) { const b = pdBor(k); return PD.falta.filter(x => PD_K(x) === k && b.m[x.sku]).length; }
+function pdBorCant(x, k) {   // la cantidad que va: la tocada, la del juego, o lo que falta (como antes)
+  const b = pdBor(k); let v = b.q[x.sku];
+  if (v == null && x.grupo) { const gr = PD.falta.filter(z => z.grupo === x.grupo && PD_K(z) === k); if (gr.length > 1) v = b.g[x.grupo] != null ? b.g[x.grupo] : Math.max(...gr.map(z => Number(z.falta))); }
+  return Math.max(0, Math.round(num(v != null ? v : x.falta))) || Number(x.falta) || 1;
+}
+async function pdBorCargar() {
+  const l = LOCAL;
+  if (!PDB.leido[l]) {   // la primera vez en esta página: lo que quedó en esta compu (por si se cortó la luz o internet antes de subirlo)
+    PDB.leido[l] = true;
+    try { const o = JSON.parse(localStorage.getItem(pdBorLsKey(l)) || '{}'); for (const k of PDB_K) { const s0 = o[k]; if (!s0) continue; const b = pdBor(k, l); pdBorPoner(b, { datos: s0.d || {}, at: s0.at, por: s0.por, desde: s0.desde, empezo: s0.empezo }); b.sucio = !!s0.sucio; b.borrar = !!s0.borrar; b.ts = s0.ts || 0; } } catch (e) {}
+  }
+  pdBorAlias();
+  try {
+    const { data, error } = await sb.rpc('pos_pedido_borrador_traer', { p_local: l }); if (error) throw error;
+    const srv = Object.fromEntries((data || []).map(f => [f.prov, f]));
+    for (const k of PDB_K) { const b = pdBor(k, l); if (b.sucio || b.borrar) continue; pdBorPoner(b, srv[k] || null); }   // lo que no está sin subir: manda la base (otra compu pudo seguirlo)
+    pdBorLS(l);
+    if (PDB_K.some(k => pdBor(k, l).sucio || pdBor(k, l).borrar)) pdBorSubir(); else if (PDB.est === 'sin') pdBorEstado('');
+  } catch (e) { pdBorEstado('sin'); }
+}
+async function pdBorSubir() {
+  clearTimeout(PDB.t); clearTimeout(PDB.re);
+  if (PDB.ocupado) { PDB.otra = true; return; }
+  PDB.ocupado = true; let falla = false; const confs = [];
+  for (const l of Object.keys(PDB.l)) for (const k of PDB_K) {
+    const b = pdBor(k, l); if (!b.sucio && !b.borrar) continue;
+    try {
+      if (b.borrar) { const { error } = await sb.rpc('pos_pedido_borrador_borrar', { p_local: l, p_prov: k }); if (error) { if (error.code) { b.borrar = false; toast(error.message, 'error'); } else falla = true; continue; } b.borrar = false; b.at = null; }
+      if (!b.sucio) continue;
+      const ts = b.ts; const { data, error } = await sb.rpc('pos_pedido_borrador_guardar', { p_local: l, p_prov: k, p_datos: pdBorDatos(b), p_base: b.at });
+      if (error) { if (error.code) { b.sucio = false; toast(error.message, 'error'); } else falla = true; continue; }
+      if (data && data.conflicto) { pdBorPoner(b, data.fila); if (l === LOCAL) confs.push({ k, f: data.fila }); continue; }
+      const f = data && data.fila; b.at = f ? f.at : null; b.por = f ? f.por : ''; b.desde = f ? f.desde : null; b.empezo = f ? f.empezo : ''; if (b.ts === ts) b.sucio = false;
+    } catch (e) { falla = true; }
+  }
+  for (const l of Object.keys(PDB.l)) pdBorLS(l);
+  PDB.ocupado = false;
+  for (const c of confs) toast(c.f ? 'Otra compu del local siguió el pedido a ' + PD_NOM[PD_DEST[c.k]] + (c.f.por ? ' (' + pila(c.f.por) + ')' : '') + ': te muestro cómo quedó' : 'El pedido a ' + PD_NOM[PD_DEST[c.k]] + ' ya lo envió o lo vació otra compu del local: la lista quedó como está ahora', 'error');
+  if (confs.length && PD.vista === 'falta' && document.getElementById('content-pedidos').classList.contains('active')) pdRender();
+  const queda = Object.keys(PDB.l).some(l => PDB_K.some(k => pdBor(k, l).sucio || pdBor(k, l).borrar));
+  if (falla) { pdBorEstado('sin'); PDB.re = setTimeout(pdBorSubir, 20000); }
+  else if (queda || PDB.otra) { PDB.otra = false; PDB.t = setTimeout(pdBorSubir, 300); }
+  else pdBorEstado('ok');
+  pdMarcados();
+}
+function pdBorHora(t) { if (!t) return ''; const d = new Date(t), h = d.toTimeString().slice(0, 5); return d.toDateString() === new Date().toDateString() ? 'hoy ' + h : d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }) + ' ' + h; }
+function pdBorBanner() {
+  const k = PD.prov || 'fg', b = pdBor(k); if (PD.vista !== 'falta' || pdBorVacio(b)) return '<div id="pd-bor"></div>';
+  const nt = pdBorTild(k), nx = b.x.length;
+  const partes = [nt ? nt + (nt === 1 ? ' artículo tildado' : ' artículos tildados') : '', nx ? nx + ' fuera de lista' : '', String(b.n || '').trim() ? 'con nota' : ''].filter(Boolean).join(' · ');
+  const quien = b.empezo ? 'Lo empezó ' + esc(pila(b.empezo)) + (b.desde ? ' ' + pdBorHora(b.desde) : '') : '';
+  const ult = b.por && b.at && b.at !== b.desde ? (quien ? ' · ' : '') + 'último cambio ' + esc(pila(b.por)) + ' ' + pdBorHora(b.at) : '';
+  return `<div id="pd-bor" class="pd-bor"><span class="pd-bor-ico">${_i('edit')}</span><div class="pd-bor-tx"><b>Pedido a medio armar para ${esc(PD_NOM[PD_DEST[k]])}</b>${partes ? ' · ' + partes : ''}<div class="mini">${quien}${ult}${quien || ult ? ' · ' : ''}<span id="pd-bor-est">${pdBorEstTxt()}</span></div></div><button class="btn" onclick="pdBorCero()" title="Destildar todo y sacar lo de fuera de lista de este pedido, en todas las compus del local">Empezar de cero</button></div>`;
+}
+function pdBorPintar() {   // el cartel de arriba de la lista y el puntito en la pastilla del destino que tiene algo a medio armar
+  const el = document.getElementById('pd-bor'); if (el) el.outerHTML = pdBorBanner();
+  document.querySelectorAll('#pd-prov .pil').forEach(p => { const con = !pdBorVacio(pdBor(p.dataset.p)); p.classList.toggle('con-bor', con); p.title = con ? 'Tiene un pedido a medio armar' : ''; });
+}
+async function pdBorCero() {
+  const k = PD.prov || 'fg', b = pdBor(k), nt = pdBorTild(k), nx = b.x.length;
+  if (!await confirmar('¿Empezar de cero el pedido a ' + PD_NOM[PD_DEST[k]] + '? Se destilda' + (nt === 1 ? '' : 'n') + ' ' + nt + (nt === 1 ? ' artículo' : ' artículos') + (nx ? ' y se saca' + (nx === 1 ? '' : 'n') + ' ' + nx + ' de fuera de lista' : '') + ', también en las otras compus del local. No se puede deshacer.')) return;
+  pdBorLimpiar(k); pdRender(); toast('Pedido a ' + PD_NOM[PD_DEST[k]] + ' vacío: podés empezar de nuevo', 'success');
+}
+function pdBorLimpiar(k) { const b = pdBor(k); pdBorPoner(b, null); if (soloVer()) return; b.borrar = true; b.ts = Date.now(); pdBorLS(); pdBorSubir(); }
 function pdVer(id) {
   const p = (PD.hechos || []).find(x => x.id === id); if (!p) return; const its = p.items || []; const ofi = p.destino === 'oficina';
   const [estT, estC] = p.estado === 'cancelado' ? ['Cancelado', 'red'] : p.estado === 'recibido' ? ['Recibido', 'green'] : p.estado === 'en_transito' ? ['En tránsito', 'viol'] : ofi ? (its.some(i => i.remito_id) ? ['En tránsito', 'viol'] : ['Pendiente en Oficina', 'amber']) : ['Pendiente de entrega', 'amber'];
@@ -2994,13 +3105,13 @@ function pdLibre() {
       <div class="cli-sin">${_i('buscar')}<input id="pd-add" placeholder="Artículo del sistema: código o descripción, y Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();pdAdd(this.value)}"></div>
       <div class="cli-sin">${_i('plus')}<input id="pd-libre-d" placeholder="Renglón libre: resma de papel, cinta, lapiceras… y Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();pdAddLibre(this.value)}"></div>
     </div>
-    ${ex.length ? `<table class="pd-items pd-t" style="margin-top:12px"><thead><tr><th>Sumado al pedido</th><th class="num">Cant.</th><th></th></tr></thead><tbody>${ex.map((it, n) => `<tr><td>${it.libre ? '<span class="chip gray">renglón libre</span> <b>' + esc(it.descripcion) + '</b>' : '<b>' + esc(it.sku) + '</b> <span class="mini">' + esc(it.descripcion || '') + '</span>'}</td><td class="num"><input value="${it.cantidad}" inputmode="numeric" onchange="PD.extras['${k}'][${n}].cantidad=Math.max(1,Math.round(num(this.value)))"></td><td><button class="btn ico chico" onclick="PD.extras['${k}'].splice(${n},1);pdLibre()" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('')}</tbody></table>` : '<div class="empty chico" style="margin-top:10px">Todavía no sumaste nada.</div>'}
+    ${ex.length ? `<table class="pd-items pd-t" style="margin-top:12px"><thead><tr><th>Sumado al pedido</th><th class="num">Cant.</th><th></th></tr></thead><tbody>${ex.map((it, n) => `<tr><td>${it.libre ? '<span class="chip gray">renglón libre</span> <b>' + esc(it.descripcion) + '</b>' : '<b>' + esc(it.sku) + '</b> <span class="mini">' + esc(it.descripcion || '') + '</span>'}</td><td class="num"><input value="${it.cantidad}" inputmode="numeric" onchange="PD.extras['${k}'][${n}].cantidad=Math.max(1,Math.round(num(this.value)));pdBorCambio('${k}')"></td><td><button class="btn ico chico" onclick="PD.extras['${k}'].splice(${n},1);pdBorCambio('${k}');pdLibre()" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('')}</tbody></table>` : '<div class="empty chico" style="margin-top:10px">Todavía no sumaste nada.</div>'}
     <div class="m-foot"><span class="spacer"></span><button class="btn primary" onclick="cerrarModal();pdMarcados()">Listo</button></div>`);
   setTimeout(() => { const n = document.getElementById('pd-add'); if (n) n.focus(); }, 80);
 }
 function pdAddLibre(v) {
   const d = String(v || '').replace(/\s+/g, ' ').trim(); if (!d) return; const k = PD.prov || 'fg';
-  PD.extras[k].push({ sku: 'VARIOS', descripcion: d, cantidad: 1, k, deposito: 0, libre: true }); pdLibre();
+  PD.extras[k].push({ sku: 'VARIOS', descripcion: d, cantidad: 1, k, deposito: 0, libre: true }); pdBorCambio(k); pdLibre();
   setTimeout(() => { const n = document.getElementById('pd-libre-d'); if (n) n.focus(); }, 90);
 }
 function pdModal() {
@@ -3009,13 +3120,13 @@ function pdModal() {
   const copia = fg && !pedPrueba() ? pdCopia(g.destino) : '';
   modal(`<div class="pd-conf"><div class="pd-c-cab"><h3>Pedido a ${esc(PD_CORTO[g.destino] || PD_NOM[g.destino])} · ${esc(LOCALES[LOCAL])}${PD.cola.length > 1 ? ' <span class="mini">(1 de ' + PD.cola.length + ')</span>' : ''}</h3><span class="pd-c-ver" title="Si después se descuenta algo, sale la versión 2 con el pedido completo actualizado">Versión 1</span><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="pd-c-tabla"><table class="pd-items pd-t"><thead><tr><th>Artículo</th>${fg ? '' : '<th class="num">Administración</th>'}<th class="num">Cant.</th><th></th></tr></thead><tbody>${g.items.map((it, i) => `<tr><td>${it.libre ? '<span class="chip gray">fuera de lista</span> <b>' + esc(it.descripcion) + '</b>' : '<b>' + esc(it.sku) + '</b> <span class="mini">' + esc(it.descripcion || '') + '</span>'}</td>${fg ? '' : '<td class="num mini">' + (it.libre ? '' : it.deposito) + '</td>'}<td class="num"><input value="${it.cantidad}" inputmode="numeric" onchange="PD.cola[0].items[${i}].cantidad=Math.max(0,Math.round(num(this.value)))"></td><td><button class="btn ico chico" onclick="PD.cola[0].items.splice(${i},1);pdModal()" aria-label="Sacar">${_i('x')}</button></td></tr>`).join('')}</tbody></table></div>
-    <div class="cli-sin pd-nota-box">${_i('edit')}<input id="pd-nota" placeholder="${fg ? 'Nota para el proveedor: entrega, horario… (opcional)' : 'Nota para Oficina (opcional)'}" value="${esc(g.nota || '')}"></div>
+    <div class="cli-sin pd-nota-box">${_i('edit')}<input id="pd-nota" placeholder="${fg ? 'Nota para el proveedor: entrega, horario… (opcional)' : 'Nota para Oficina (opcional)'}" value="${esc(g.nota || '')}" oninput="PD.cola[0].nota=this.value;pdBorNota('${PD_KDE[g.destino]}',this.value)"></div>
     <div class="pd-c-mail">${mailPara ? (fg ? 'El mail va a ' : 'Le llega al depósito: aviso al celular y mail a ') + esc(mailPara) + (copia ? ' con copia a ' + esc(copia) : '') + '.' : (fg ? 'No hay mail configurado para este destino (Ajustes): no se manda mail.' : 'Le llega al depósito con aviso al celular.')}</div>
     <div class="pd-c-pie"><button class="btn" onclick="cerrarModal()">Cancelar</button><span class="spacer"></span><button class="btn primary" id="pd-ok" onclick="pdEnviar()">${fg ? 'Enviar pedido' : 'Pedir a Oficina'}</button></div></div>`, 'pastilla');
   setTimeout(() => { const n = document.getElementById('pd-nota'); if (n) n.focus(); }, 50);
 }
 function pdDestino(d) { PD.cola[0].destino = d; pdModal(); }
-function pdAdd(v) { const q = String(v || '').trim().toUpperCase(); if (!q) return; const a = ARTS.find(x => x.sku.toUpperCase() === q) || ARTS.find(x => !x.discontinuado && (x.sku + ' ' + x.descripcion).toUpperCase().includes(q)); if (!a) { toast('No encontré ese producto', 'error'); return; } if (a.discontinuado) { toast(a.sku + ' está dado de baja (tilde importado en el Dragonfish): no se pide', 'error'); return; } const k = PD.prov || 'fg'; const ya = PD.extras[k].find(i => i.sku === a.sku); if (ya) ya.cantidad++; else PD.extras[k].push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, k, deposito: 0 }); pdLibre(); }
+function pdAdd(v) { const q = String(v || '').trim().toUpperCase(); if (!q) return; const a = ARTS.find(x => x.sku.toUpperCase() === q) || ARTS.find(x => !x.discontinuado && (x.sku + ' ' + x.descripcion).toUpperCase().includes(q)); if (!a) { toast('No encontré ese producto', 'error'); return; } if (a.discontinuado) { toast(a.sku + ' está dado de baja (tilde importado en el Dragonfish): no se pide', 'error'); return; } const k = PD.prov || 'fg'; const ya = PD.extras[k].find(i => i.sku === a.sku); if (ya) ya.cantidad++; else PD.extras[k].push({ sku: a.sku, descripcion: a.descripcion, cantidad: 1, k, deposito: 0 }); pdBorCambio(k); pdLibre(); }
 let PARAMS_PED = {};
 const pedPrueba = () => MODO === 'prueba' && PARAMS_PED.pedidos_modo !== 'real';   // los Pedidos pueden ser reales con el resto del POS en prueba
 function pedFranja() { const f = document.getElementById('franja-pos-prueba'); if (!f || PARAMS_PED.pedidos_modo !== 'real' || f.querySelector('.ped-real')) return; f.insertAdjacentHTML('beforeend', ' <span class="ped-real" style="font-weight:700;letter-spacing:0;white-space:nowrap">· OJO: los PEDIDOS sí son reales</span>'); }
@@ -3101,7 +3212,7 @@ async function pdEnviar() {
   const aid = await pdAut('pedido', 'Pedido a ' + PD_NOM[g.destino] + ' · ' + LOCALES[LOCAL] + ' · ' + items.reduce((s, i) => s + i.cantidad, 0) + ' unidades en ' + items.length + ' artículos'); if (aid === null) { pdModal(); return; }
   if (!await hubReg('pos.pedidos', { accion: 'crear', destino: g.destino, renglones: items.length })) return; const { data, error } = await sb.rpc('pos_pedido_crear', { p_local: LOCAL, p_destino: g.destino, p_items: items.map(i => i.libre ? { sku: 'VARIOS', cantidad: i.cantidad, descripcion: i.descripcion } : { sku: i.sku, cantidad: i.cantidad }), p_nota: nota || null, p_autorizacion_id: aid || null });
   if (error) { pdAutFallo('pedido', error); pdModal(); return; }
-  PD.cola.shift(); cerrarModal(); PD.extras[PD_KDE[g.destino]] = [];   // lo de fuera de lista ya salió en este pedido
+  PD.cola.shift(); cerrarModal(); pdBorLimpiar(PD_KDE[g.destino]);   // (JP 19-nov) ya salió: se borra lo preguardado de ese destino (tildes, cantidades, fuera de lista y nota)
   if (true) {
     const wa = (data.wa_para || '').replace(/\D/g, ''); const txt = pdTextoWA(data.numero_fmt, items, nota, data.enviado_por); window._pdTxt = txt;
     pdFicha('Pedido ' + data.numero_fmt + ' a ' + (PD_CORTO[g.destino] || PD_NOM[g.destino]), data.id, g.destino, 'modal', data.wa_para, 'cerrarModal();pdModal()');
@@ -4547,6 +4658,37 @@ function mpZonas() {
 // ═══ Acciones que Clodi puede dejar preparadas (JP 10-nov): arma el ticket; la persona revisa y recién ahí se emite ═══
 const clodiDoc = p => String(p.cliente_doc || '').replace(/\D/g, '');
 async function clodiCliente(doc) { if (doc.length < 7) return ''; await cliBuscar(doc); const c = T.cliente; return !c ? ' · no pude cargar el cliente ' + doc + ': cargalo a mano' : c.nombre ? ' · cliente ' + tit(c.nombre) : ' · cliente nuevo con ' + c.doc_tipo + ' ' + c.doc + ': falta escribirle el nombre'; }
+// (JP 19-nov) búsqueda de artículos de Clodi: primero como el buscador de Vender; si no encuentra, más tolerante con lo dictado por voz
+// («B roja gde» → BROJAGR, BANDEJA MIMI ROJA GRANDE): abreviaturas, masculino/femenino, plural, letra suelta como inicial y código parecido
+const CLODI_ABREV = { GDE: 'GRANDE', GRDE: 'GRANDE', CH: 'CHIC', CHIQ: 'CHIC', PEQ: 'CHIC', MED: 'MEDIAN', MD: 'MEDIAN', BCO: 'BLANC', NGO: 'NEGR', NEG: 'NEGR', RJO: 'ROJ', AZ: 'AZUL', NAT: 'NATURAL', RECT: 'RECTANGULAR', RED: 'REDOND', CUAD: 'CUADRAD', DOR: 'DORAD', TRANSP: 'TRANSPARENTE', AMAR: 'AMARILL' };
+const CLODI_NO = new Set(['DE', 'DEL', 'LA', 'EL', 'LOS', 'LAS', 'UN', 'UNA', 'UNOS', 'UNAS', 'EN', 'CON', 'Y', 'ME', 'MI', 'LO', 'SE', 'QUE', 'POR', 'PARA', 'AL', 'HAY', 'TENEMOS', 'TENES', 'QUEDA', 'QUEDAN', 'BUSCAME', 'BUSCAS', 'BUSCA', 'BUSCAR', 'CONSULTA', 'CONSULTAR', 'STOCK', 'CUANTO', 'CUANTOS', 'CUANTAS', 'SALE', 'PRECIO', 'ARTICULO', 'CODIGO']);
+function clodiLim(s) { return String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function clodiCanon(w) { if (CLODI_ABREV[w]) return CLODI_ABREV[w]; if (w.length > 4 && w.endsWith('S')) w = w.slice(0, -1); if (w.length > 3 && /[AO]$/.test(w)) w = w.slice(0, -1); return w; }
+function clodiBuscarArt(texto) {
+  const q = clodiLim(texto).replace(/[¿?¡!.,;:«»"()]/g, ' ').replace(/\s+/g, ' ').trim();
+  const pal = q.split(' ').filter(w => w && !CLODI_NO.has(w)); if (!pal.length) return { q: '', res: [] };
+  const j1 = q.replace(/[^A-Z0-9]/g, ''), junto = pal.join('').replace(/[^A-Z0-9]/g, '');
+  const exacto = ARTS.find(a => a.sku.toUpperCase() === q || a.sku.toUpperCase() === pal.join(' ')) || ARTS.find(a => { const s0 = a.sku.toUpperCase().replace(/[^A-Z0-9]/g, ''); return s0 === j1 || s0 === junto; });
+  if (exacto) return { q, res: [exacto], buscar: exacto.sku };
+  const suelta = w => w.length === 1 && /[A-Z]/.test(w), sueltas = pal.filter(suelta), largas = pal.filter(w => !suelta(w));
+  const txt = a => clodiLim(a.sku + ' ' + a.descripcion + ' ' + (a.descripcion_adicional || '')), toks = t => t.split(/[^A-Z0-9]+/).filter(Boolean);
+  const inicial = (ts, w) => ts.some(t => t[0] === w);
+  const lcp = s0 => { s0 = s0.toUpperCase(); let i = 0; while (i < s0.length && i < junto.length && s0[i] === junto[i]) i++; return i; };
+  const parecido = a => { const n = lcp(a.sku); return n >= 4 && n >= Math.min(junto.length, a.sku.length) - 2 ? n : 0; };
+  const orden = l => l.sort((a, b) => parecido(b) - parecido(a) || Number(b.stock) - Number(a.stock));
+  // 1) como el buscador de Vender: todas las palabras dentro del texto (la letra suelta, como inicial de una palabra)
+  let res = largas.length ? ARTS.filter(a => { const t = txt(a); return largas.every(w => t.includes(w)) && (!sueltas.length || sueltas.every(w => inicial(toks(t), w))); }) : [];
+  if (res.length) return { q, res: orden(res), buscar: sueltas.length ? null : largas.join(' ') };
+  // 2) lo dictado por voz: abreviaturas (GDE, CH, BCO…), masculino/femenino y plural
+  const cq = largas.map(clodiCanon), ctoks = a => toks(txt(a)).map(clodiCanon);
+  const pega = (cts, w) => cts.some(t => t === w || (w.length >= 4 && t.startsWith(w)));
+  if (cq.length) { res = ARTS.filter(a => { const cts = ctoks(a); return cq.every(w => pega(cts, w)) && (!sueltas.length || sueltas.every(w => inicial(toks(txt(a)), w))); }); if (res.length) return { q, res: orden(res) }; }
+  // 3) código parecido (dictado con una parte distinta)
+  res = junto.length >= 4 ? ARTS.filter(a => parecido(a)) : []; if (res.length) return { q, res: orden(res), aprox: true };
+  // 4) los que tienen más palabras en común (al menos la mitad)
+  if (cq.length > 1) { const pts = ARTS.map(a => { const cts = ctoks(a); return { a, n: cq.filter(w => pega(cts, w)).length }; }).filter(x => x.n >= Math.ceil(cq.length / 2)); const max = Math.max(0, ...pts.map(x => x.n)); res = orden(pts.filter(x => x.n === max).map(x => x.a)); if (res.length) return { q, res, aprox: true }; }
+  return { q, res: [] };
+}
 const CLODI_MEDIOS = { efectivo: 'efectivo', dolares: 'efectivo_usd', point: 'mp_point', qr: 'mp_qr', link: 'link', transferencia: 'transferencia', vale: 'vale' };
 window.ADORNO_ACCIONES = [{
   nombre: 'armar_venta',
@@ -4619,6 +4761,58 @@ window.ADORNO_ACCIONES = [{
     return { ok: true, listo: true, resumen: 'Encontré ' + (L.length === 1 ? 'uno' : L.length) + ' con ' + qué + ': ' + L.slice(0, 5).map(uno).join(' | ') + (L.length > 5 ? ' | y ' + (L.length - 5) + ' más' : '') + '. Quedaron en la lista de Comprobantes: tocá el número para abrirlo.' };
   },
   confirmar: async () => ({ ok: true, mensaje: 'Están en la lista de Comprobantes.' })
+}, {
+  // (JP 19-nov, charla de Clodi) lo más pedido en los locales: «imprimime 10 etiquetas de la SMINI». Clodi deja la lista armada en Etiquetas; se imprime recién con Enviar
+  nombre: 'preparar_etiquetas',
+  descripcion: 'Deja cargada en la pestaña Etiquetas la lista de etiquetas de producto para imprimir, con el código (SKU) y la cantidad de cada artículo. No imprime: la persona mira la lista y la vista previa del rollo, y recién al tocar Enviar salen por la etiquetadora del local. Usar cuando piden "imprimime / haceme / sacame / necesito N etiquetas de tal código". Si no dicen la cantidad, es 1. Al dictar, los códigos suelen llegar separados ("s mini" es SMINI): pasalos sin espacios.',
+  parametros: { type: 'object', required: ['items'], properties: {
+    items: { type: 'array', description: 'Artículos por código (SKU) y cuántas etiquetas de cada uno', items: { type: 'object', required: ['sku'], properties: { sku: { type: 'string', description: 'Código del artículo tal como lo dijo la persona, sin espacios' }, cantidad: { type: 'number', description: 'Cuántas etiquetas; por defecto 1' } } } } } },
+  disponible: () => !!(typeof ARTS !== 'undefined' && ARTS.length) && typeof etAgregar === 'function' && tabOk('etiquetas'),
+  preparar: async (p) => {
+    const pedidos = (p.items || []).map(i => ({ q: String(i.sku || '').toUpperCase().replace(/\s+/g, ''), n: Math.min(500, Math.max(1, Math.round(Number(i.cantidad) || 1))) })).filter(i => i.q);
+    if (!pedidos.length) return { ok: false, error: 'decime el código del artículo' };
+    const enc = [], mal = [];
+    for (const i of pedidos) { const a = ARTS.find(x => x.sku.toUpperCase() === i.q) || ARTS.find(x => x.sku.toUpperCase().replace(/[^A-Z0-9]/g, '') === i.q.replace(/[^A-Z0-9]/g, '')); if (a) enc.push({ a, n: i.n }); else mal.push(i.q); }
+    if (mal.length) return { ok: false, error: 'no encuentro ' + (mal.length === 1 ? 'el código ' : 'los códigos ') + mal.join(', ') + ' en ' + (LOCALES[LOCAL] || 'este local') };
+    if (ET.cola.length && !await confirmar('Ya hay etiquetas en la lista. ¿La vacío para armar la nueva?')) return { ok: false, error: 'quedó la lista de etiquetas que ya estaba' };
+    switchTab('etiquetas'); ET.cola = []; ET.pend = 0;
+    for (const e of enc) etAgregar(e.a.sku, e.n);
+    const tot = ET.cola.reduce((t, i) => t + i.cantidad, 0); let imps = []; try { imps = await etImpresoras(); } catch (e) {}
+    const celu = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const sale = imps.length ? ' · salen por ' + imps.map(i => i.nombre).join(' y ') + (imps.some(i => !i.en_linea) ? ' (ojo: la PC que imprime no responde, salen cuando vuelva)' : '') : celu ? ' · ojo: ' + (LOCALES[LOCAL] || 'este local') + ' todavía no tiene etiquetadora conectada al POS, desde el celu no salen' : ' · salen por el cuadro de impresión de esta computadora';
+    return { ok: true, resumen: tot + (tot === 1 ? ' etiqueta: ' : ' etiquetas: ') + ET.cola.map(i => i.cantidad + ' × ' + i.sku).join(', ') + sale + '. Mirá la vista previa del rollo antes de mandar.' };
+  },
+  confirmar: async () => {   // la misma función del botón «Imprimir» (local, ubicación y confirmación del admin); dice lo que pasó de verdad
+    if (!ET.cola.length) return { ok: false, error: 'la lista de etiquetas está vacía' };
+    switchTab('etiquetas'); let imps = []; try { imps = await etImpresoras(true); } catch (e) {}
+    if (!imps.length && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return { ok: false, error: (LOCALES[LOCAL] || 'este local') + ' todavía no tiene etiquetadora conectada al POS: desde el celu no se pueden imprimir. La lista quedó armada en Etiquetas' };
+    await etImprimir();
+    if (!imps.length) return { ok: true, mensaje: 'Te abrí el cuadro de impresión de esta compu: elegí la etiquetadora y dale Imprimir.' };
+    return ET.cola.length ? { ok: false, error: 'no salieron: fijate el aviso de la pantalla. La lista quedó armada en Etiquetas' } : { ok: true, mensaje: 'Las mandé a la etiquetadora: fijate el aviso de la pantalla.' };
+  }
+}, {
+  // (JP 19-nov, charla de Clodi) «buscame la B roja gde»: Clodi busca, deja la ficha en Vender y dice el stock de cada local y el precio (no toca el ticket)
+  nombre: 'consultar_stock',
+  descripcion: 'Busca un artículo por código (SKU) o por palabras de la descripción y dice cuánto stock hay en cada local y el precio. Deja la búsqueda hecha en la pestaña Vender, con la ficha del artículo a la vista. No carga nada en el ticket. Usar cuando preguntan "¿hay / tenemos / queda tal cosa?", "buscame tal artículo", "¿cuánto stock hay de tal código?", "¿en qué local hay?" o "¿cuánto sale?". Pasá las palabras del artículo como las dijo, sin agregar otras (ni "buscame", "stock" o "hay"); si dictó un código separado ("s mini"), pasalo junto (SMINI).',
+  parametros: { type: 'object', required: ['texto'], properties: {
+    texto: { type: 'string', description: 'Código del artículo, o palabras de su descripción (por ejemplo "bandeja roja grande" o "B roja gde")' } } },
+  disponible: () => !!(typeof ARTS !== 'undefined' && ARTS.length) && typeof vBuscar === 'function' && tabOk('vender'),
+  preparar: async (p) => {
+    const r = clodiBuscarArt(p.texto);
+    if (!r.q) return { ok: false, error: 'decime el código o cómo es el artículo' };
+    if (!r.res.length) return { ok: true, listo: true, resumen: 'No encontré nada con «' + String(p.texto).trim() + '» en ' + (LOCALES[LOCAL] || 'este local') + '. Probá con menos palabras o con el código.' };
+    const res = r.res;
+    switchTab('vender'); const inp = document.getElementById('v-q'); if (inp) { inp.value = r.buscar || res[0].sku; vBuscar(); }   // el ticket no se toca
+    const det = [];
+    for (const a of res.slice(0, 3)) {
+      if (!_fStock[a.sku]) { try { const { data } = await sb.from('stock_articulos').select('local,stock').eq('sku', a.sku); _fStock[a.sku] = data || []; } catch (e) { _fStock[a.sku] = []; } }
+      const por = Object.keys(LOCALES).map(l => { const x = _fStock[a.sku].find(z => z.local === l); return LOCALES[l] + ' ' + (l === LOCAL ? Number(a.stock) : (x ? Number(x.stock) : 0)); }).join(', ');   // el de acá sale del catálogo: ya tiene restadas las señas
+      det.push(a.sku + ' (' + a.descripcion + '): ' + por + ' · ' + plata(a.precio) + (a.reservado ? ' · ' + a.reservado + ' señado' + (a.reservado > 1 ? 's' : '') + ' acá' : ''));
+    }
+    vFicha(res[0].sku);
+    return { ok: true, listo: true, resumen: (r.aprox ? 'No encontré eso exacto; lo más parecido: ' : res.length === 1 ? '' : 'Encontré ' + res.length + ': ') + det.join(' | ') + (res.length > 3 ? ' | y ' + (res.length - 3) + ' más' + (r.buscar ? ': quedaron en la lista de Vender' : '; para verlos, afiná la búsqueda') + '.' : '') };
+  },
+  confirmar: async () => ({ ok: true, mensaje: 'Está en Vender.' })
 }];
 // ═══ Cobros por Mercado Pago que no pasan por el Point integrado (JP 10-nov) ═══
 // Transferencia, Point y QR «No integrado» y link de pago: antes de emitir se busca el cobro en la cuenta de Mercado Pago
@@ -5861,6 +6055,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=233"></script>
+<script src="manual.js?v=234"></script>
 </body>
 </html>
