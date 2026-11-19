@@ -698,7 +698,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .cli-mail.falta { border-color: var(--amber); background: #fffbeb; } .cli-mail.falta #v-mail-st { color: #b45309; font-weight: 600; white-space: nowrap; }
 #ov .box.ficha { max-width: 940px; padding: 0; overflow: hidden; }
 #ov .box.ficha-prod { max-width: 1100px; width: 96vw; padding: 10px 12px 12px; } .prod-if { width: 100%; height: 80vh; border: none; border-radius: 12px; background: #fff; margin-top: 8px; } .pf-link { color: var(--primary-dark); white-space: nowrap; }
-#ov .box.preview { max-width: 900px; width: 96vw; } .pv-a4 { background: #cfcac0; padding: 10px; border-radius: 10px; display: block; overflow: auto; max-height: calc(100vh - 150px); } .pv-zoom { display: inline-flex; align-items: center; gap: 2px; margin-left: 10px; } .pv-zoom .pil { min-width: 64px; justify-content: center; } #pv-1.tk-wrap { overflow: auto; max-height: calc(100vh - 150px); } .pv-a4 iframe { width: 794px; height: 1123px; border: 0; background: white; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
+#ov .box.preview { max-width: 900px; width: 96vw; } .pv-a4 { background: #cfcac0; padding: 10px; border-radius: 10px; display: block; overflow: auto; max-height: calc(100vh - 150px); } .pv-zoom { display: inline-flex; align-items: center; gap: 2px; margin-left: 10px; } .pv-a4 iframe { pointer-events: none; } .pv-a4, #pv-1.tk-wrap { cursor: grab; } .pv-a4.arrastrando, #pv-1.arrastrando { cursor: grabbing; user-select: none; } .pv-zoom .pil { min-width: 64px; justify-content: center; } #pv-1.tk-wrap { overflow: auto; max-height: calc(100vh - 150px); } .pv-a4 iframe { width: 794px; height: 1123px; border: 0; background: white; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
 .fb { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-height: 90vh; }
 .fb-side { background: var(--primary-dark); color: #fff; padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: auto; }
 .fb-x { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; opacity: .85; }
@@ -3260,20 +3260,43 @@ function vPreview(modo) {
   window._pv = x; pvZoomIni(); pvTab(2); pvSoloA4(x);
 }
 // La hoja A4 (595 × 842 px) se escala para que entre entera en la ventana, sin recortes
-// (JP 19-nov) y se puede acercar para leerla: botones − / + (o Ctrl + rueda del mouse); «Entera» vuelve a que entre toda
+// (JP 19-nov) y se puede acercar para leerla: con la rueda del mouse (acerca donde está el mouse) o con − / +; arrastrando se mueve la hoja.
+//  «Entera» vuelve a que entre toda. Si el comprobante tiene varias hojas, se ven todas una abajo de la otra.
 let PV_ZOOM = 1;
-const pvZoomHTML = () => `<span class="pv-zoom" title="Acercar o alejar para leer (también con Ctrl + rueda del mouse)"><button class="btn ico" onclick="pvZoom(-1)" aria-label="Alejar">${_i('minus')}</button><button class="pil" id="pv-zl" onclick="pvZoom(0)" title="Que entre entera en la ventana">Entera</button><button class="btn ico" onclick="pvZoom(1)" aria-label="Acercar">${_i('plus')}</button></span>`;
-function pvZoom(d) { PV_ZOOM = d === 0 ? 1 : Math.max(1, Math.min(5, PV_ZOOM * (d > 0 ? 1.25 : 0.8))); if (PV_ZOOM < 1.01) PV_ZOOM = 1; pvEscala(); }
-function pvZoomIni() { PV_ZOOM = 1; for (const id of ['pv-1', 'pv-2']) { const b = document.getElementById(id); if (b) b.onwheel = e => { if (!e.ctrlKey) return; e.preventDefault(); pvZoom(e.deltaY < 0 ? 1 : -1); }; } }
+const pvZoomHTML = () => `<span class="pv-zoom" title="Rueda del mouse: acercar o alejar · arrastrá la hoja para moverte"><button class="btn ico" onclick="pvZoom(-1)" aria-label="Alejar">${_i('minus')}</button><button class="pil" id="pv-zl" onclick="pvZoom(0)" title="Que entre entera en la ventana">Entera</button><button class="btn ico" onclick="pvZoom(1)" aria-label="Acercar">${_i('plus')}</button></span>`;
+const pvCaja = () => document.getElementById(window._pvTab === 1 ? 'pv-1' : 'pv-2');
+// acerca o aleja dejando quieto el punto que está debajo del mouse (o el centro, con los botones)
+function pvZoomEn(f, ev) {
+  const box = pvCaja(); if (!box) return;
+  const r = box.getBoundingClientRect(), mx = ev ? ev.clientX - r.left : box.clientWidth / 2, my = ev ? ev.clientY - r.top : box.clientHeight / 2;
+  const z0 = PV_ZOOM; let z1 = Math.max(1, Math.min(5, z0 * f)); if (z1 < 1.01) z1 = 1; if (Math.abs(z1 - z0) < 1e-4) return;
+  const cx = box.scrollLeft + mx, cy = box.scrollTop + my;
+  PV_ZOOM = z1; pvEscala();
+  const k = z1 / z0; box.scrollLeft = cx * k - mx; box.scrollTop = cy * k - my;
+}
+function pvZoom(d) { if (d === 0) { PV_ZOOM = 1; pvEscala(); const b = pvCaja(); if (b) b.scrollTo(0, 0); return; } pvZoomEn(d > 0 ? 1.25 : 0.8); }
+function pvZoomIni() {
+  PV_ZOOM = 1;
+  for (const id of ['pv-1', 'pv-2']) {
+    const b = document.getElementById(id); if (!b) continue;
+    b.title = 'Rueda del mouse: acercar o alejar · arrastrá para moverte';
+    b.onwheel = e => { e.preventDefault(); pvZoomEn(Math.exp(-Math.max(-300, Math.min(300, e.deltaY)) * (e.deltaMode === 1 ? 0.05 : 0.0015)), e); };
+    let x0 = 0, y0 = 0, sl = 0, st = 0, on = false;   // arrastrar para moverse (con el dedo, el desplazamiento normal)
+    b.onpointerdown = e => { if (e.button !== 0 || e.pointerType === 'touch') return; on = true; x0 = e.clientX; y0 = e.clientY; sl = b.scrollLeft; st = b.scrollTop; b.classList.add('arrastrando'); try { b.setPointerCapture(e.pointerId); } catch (x) {} };
+    b.onpointermove = e => { if (!on) return; b.scrollLeft = sl - (e.clientX - x0); b.scrollTop = st - (e.clientY - y0); };
+    b.onpointerup = b.onpointercancel = () => { on = false; b.classList.remove('arrastrando'); };
+  }
+}
 function pvEscala() {
   const box = document.getElementById('pv-2'), f = document.getElementById('pv-if'); if (!box || !f) return;
   { const tk = document.querySelector('#pv-1 > *'); if (tk) tk.style.zoom = PV_ZOOM; }   // la comandera también se acerca
   const anchoDisp = Math.max(200, box.clientWidth - 24), altoDisp = Math.max(300, window.innerHeight - box.getBoundingClientRect().top - 40);
   const esc_ = Math.min(1, anchoDisp / 794, altoDisp / 1123) * PV_ZOOM;   // A4 = 210 × 297 mm = 794 × 1123 px de pantalla
+  const alto = Math.max(1123, Number(f.dataset.alto) || 1123);   // todas las hojas del comprobante, una abajo de la otra
   { const l = document.getElementById('pv-zl'); if (l) l.textContent = PV_ZOOM === 1 ? 'Entera' : Math.round(esc_ * 100) + '%'; }
-  f.style.transform = 'scale(' + esc_.toFixed(3) + ')'; f.style.transformOrigin = 'top left'; f.style.width = '794px'; f.style.height = '1123px';
+  f.style.transform = 'scale(' + esc_.toFixed(3) + ')'; f.style.transformOrigin = 'top left'; f.style.width = '794px'; f.style.height = alto + 'px';
   let w = box.querySelector('.pv-wrap'); if (!w) { w = document.createElement('div'); w.className = 'pv-wrap'; f.parentNode.insertBefore(w, f); w.appendChild(f); }
-  w.style.width = Math.ceil(794 * esc_) + 'px'; w.style.height = Math.ceil(1123 * esc_) + 'px'; w.style.overflow = 'hidden'; w.style.margin = '0 auto';
+  w.style.width = Math.ceil(794 * esc_) + 'px'; w.style.height = Math.ceil(alto * esc_) + 'px'; w.style.overflow = 'hidden'; w.style.margin = '0 auto';
 }
 window.addEventListener('resize', () => { if (document.getElementById('pv-if')) pvEscala(); });
 function pvTab(n) {
@@ -3281,7 +3304,7 @@ function pvTab(n) {
   document.getElementById('pv-t1').classList.toggle('on', n === 1); document.getElementById('pv-t2').classList.toggle('on', n === 2);
   document.getElementById('pv-print').title = pvVaA4() ? 'Imprimir la hoja A4 (este comprobante no sale por la comandera)' : 'Imprimir en la comandera';
   window._pvTab = n;
-  if (n === 2) { const f = document.getElementById('pv-if'); if (!f.dataset.ok) { f.srcdoc = a4HTML(window._pv); f.dataset.ok = 1; } pvEscala(); }
+  if (n === 2) { const f = document.getElementById('pv-if'); if (!f.dataset.ok) { f.onload = () => { try { f.dataset.alto = f.contentDocument.documentElement.scrollHeight; } catch (e) {} pvEscala(); }; f.srcdoc = a4HTML(window._pv); f.dataset.ok = 1; } pvEscala(); }
 }
 // El remito no va a la comandera: solo hoja A4 (se esconden las pestañas y abre directo en A4)
 function pvSoloA4(x) { if (!x || !x.c || x.c.tipo !== 'RE') return; const t = document.getElementById('pv-t1'); if (t) t.parentElement.style.display = 'none'; pvTab(2); }
@@ -5430,6 +5453,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=225"></script>
+<script src="manual.js?v=226"></script>
 </body>
 </html>
