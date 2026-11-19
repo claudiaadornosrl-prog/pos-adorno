@@ -1340,6 +1340,7 @@ async function init() {
   if (tp) { TOPE.valor = Number(tp.valor_num) || TOPE.valor; TOPE.at = tp.actualizado_at; TOPE.error = tp.error; }
   await cargarArticulos();
   vRender();
+  setTimeout(async () => { try { const eq = await caraEquipo(); if (eq.some(e => e.cara)) caraPrecalentar().catch(() => {}); } catch (e) {} }, 2500);   // (JP 19-nov) que la primera factura no espere a la cámara
   document.getElementById('v-q').addEventListener('input', vBuscarDebounce);
   document.getElementById('v-q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); vEscanear(); } });
   document.getElementById('v-q').focus();
@@ -4371,6 +4372,16 @@ function caraLib() {
     sc.onerror = () => { CARA.lib = null; mal(new Error('No pude bajar el reconocimiento')); }; document.head.appendChild(sc);
   }));
 }
+let _caraCalor = null;
+function caraPrecalentar() {
+  if (_caraCalor) return _caraCalor;
+  return _caraCalor = (async () => {
+    await caraLib();
+    try { const c = document.createElement('canvas'); c.width = 160; c.height = 160; const x = c.getContext('2d'); x.fillStyle = '#8a8a8a'; x.fillRect(0, 0, 160, 160);
+      await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }));
+      await faceapi.detectFaceLandmarksTiny(c); await faceapi.computeFaceDescriptor(c); } catch (e) {}
+  })().catch(e => { _caraCalor = null; throw e; });
+}
 async function caraEquipo(forzar) {
   if (!forzar && CARA.equipo && CARA.local === LOCAL && Date.now() - CARA.at < 10 * 60000) return CARA.equipo;
   const { data, error } = await sb.rpc('pos_equipo', { p_local: LOCAL }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return CARA.equipo && CARA.local === LOCAL ? CARA.equipo : []; }
@@ -4388,13 +4399,16 @@ async function caraOculta(probar, ms, vivo) {
   caraPast('Un momento…'); CARA.falla = null;
   try {
     const cam = caraCam(video); let tarde = false;
-    try { await Promise.race([Promise.all([caraLib(), cam]), _esp(20000).then(() => { tarde = true; throw new Error('tarda'); })]); }
+    try { await Promise.race([Promise.all([caraPrecalentar(), cam]), _esp(40000).then(() => { tarde = true; throw new Error('tarda'); })]); }
     catch (e) { CARA.falla = 'cam'; CARA.err = tarde ? 'tarda' : String((e && e.name) || '') + (e && e.message ? ': ' + e.message : ''); try { console.warn('POS cámara:', CARA.err); } catch (x) {} if (tarde) cam.then(caraCamOff, () => {}); return null; }
-    const t0 = Date.now(); let huboImg = false;
+    const t0 = Date.now(); let huboImg = false, pend = null;
     while (Date.now() - t0 < ms && (!vivo || vivo())) {
       if (video.readyState < 2 || !video.videoWidth) { await _esp(200); continue; }   // todavía sin imagen
       huboImg = true;
-      let d = null; try { d = await Promise.race([caraLeer(video), _esp(2500).then(() => null)]); } catch (e) {}
+      if (!pend) pend = caraLeer(video).catch(() => null);
+      const d = await Promise.race([pend, _esp(400).then(() => undefined)]);
+      if (d === undefined) continue;   // la lectura sigue: se la espera (no se larga otra encima)
+      pend = null;
       if (d) { const dd = Array.from(d); const r = await Promise.race([probar(dd), _esp(6000).then(() => null)]); if (r) { CARA.ult = { d: dd, at: Date.now() }; return r; } }
       await _esp(200);
     }
@@ -4436,7 +4450,23 @@ function quienEmite(probar, titulo, at) {
     // la que reconoció la cámara, o la que eligió su nombre después de que la cámara la leyó (la base chequea que se parezca).
     let ultimaLectura = null;
     const aprender = (id, d) => { if (!id || !d) return; sb.rpc('pos_cara_aprender', { p_local: LOCAL, p_empleado_id: id, p_descriptor: d }).catch(() => {}); };
-    window._qeElegir = id => { aprender(id, ultimaLectura); emite({ id, modo: 'manual' }); }; window._qeCancelar = () => cerrar(null);
+    window._qeElegir = async id => {
+      // (JP 19-nov) si la cámara reconoció a quien emite, no se cambia a mano: se vuelve a mirar la cámara y tiene que reconocer a la que se elige
+      // (por si dos vendedoras miran la cámara a la vez y tomó a la que no estaba facturando)
+      if (em && em.modo === 'cara' && id !== em.id) {
+        if (window._qeVerif) return; window._qeVerif = true;
+        const e = eq.find(x => x.empleado_id === id), nom = pila(e ? e.nombre : '');
+        marca('qe-em', em.id); msg('Mirá de frente a la cámara, ' + nom + '…');
+        let r = null;
+        try { r = await caraOculta(async d => { let m = null; try { m = (await sb.rpc('pos_cara_identificar', { p_local: LOCAL, p_descriptor: d })).data; } catch (x) {} return m && m.empleado_id === id ? { d } : null; }, 8000); }
+        finally { window._qeVerif = false; }
+        if (fin) return;
+        if (r) { aprender(id, r.d); em = { id, modo: 'cara', desc: r.d }; marca('qe-em', id); msg('✔ La cámara reconoció a ' + nom + (at ? ' · ahora tocá quién atendió' : ''), true); if (!at) { cerrar(em); return; } listo(); }
+        else { marca('qe-em', em.id); msg('La cámara no reconoce a ' + nom + ': no se cambia. Si sos vos, mirá de frente a la cámara y tocá de nuevo tu moneda.'); }
+        return;
+      }
+      aprender(id, ultimaLectura); emite({ id, modo: 'manual' });
+    }; window._qeCancelar = () => cerrar(null);
     window._qaPick = id => { atId = id === -1 ? 'nadie' : id; marca('qe-at', id); listo(); };
     const eq = await caraEquipo(); const conCara = eq.filter(e => e.cara); const apagado = eq.some(e => e.caras_activas === false);
     const delLocal = eq.filter(e => e.local === LOCAL); if (at && !delLocal.length) atId = null;
@@ -4452,7 +4482,7 @@ function quienEmite(probar, titulo, at) {
     }
     modal(`<div class="m-head"><h3>${titulo || (at ? '¿Quién emite y quién atendió?' : '¿Quién emite?')}</h3><span class="spacer"></span><button class="btn ico" onclick="_qeCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
       <div class="qe-zona em">${at ? `<div class="qe-rot">${_i('cobrar')} Emite (en la caja)</div>` : ''}<div id="qe-box"><div id="qe-msg"></div></div>
-      <div class="mini" style="margin:10px 0 6px">${pre ? 'Si no sos vos, tocá tu nombre:' : 'Elegí tu nombre:'}</div>
+      <div class="mini" style="margin:10px 0 6px">${pre ? 'La reconoció la cámara. Si no sos vos, tocá tu moneda y mirá a la cámara:' : 'Elegí tu nombre:'}</div>
       <div class="qe-monedas" id="qe-em">${eq.filter(e => e.local === LOCAL || e.admin).map(e => qeMoneda(e, eq, `_qeElegir(${e.empleado_id})`, e.admin && e.local !== LOCAL ? 'admin' : '')).join('') || '<span class="mini">No hay empleadas cargadas en este local.</span>'}</div></div>
       ${at && delLocal.length ? `<div class="qe-zona at"><div class="qe-rot"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Atendió al cliente</div><div class="mini" style="margin:0 0 6px">Tocá quién lo atendió (puede ser la misma persona) o «${QE_NADIE}» si nadie lo atendió.</div><div class="qe-monedas" id="qe-at">${delLocal.map(e => qeMoneda(e, eq, `_qaPick(${e.empleado_id})`)).join('')}${qeMonedaNadie('_qaPick(-1)')}</div></div>` : ''}
       <div class="m-foot"><span class="spacer"></span><button class="btn" onclick="_qeCancelar()">Cancelar</button></div>`);
@@ -5164,6 +5194,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=219"></script>
+<script src="manual.js?v=220"></script>
 </body>
 </html>
