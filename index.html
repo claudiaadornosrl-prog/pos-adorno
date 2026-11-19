@@ -698,7 +698,7 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .cli-mail.falta { border-color: var(--amber); background: #fffbeb; } .cli-mail.falta #v-mail-st { color: #b45309; font-weight: 600; white-space: nowrap; }
 #ov .box.ficha { max-width: 940px; padding: 0; overflow: hidden; }
 #ov .box.ficha-prod { max-width: 1100px; width: 96vw; padding: 10px 12px 12px; } .prod-if { width: 100%; height: 80vh; border: none; border-radius: 12px; background: #fff; margin-top: 8px; } .pf-link { color: var(--primary-dark); white-space: nowrap; }
-#ov .box.preview { max-width: 900px; width: 96vw; } .pv-a4 { background: #cfcac0; padding: 10px; border-radius: 10px; display: flex; justify-content: center; } .pv-a4 iframe { width: 794px; height: 1123px; border: 0; background: white; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
+#ov .box.preview { max-width: 900px; width: 96vw; } .pv-a4 { background: #cfcac0; padding: 10px; border-radius: 10px; display: block; overflow: auto; max-height: calc(100vh - 150px); } .pv-zoom { display: inline-flex; align-items: center; gap: 2px; margin-left: 10px; } .pv-zoom .pil { min-width: 64px; justify-content: center; } #pv-1.tk-wrap { overflow: auto; max-height: calc(100vh - 150px); } .pv-a4 iframe { width: 794px; height: 1123px; border: 0; background: white; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
 .fb { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-height: 90vh; }
 .fb-side { background: var(--primary-dark); color: #fff; padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: auto; }
 .fb-x { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; opacity: .85; }
@@ -971,7 +971,7 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
             <button class="btn ico" onclick="vVaciar()" title="Vaciar el ticket" aria-label="Vaciar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
             <input id="v-obs" placeholder="Observación (opcional)">
             <label class="mini cli-chk" id="v-chk-pr" style="display:none" title="Tildado es un presupuesto; sin tildar, comprobante manual"><input type="checkbox" id="v-chk-pr-in" onchange="vTipo(this.checked ? 'PR' : 'MA','X')"> Presupuesto</label>
-            <label class="mini cli-chk" id="v-dias-lb" style="display:none" title="Cuántos días corridos se le respeta el precio al cliente. Sale escrito en el comprobante.">Respetar el precio <input id="v-dias" inputmode="numeric" autocomplete="off" value="" placeholder="¿?" oninput="this.classList.remove('falta')" style="width:52px;text-align:center;border-radius:999px;padding:3px 4px;border:1px solid #7dd3fc;background:#e0f2fe;color:#0369a1;font-weight:700"> días</label>
+            <label class="mini cli-chk" id="v-dias-lb" style="display:none" title="Cuántos días corridos se le respeta el precio al cliente. Sale escrito en el comprobante.">Respetar el precio <input id="v-dias" inputmode="numeric" autocomplete="off" value="" placeholder="¿?" oninput="this.classList.remove('falta');diasHasta()" style="width:52px;text-align:center;border-radius:999px;padding:3px 4px;border:1px solid #7dd3fc;background:#e0f2fe;color:#0369a1;font-weight:700"> días corridos <b id="v-dias-hasta" style="color:#0369a1"></b></label>
             <button class="btn pre-btn" id="v-pre" style="display:none" onclick="rmPreGuardar()" title="Guardar sin emitir: queda en Remitos → Pre-remitos para seguir armándolo. No es un remito oficial: no lleva número ni mueve stock"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span>Guardar pre-remito</span></button>
             <button class="btn-cobrar" id="v-cobrar" onclick="emitirTicket()" title="Emitir el comprobante"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span id="v-cobrar-lb">Emitir</span></button>
           </div>
@@ -2088,12 +2088,22 @@ async function vSenasOfrecer(c) {
     ${uno ? '' : '<div class="sena-pils-pie"><button class="btn" onclick="cerrarModal()">Ahora no</button></div>'}</div>`, 'pastilla');
 }
 // Días corridos que se respeta el precio (presupuesto y seña). Los viejos, sin el dato: presupuesto 14 días, seña sin vencimiento.
+function diasHasta() { const el = document.getElementById('v-dias-hasta'); if (!el) return; const v = document.getElementById('v-dias').value.trim(); el.textContent = !/^\d+$/.test(v) ? '' : Number(v) > 0 ? '· hasta el ' + hastaFecha(new Date().toISOString().slice(0, 10), Math.min(365, Number(v))) : '· sin congelar'; }
 const diasVal = () => Math.max(0, Math.min(365, Math.round(num(document.getElementById('v-dias').value)) || 0));
 const diasDesde = f => Math.floor((new Date(new Date().toDateString()) - new Date(String(f).slice(0, 10) + 'T00:00:00')) / 864e5);
 function hastaFecha(f, n) { const v = new Date(String(f).slice(0, 10) + 'T12:00:00'); v.setDate(v.getDate() + n); return fechaAR(v.toISOString().slice(0, 10)); }
-function prValidez(c) { const n = c.precio_dias == null ? 14 : Number(c.precio_dias); return n > 0 ? 'Los precios de este presupuesto se mantienen por ' + n + (n === 1 ? ' día corrido' : ' días corridos') + (c.fecha ? ', hasta el ' + hastaFecha(c.fecha, n) : '') + '.' : 'Precios sujetos a cambio sin previo aviso.'; }
+// (JP 19-nov) en todos los comprobantes: quién atendió en sala y quién en caja (sin sala —Oficina, nota de crédito, por su cuenta— solo la caja)
+const pilaN = n => { n = String(n || '').trim(); return !n || n.includes('@') ? '' : tit((n.split(',')[1] || n).trim()); };
+function atendioTxt(c) {
+  const caja = pilaN(c.vendedora_nombre), sala = pilaN(c.atendio_nombre);
+  if (sala && caja && sala !== caja) return `Te atendió ${esc(sala)} en sala y ${esc(caja)} en caja`;
+  if (sala && caja) return `Te atendió ${esc(caja)}, en sala y en caja`;
+  if (sala) return `Te atendió ${esc(sala)} en sala`;
+  return caja ? `Te atendió ${esc(caja)} en caja` : '';
+}
+function prValidez(c) { const n = c.precio_dias == null ? 14 : Number(c.precio_dias); return n > 0 ? 'Los precios de este presupuesto se mantienen hasta el ' + hastaFecha(c.fecha || new Date().toISOString().slice(0, 10), n) + '.' : 'Precios sujetos a cambio sin previo aviso.'; }   // (JP 19-nov) la fecha, no los días (siempre corridos)
 function senaValidez(c) { const n = c && c.precio_dias; if (n == null) return 'Esta seña se descuenta cuando retirás los artículos. No vence.';
-  return 'Esta seña se descuenta cuando retirás los artículos; la plata no vence. ' + (Number(n) > 0 ? 'Los precios de lo señado se respetan por ' + Number(n) + (Number(n) === 1 ? ' día corrido' : ' días corridos') + (c.fecha ? ', hasta el ' + hastaFecha(c.fecha, Number(n)) : '') + '; después se toman los precios vigentes.' : 'Los artículos se cobran al precio vigente el día que los retirás.'); }
+  return 'Esta seña se descuenta cuando retirás los artículos; la plata no vence. ' + (Number(n) > 0 ? 'Los precios de lo señado se respetan hasta el ' + hastaFecha(c.fecha || new Date().toISOString().slice(0, 10), Number(n)) + '; después se toman los precios vigentes.' : 'Los artículos se cobran al precio vigente el día que los retirás.'); }
 function vSenaUsar(x) {
   cerrarModal(); T.sena_usar = { id: x.id, importe: Number(x.importe), factura: x.factura, letra: x.letra };
   const venc = x.precio_dias != null && diasDesde(x.fecha) > Number(x.precio_dias); let cambio = 0;   // pasado el plazo, lo señado va al precio de hoy
@@ -3242,18 +3252,25 @@ function vPreview(modo) {
   if (!T.items.length) { toast('Todavía no agregaste nada', 'error'); return; }
   const x = vPreviewDatos();
   if (modo === 'imprimir') { document.getElementById('print-area').innerHTML = ticketHTML(x); window.print(); return; }
-  modal(`<div class="m-head"><h3>Vista previa</h3><span class="pils" style="margin-left:10px"><button class="pil on" id="pv-t2" onclick="pvTab(2)">Hoja A4</button><button class="pil" id="pv-t1" onclick="pvTab(1)">Comandera</button></span><span class="spacer"></span>
+  modal(`<div class="m-head"><h3>Vista previa</h3><span class="pils" style="margin-left:10px"><button class="pil on" id="pv-t2" onclick="pvTab(2)">Hoja A4</button><button class="pil" id="pv-t1" onclick="pvTab(1)">Comandera</button></span>${pvZoomHTML()}<span class="spacer"></span>
     <button class="btn ico primary-ico" id="pv-print" onclick="pvImprimir()" title="Imprimir lo que se ve" aria-label="Imprimir">${_i('print')}</button><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div class="mini" style="text-align:center;margin-bottom:8px">Así va a salir. Todavía no está emitido: no tiene número ni CAE.</div>
     <div id="pv-1" class="tk-wrap">${ticketHTML(x)}</div>
     <div id="pv-2" class="pv-a4" style="display:none"><iframe id="pv-if" title="Hoja A4"></iframe></div>`, 'preview');
-  window._pv = x; pvTab(2); pvSoloA4(x);
+  window._pv = x; pvZoomIni(); pvTab(2); pvSoloA4(x);
 }
 // La hoja A4 (595 × 842 px) se escala para que entre entera en la ventana, sin recortes
+// (JP 19-nov) y se puede acercar para leerla: botones − / + (o Ctrl + rueda del mouse); «Entera» vuelve a que entre toda
+let PV_ZOOM = 1;
+const pvZoomHTML = () => `<span class="pv-zoom" title="Acercar o alejar para leer (también con Ctrl + rueda del mouse)"><button class="btn ico" onclick="pvZoom(-1)" aria-label="Alejar">${_i('minus')}</button><button class="pil" id="pv-zl" onclick="pvZoom(0)" title="Que entre entera en la ventana">Entera</button><button class="btn ico" onclick="pvZoom(1)" aria-label="Acercar">${_i('plus')}</button></span>`;
+function pvZoom(d) { PV_ZOOM = d === 0 ? 1 : Math.max(1, Math.min(5, PV_ZOOM * (d > 0 ? 1.25 : 0.8))); if (PV_ZOOM < 1.01) PV_ZOOM = 1; pvEscala(); }
+function pvZoomIni() { PV_ZOOM = 1; for (const id of ['pv-1', 'pv-2']) { const b = document.getElementById(id); if (b) b.onwheel = e => { if (!e.ctrlKey) return; e.preventDefault(); pvZoom(e.deltaY < 0 ? 1 : -1); }; } }
 function pvEscala() {
   const box = document.getElementById('pv-2'), f = document.getElementById('pv-if'); if (!box || !f) return;
+  { const tk = document.querySelector('#pv-1 > *'); if (tk) tk.style.zoom = PV_ZOOM; }   // la comandera también se acerca
   const anchoDisp = Math.max(200, box.clientWidth - 24), altoDisp = Math.max(300, window.innerHeight - box.getBoundingClientRect().top - 40);
-  const esc_ = Math.min(1, anchoDisp / 794, altoDisp / 1123);   // A4 = 210 × 297 mm = 794 × 1123 px de pantalla
+  const esc_ = Math.min(1, anchoDisp / 794, altoDisp / 1123) * PV_ZOOM;   // A4 = 210 × 297 mm = 794 × 1123 px de pantalla
+  { const l = document.getElementById('pv-zl'); if (l) l.textContent = PV_ZOOM === 1 ? 'Entera' : Math.round(esc_ * 100) + '%'; }
   f.style.transform = 'scale(' + esc_.toFixed(3) + ')'; f.style.transformOrigin = 'top left'; f.style.width = '794px'; f.style.height = '1123px';
   let w = box.querySelector('.pv-wrap'); if (!w) { w = document.createElement('div'); w.className = 'pv-wrap'; f.parentNode.insertBefore(w, f); w.appendChild(f); }
   w.style.width = Math.ceil(794 * esc_) + 'px'; w.style.height = Math.ceil(1123 * esc_) + 'px'; w.style.overflow = 'hidden'; w.style.margin = '0 auto';
@@ -3484,7 +3501,7 @@ function a4HTML(x) {
   const d = new Date(c.fecha + 'T00:00:00'); const fechaL = `${d.getDate()} de ${A4_MESES[d.getMonth()]} de ${d.getFullYear()}`;
   const titulo = re ? 'Remito X' : ma ? 'Comprobante' : pr ? 'Presupuesto' : (nc ? 'Nota de crédito ' : 'Factura ') + c.letra;
   const cod = fiscal && c.arca_cbte_tipo ? ` · Cód. ${String(c.arca_cbte_tipo).padStart(3, '0')}` : '';
-  const quien = (re ? 'Lo emitió ' : pr ? 'Te lo preparó ' : 'Te atendió ') + (n => esc(tit((String(n || '').split(',')[1] || n || '').trim())))(!re && !pr && c.atendio_nombre || c.vendedora_nombre);
+  const quien = re ? 'Lo emitió ' + esc(pilaN(c.vendedora_nombre)) : atendioTxt(c);   // (JP 19-nov) sala y caja
   const nroTxt = c.preview ? 'Vista previa · sin emitir' : 'N° ' + (re ? remNum(c) : fmtNum(c.punto_venta, c.numero)) + cod + (re && c.destino_local ? ' · Tránsito ' + trNum(c) : '');
   const devuelve = nc && rel ? `<br>Devuelve la ${rel.tipo === 'MA' ? 'Comprobante' : 'Factura ' + rel.letra} ${fmtNum(rel.punto_venta, rel.numero)}` : '';
   let cli = `<b>${esc(c.cliente_interno || c.cliente_nombre || 'Consumidor Final')}</b>`;
@@ -3659,7 +3676,7 @@ function vRender() {
   for (const f of t.filas) { const e = f.row.querySelector('.dval'); const v = num(f.row.dataset.v);
     if (document.activeElement !== e) e.value = !v ? '' : f.row.dataset.modo === 'imp' ? plata(v) : String(v).replace('.', ',') + '%';
     const dm = f.row.querySelector('.dmonto'); dm.textContent = f.d ? '- ' + plata(f.d) : '$ 0'; dm.className = 'dmonto ' + (f.d ? (f.row.dataset.modo === 'imp' ? 'dto-imp' : 'dto-pct') : ''); }
-  { const l = document.getElementById('v-dias-lb'), on = T.tipo === 'PR' || !!T.sena; if (on && l.style.display === 'none') document.getElementById('v-dias').value = ''; l.style.display = on ? '' : 'none'; }
+  { const l = document.getElementById('v-dias-lb'), on = T.tipo === 'PR' || !!T.sena; if (on && l.style.display === 'none') document.getElementById('v-dias').value = ''; l.style.display = on ? '' : 'none'; diasHasta(); }
   { const a = vArts(); document.getElementById('v-arts-fila').style.display = (a.u || a.c) ? '' : 'none'; document.getElementById('v-arts').textContent = _nArt(a.u) + (a.c ? ' · ' + String(a.c).replace('.', ',') + ' de cambio' : ''); }
   document.getElementById('v-subtotal').textContent = plata(r2(t.sub + prAho)); document.getElementById('v-subtotal-lb').textContent = prAho > 0 ? 'Subtotal sin promociones' : 'Subtotal';
   // Letra A: en pantalla se discrimina el IVA igual que en el comprobante (los precios son con IVA incluido; neto = total / 1,21)
@@ -5172,7 +5189,7 @@ function ticketHTML(x) {
   return `<div class="ticket">${pru ? `<div style="${FRANJA_PRUEBA}font-size:11px;padding:4px 8px;margin-bottom:6px">PRUEBA · SIN VALOR FISCAL</div>` : ''}
     <div class="tk-h"><img class="tk-logo${li.logo === 'atelier-logo-der.png' ? ' atelier' : ''}" src="${esc(li.logo || 'logo-ca.png')}" alt="Claudia Adorno"><div class="tk-local">${esc(LOCALES[c.local] || c.local)}</div><div class="mini">${esc(li.domicilio || '')}</div></div>
     <div class="sep"></div>
-    <div class="tk-tipo"><b>${esc(titulo)}</b><span class="nro">${c.preview ? 'sin emitir' : fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} · ${String(c.hora).slice(0, 5)}${(n => n ? ' · Te atendió ' + esc(tit((n.split(',')[1] || n).trim())) : '')(c.atendio_nombre || c.vendedora_nombre)}</div>${devuelve ? `<div class="mini">${esc(devuelve)}</div>` : ''}</div>
+    <div class="tk-tipo"><b>${esc(titulo)}</b><span class="nro">${c.preview ? 'sin emitir' : fmtNum(c.punto_venta, c.numero)}</span><div class="mini">${fechaAR(c.fecha)} · ${String(c.hora).slice(0, 5)}${c.tipo !== 'RE' && atendioTxt(c) ? '<br>' + atendioTxt(c) : ''}</div>${devuelve ? `<div class="mini">${esc(devuelve)}</div>` : ''}</div>
     <div class="sep"></div>
     <div class="tk-cli">${cliente}</div>
     <div class="sep"></div>
@@ -5228,14 +5245,14 @@ async function reintentarCAE(id) {
 async function verComprobante(id, recien) {
   const x = await traerComprobante(id); if (!x.c) { toast('No lo encontré', 'error'); return; }
   // (JP 9-nov) mismas pestañas que la vista previa al emitir: Comandera / Hoja A4 (y el PDF si ya está)
-  modal(`<div class="m-head"><h3>${recien ? '✓ Emitido' : 'Comprobante'}</h3><span class="pils" style="margin-left:10px"><button class="pil on" id="pv-t2" onclick="pvTab(2)">Hoja A4</button><button class="pil" id="pv-t1" onclick="pvTab(1)">Comandera</button></span><span class="spacer"></span>
+  modal(`<div class="m-head"><h3>${recien ? '✓ Emitido' : 'Comprobante'}</h3><span class="pils" style="margin-left:10px"><button class="pil on" id="pv-t2" onclick="pvTab(2)">Hoja A4</button><button class="pil" id="pv-t1" onclick="pvTab(1)">Comandera</button></span>${pvZoomHTML()}<span class="spacer"></span>
     ${x.c.pdf_url ? `<a class="btn ico primary-ico" href="${esc(x.c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF (hoja A4, el que va por mail)" aria-label="PDF">${_i('pdf')}</a>` : '<span class="mini" title="El PDF se arma solo apenas el comprobante tiene CAE">PDF en camino…</span>'}
     ${x.c.estado === 'emitido' && !x.c.destino_local ? `<button class="btn ico cm-wa" onclick="compWaPedir(${x.c.id})" title="Mandar el comprobante por WhatsApp" aria-label="WhatsApp">${WA_SVG}</button>` : ''}
     <button class="btn ico primary-ico" id="pv-print" onclick="pvImprimir()" title="Imprimir lo que se ve" aria-label="Imprimir">${_i('print')}</button>
     <button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div id="pv-1" class="tk-wrap">${ticketHTML(x)}</div>
     <div id="pv-2" class="pv-a4" style="display:none"><iframe id="pv-if" title="Hoja A4"></iframe></div>`, 'preview');
-  window._ultimoTicket = x; window._pv = x; pvTab(2); pintarQR(document.querySelector('#ov .tk-wrap')); pvSoloA4(x);
+  window._ultimoTicket = x; window._pv = x; pvZoomIni(); pvTab(2); pintarQR(document.querySelector('#ov .tk-wrap')); pvSoloA4(x);
   if (x.c.letra !== 'X' && x.c.cae_estado === 'pendiente') vigilarCAE(id);
 }
 async function imprimir(id) {
@@ -5413,6 +5430,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=224"></script>
+<script src="manual.js?v=225"></script>
 </body>
 </html>
