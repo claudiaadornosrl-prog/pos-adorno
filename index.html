@@ -984,6 +984,7 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
         <label>Hasta <input type="date" id="c-hasta" onchange="cargarComprobantes()"></label>
         <label>Tipo <select id="c-tipo" onchange="cargarComprobantes()"><option value="">Todos</option><option value="FC">Facturas</option><option value="NC">Notas de crédito</option><option value="MA">Facturas manuales</option><option value="PR">Presupuestos</option><option value="RE">Remitos</option></select></label>
         <label>Buscar <input id="c-q" placeholder="lo que sea: cliente, artículo, pago, importe…" oninput="cDebounce()"></label>
+        <button class="pil" id="c-sv" onclick="cSinVerif()" title="Facturas con un pago de Point, QR, transferencia o link que se emitió «sin verificar»: para verificarlo cuando llega el comprobante del cliente">Pagos sin verificar<span class="badge" id="c-sv-n" style="display:none"></span></button>
         <span class="stat" id="c-stat"></span>
       </div>
       <div id="c-lista"></div>
@@ -1350,7 +1351,7 @@ async function init() {
   document.getElementById('v-q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); vEscanear(); } });
   document.getElementById('v-q').focus();
 }
-const HUB_FN = { nc: 'pos.nota_credito', re: 'pos.remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo', envio: 'pos.precio_envio', precio: 'pos.precio', descuento: 'pos.descuento', caja: 'pos.caja_point_qr', promo: 'pos.promociones_editar' };
+const HUB_FN = { nc: 'pos.nota_credito', re: 'pos.remito', ma: 'pos.presupuesto', anular: 'pos.anular', pedido: 'pos.pedidos', minimo: 'pos.minimos', mov: 'pos.mov_stock', recibir: 'pos.recibir', cobro: 'pos.cobro_sin_mp', efectivo: 'pos.cobro_efectivo', envio: 'pos.precio_envio', precio: 'pos.precio', descuento: 'pos.descuento', caja: 'pos.caja_point_qr', promo: 'pos.promociones_editar', pago: 'pos.pago_corregir' };
 const HUB_TAB = { vender: 'pos.vender', vales: 'pos.vales', etiquetas: 'pos.etiquetas', caja: 'pos.caja', promociones: 'pos.promociones', online: 'pos.online' };
 // estado de una función del Hub para quien está logueado; null si el Hub no respondió (ahí vale la regla de antes)
 const hubF = f => { if (!PERFIL) return null; if (PERFIL.es_admin) return 'h'; const m = PERFIL.hub; return m && Object.keys(m).length ? (m[f] || 'o') : null; };
@@ -5152,10 +5153,16 @@ function cTexto(c) { const x = CIDX[c.id] || {};
 const cMontos = c => [Number(c.total)].concat((CIDX[c.id] || {}).m || []);
 let _cT; function cDebounce() { clearTimeout(_cT); _cT = setTimeout(cargarComprobantes, 600); }
 let COMPS = [];
+// (JP 19-nov) pagos que se emitieron «sin verificar» (medios verificables): cartel en la lista y pastilla para verlos todos
+let C_SV = false, PG_PEND = {};
+function cSinVerif() { C_SV = !C_SV; cargarComprobantes(); }
 async function cargarComprobantes() {
   const d = document.getElementById('c-desde').value, h = document.getElementById('c-hasta').value, tipo = document.getElementById('c-tipo').value, q = document.getElementById('c-q').value.trim();
+  try { const { data: pp } = await sb.rpc('pos_pagos_pendientes', { p_local: LOCAL }); PG_PEND = {}; (pp || []).forEach(x => { PG_PEND[x.comprobante_id] = x; }); } catch (e) { PG_PEND = {}; }
+  { const n = Object.keys(PG_PEND).length, b = document.getElementById('c-sv-n'); if (b) { b.textContent = n || ''; b.style.display = n ? '' : 'none'; } const pl = document.getElementById('c-sv'); if (pl) pl.classList.toggle('on', C_SV); }
   let qry = sb.from('pos_comprobantes').select('*').eq('local', LOCAL).order('id', { ascending: false }).limit(500);
-  if (d) qry = qry.gte('fecha', d); if (h) qry = qry.lte('fecha', h);   // vacío = sin límite de ese lado
+  if (C_SV) qry = qry.in('id', Object.keys(PG_PEND).map(Number).concat([0]));   // todas las pendientes, de cualquier fecha
+  else { if (d) qry = qry.gte('fecha', d); if (h) qry = qry.lte('fecha', h); }   // vacío = sin límite de ese lado
   if (tipo) qry = qry.eq('tipo', tipo);
   const { data, error } = await qry; if (error) { toast(error.message, 'error'); return; }
   COMPS = data || [];
@@ -5171,12 +5178,82 @@ async function cargarComprobantes() {
       <td>${esc(c.cliente_nombre)}<div class="mini">${c.cliente_doc ? (c.cliente_doc_tipo || '') + ' ' + c.cliente_doc : ''}${c.cliente_informado === false && c.cliente_interno ? '<span title="Cliente registrado en nuestra base; a ARCA fue como Consumidor Final">👤 ' + esc(c.cliente_interno) + '</span>' : (!c.cliente_globalid && !c.cliente_doc && c.tipo !== 'NC' ? '<span title="Se vendió sin cargar cliente">sin cliente</span>' : '')}</div></td>
       <td class="mini">${esc(c.vendedora_nombre || '')}${c.atendio_nombre && c.atendio_nombre !== c.vendedora_nombre ? '<div>atendió ' + esc(pila(c.atendio_nombre)) + '</div>' : c.atendio_nadie ? '<div>' + QE_NADIE.toLowerCase() + '</div>' : ''}${c.autorizado_por && c.autorizado_modo !== 'propia' ? '<div>autorizó ' + esc(pila(c.autorizado_por)) + ' <span class="chip green">' + c.autorizado_modo + '</span></div>' : ''}</td>
       <td class="num"><b>${c.signo < 0 ? '- ' : ''}${plata(c.total)}</b></td>
-      <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'prueba' ? '<span class="chip red" title="Comprobante de prueba: no fue a ARCA y no tiene valor fiscal">Prueba</span>' : c.cae_estado === 'pendiente' ? (String(c.cae_error || '').startsWith('En espera') ? '<span class="chip amber" title="' + esc(c.cae_error) + '">En espera</span>' : '<span class="chip amber" title="Esperando el CAE de ARCA">CAE…</span>') : c.cae_estado === 'ok' ? '<span class="chip green" title="CAE ' + esc(c.cae) + '">CAE</span>' : c.cae_estado === 'error' ? '<span class="chip red" title="' + esc(c.cae_error || '') + '">CAE rechazado</span>' : c.tipo === 'RE' ? (c.destino_local ? '<span class="chip viol">Traslado → ' + esc(LOCALES[c.destino_local]) + '</span> ' + trChip(c) : c.facturado_en ? '<span class="chip green">Remito facturado</span>' : '<span class="chip amber">Remito sin facturar</span>') : c.tipo === 'PR' ? '<span class="chip amber">Presupuesto</span>' : '<span class="chip gray">Manual</span>'}${c.es_sena ? ' <span class="chip blue">Seña</span>' : ''}${Number(c.gift_desc) > 0 ? ' <span class="chip blue" title="Descontó una gift card ya facturada de ' + plata(c.gift_desc) + '">Usa gift</span>' : ''}${Number(c.sena_monto) > 0 ? ' <span class="chip blue" title="Descontó una seña de ' + plata(c.sena_monto) + '">Usa seña</span>' : ''}</td>
-      <td class="acc">${c.tipo === 'RE' && c.estado === 'emitido' && !c.facturado_en && !c.destino_local ? `<button class="btn ico" onclick="rmFacturar(${c.id})" title="Facturar este remito" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo === 'PR' && c.estado === 'emitido' ? `<button class="btn ico" onclick="prFacturar(${c.id})" title="Facturar este presupuesto" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo !== 'NC' && c.tipo !== 'RE' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
+      <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'prueba' ? '<span class="chip red" title="Comprobante de prueba: no fue a ARCA y no tiene valor fiscal">Prueba</span>' : c.cae_estado === 'pendiente' ? (String(c.cae_error || '').startsWith('En espera') ? '<span class="chip amber" title="' + esc(c.cae_error) + '">En espera</span>' : '<span class="chip amber" title="Esperando el CAE de ARCA">CAE…</span>') : c.cae_estado === 'ok' ? '<span class="chip green" title="CAE ' + esc(c.cae) + '">CAE</span>' : c.cae_estado === 'error' ? '<span class="chip red" title="' + esc(c.cae_error || '') + '">CAE rechazado</span>' : c.tipo === 'RE' ? (c.destino_local ? '<span class="chip viol">Traslado → ' + esc(LOCALES[c.destino_local]) + '</span> ' + trChip(c) : c.facturado_en ? '<span class="chip green">Remito facturado</span>' : '<span class="chip amber">Remito sin facturar</span>') : c.tipo === 'PR' ? '<span class="chip amber">Presupuesto</span>' : '<span class="chip gray">Manual</span>'}${c.es_sena ? ' <span class="chip blue">Seña</span>' : ''}${Number(c.gift_desc) > 0 ? ' <span class="chip blue" title="Descontó una gift card ya facturada de ' + plata(c.gift_desc) + '">Usa gift</span>' : ''}${Number(c.sena_monto) > 0 ? ' <span class="chip blue" title="Descontó una seña de ' + plata(c.sena_monto) + '">Usa seña</span>' : ''}${PG_PEND[c.id] ? ` <a href="#" class="chip amber" onclick="pgVer(${c.id});return false" title="Tiene ${PG_PEND[c.id].pagos === 1 ? 'un pago' : PG_PEND[c.id].pagos + ' pagos'} de ${plata(PG_PEND[c.id].importe)} sin verificar: tocá para verificarlo">Pago sin verificar</a>` : ''}</td>
+      <td class="acc">${(c.tipo === 'FC' || c.tipo === 'MA') && c.estado === 'emitido' ? `<button class="btn ico" onclick="pgVer(${c.id})" title="Pagos: verificar un pago o corregir la forma de pago" aria-label="Pagos">${_i('cobrar')}</button>` : ''}${c.tipo === 'RE' && c.estado === 'emitido' && !c.facturado_en && !c.destino_local ? `<button class="btn ico" onclick="rmFacturar(${c.id})" title="Facturar este remito" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo === 'PR' && c.estado === 'emitido' ? `<button class="btn ico" onclick="prFacturar(${c.id})" title="Facturar este presupuesto" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo !== 'NC' && c.tipo !== 'RE' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && c.cae_estado === 'error' ? `<button class="btn ico" onclick="reintentarCAE(${c.id})" title="Pedir el CAE de nuevo a ARCA" aria-label="Reintentar CAE">${_i('nc')}</button>` : ''}
         ${(c.tipo === 'PR' || c.tipo === 'MA' || (c.tipo === 'FC' && c.letra !== 'X' && (c.cae_estado === 'ok' || c.cae_estado === 'prueba') && !c.sena_id && !(Number(c.gift_desc) > 0))) && c.estado === 'emitido' && !c.es_sena && !c.gift_codigos && !c.remito_id ? `<button class="btn ico" onclick="modificar(${c.id})" title="${c.tipo === 'FC' ? 'Modificar la factura: al emitir salen la nota de crédito y la factura nueva' : c.tipo === 'PR' ? 'Modificar el presupuesto' : 'Modificar el comprobante X (pide autorización de la encargada)'}" aria-label="Modificar">${_i('edit')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && c.cae_estado !== 'ok' && c.cae_estado !== 'pendiente' ? `<button class="btn ico peligro" onclick="anular(${c.id})" title="Anular" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
-    : '<div class="empty">No hay comprobantes en ese rango.</div>';
+    : `<div class="empty">${C_SV ? 'No hay pagos sin verificar en ' + esc(LOCALES[LOCAL] || LOCAL) + '.' : 'No hay comprobantes en ese rango.'}</div>`;
+}
+// ═══ Pagos de un comprobante emitido (JP 19-nov): verificar después y corregir la forma de pago ═══
+const PG_MEDIOS_OK = ['efectivo', 'efectivo_usd', 'transferencia', 'mp_point_ni', 'mp_qr_ni', 'mp_qr', 'cc'];
+const medioNom = k => ((MEDIOS || []).find(m => m.clave === k) || {}).nombre || k;
+const pgComp = c => TIPO_NOM[c.tipo] + ' ' + c.letra + ' ' + fmtNum(c.punto_venta, c.numero);
+const pgCuando = t => { const d = new Date(t); return fechaAR(d.toISOString().slice(0, 10)) + ' ' + d.toTimeString().slice(0, 5); };
+async function pgVer(id) {
+  const { data, error } = await sb.rpc('pos_pagos_de', { p_comprobante: id }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  window._PG = data; const c = data.comprobante;
+  const est = p => p.estado === 'verificado' ? '<span class="chip green">✔ verificado</span>' : p.estado === 'sin_verificar' ? '<span class="chip amber">sin verificar</span>' : '';
+  modal(`<div class="m-head"><h3>Pagos · ${esc(pgComp(c))}</h3><span class="spacer"></span><button class="btn chico" onclick="verComprobante(${c.id})">Ver el comprobante</button><button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
+    <div class="mini" style="margin-bottom:8px">${fechaAR(c.fecha)} · ${esc(c.cliente_nombre || '')} · total ${plata(c.total)}. La forma de pago no viaja a ARCA: corregirla no cambia la factura (el importe queda igual).</div>
+    <table><thead><tr><th>Forma de pago</th><th class="num">Importe</th><th>Referencia</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${data.pagos.map(p => `<tr><td><b>${esc(p.nombre)}</b>${p.detalle && p.detalle.usd ? '<div class="mini">US$ ' + Number(p.detalle.usd) + ' × ' + plata2(p.detalle.tc) + '</div>' : ''}</td><td class="num" style="white-space:nowrap">${plata2(p.importe)}</td><td class="mini">${esc(p.referencia || '')}</td>
+      <td>${est(p)}${p.verificado_at ? `<div class="mini">${p.verificado_modo === 'mp' ? 'con Mercado Pago' : 'a mano'} · ${esc(pila(p.verificado_nombre || ''))} · ${pgCuando(p.verificado_at)}</div>` : ''}</td>
+      <td class="acc">${p.puede_verificar ? `<button class="btn primary chico" onclick="pgVerificar(${p.id})" title="Buscar este cobro en Mercado Pago, desde el día de la factura">Verificar</button><button class="btn chico" onclick="pgManual(${p.id})" title="Si entró a una cuenta que no es Mercado Pago: con el número de operación del comprobante del cliente">A mano</button>` : ''}${p.puede_cambiar ? `<button class="btn chico" onclick="pgCambiar(${p.id})" title="Corregir la forma de pago (lo hace o lo autoriza la encargada)">Corregir</button>` : ''}</td></tr>`).join('')}
+    </tbody></table>
+    ${data.cambios.length ? `<div class="mini" style="margin-top:12px"><b>Correcciones de la forma de pago</b>${data.cambios.map(k => `<div>${pgCuando(k.hecho_at)} · ${esc(medioNom(k.medio_antes))} → <b>${esc(medioNom(k.medio_despues))}</b> · ${plata2(k.importe)} · «${esc(k.motivo)}» · ${esc(pila(k.hecho_nombre || ''))}${k.autorizado_por && k.autorizado_modo !== 'propia' ? ' · autorizó ' + esc(pila(k.autorizado_por)) : ''}</div>`).join('')}</div>` : ''}`);
+}
+async function pgVerificar(pid) {
+  const D = window._PG, p = D.pagos.find(x => x.id === pid), c = D.comprobante; if (!p) return;
+  toast('Busco el cobro de ' + plata2(p.importe) + ' en Mercado Pago desde el ' + fechaAR(c.fecha) + '…', 'success');
+  const min = Math.min(20160, Math.max(240, Math.round((Date.now() - new Date(c.fecha + 'T00:00:00-03:00').getTime()) / 60000) + 1440));
+  try { await sb.functions.invoke('sync-mp-on-demand', { body: { minutes_back: min } }); } catch (e) {}
+  const { data, error } = await sb.rpc('pos_pago_buscar_mp', { p_pago_id: pid }); if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  const lista = data || [];
+  if (!lista.length) { if (await confirmar('No apareció un cobro de ' + plata2(p.importe) + ' en Mercado Pago desde el ' + fechaAR(c.fecha) + '. ¿Lo verificás a mano con el número de operación del comprobante del cliente?')) pgManual(pid); return; }
+  window._PGL = { pid, lista };
+  modal(`<div class="m-head"><h3>${lista.length === 1 ? 'Apareció este cobro' : 'Hay ' + lista.length + ' cobros'} de ${plata2(p.importe)} en Mercado Pago</h3><span class="spacer"></span><button class="btn ico" onclick="pgVer(${c.id})" aria-label="Volver">${_i('x')}</button></div>
+    <div class="mini" style="margin-bottom:8px">Fijate en el comprobante del cliente la fecha, la hora y el código, y tocá el que es. Queda atado a esta factura y no se puede usar en otra.</div>
+    <table><tbody>${lista.map((m, i) => `<tr><td><b>${esc(m.dia)} ${esc(m.hora)}</b></td><td class="mini">${esc(m.codigo || '')}${m.detalle ? '<div>' + esc(m.detalle) + '</div>' : ''}</td><td class="acc"><button class="btn primary chico" onclick="pgTomar(${i})">Es este</button></td></tr>`).join('')}</tbody></table>`);
+}
+async function pgTomar(i) {
+  const L = window._PGL, m = L && L.lista[i]; if (!m) return; const c = window._PG.comprobante;
+  const { data, error } = await sb.rpc('pos_pago_verificar', { p_pago_id: L.pid, p_mov_id: m.id, p_referencia: null, p_autorizacion_id: null });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  toast('✔ Pago verificado con Mercado Pago' + (data.referencia ? ' (op. ' + data.referencia + ')' : '') + ': quedó conciliado con esta factura', 'success'); pgVer(c.id); if (document.getElementById('c-lista')) cargarComprobantes();
+}
+async function pgManual(pid) {
+  const D = window._PG, p = D.pagos.find(x => x.id === pid), c = D.comprobante; if (!p) return;
+  const ref = await pedirTexto('Número de operación del comprobante que mandó el cliente (' + p.nombre + ' de ' + plata2(p.importe) + '):', p.referencia || ''); if (ref == null || !ref.trim()) return;
+  const aid = await autorizar('cobro', 'Verificar a mano un pago de ' + plata2(p.importe) + ' · ' + pgComp(c) + ' · op. ' + ref.trim()); if (aid === null) return;
+  const { error } = await sb.rpc('pos_pago_verificar', { p_pago_id: pid, p_mov_id: null, p_referencia: ref.trim(), p_autorizacion_id: aid || null });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  toast('✔ Pago verificado a mano (op. ' + ref.trim() + ')', 'success'); pgVer(c.id); if (document.getElementById('c-lista')) cargarComprobantes();
+}
+function pgCambiar(pid) {
+  const D = window._PG, p = D.pagos.find(x => x.id === pid), c = D.comprobante; if (!p) return; window._PGC = { pid, medio: null };
+  modal(`<div class="m-head"><h3>Corregir la forma de pago</h3><span class="spacer"></span><button class="btn ico" onclick="pgVer(${c.id})" aria-label="Volver">${_i('x')}</button></div>
+    <div class="mini" style="margin-bottom:8px">${esc(pgComp(c))} · hoy dice <b>${esc(p.nombre)}</b> por ${plata2(p.importe)}. El importe no cambia y no toca ARCA. Lo hace la encargada (o lo autoriza). Queda anotado quién, cuándo y por qué.</div>
+    <div class="mini">¿Cómo se pagó?</div>
+    <div class="pils" id="pgc-m" style="flex-wrap:wrap;margin:4px 0 8px">${PG_MEDIOS_OK.filter(k => (MEDIOS || []).some(m => m.clave === k && m.activo !== false)).map(k => `<button type="button" class="pil" data-m="${k}" onclick="pgcElegir('${k}')">${esc(medioNom(k))}</button>`).join('')}</div>
+    <div class="cli-sin" id="pgc-tc-box" style="display:none">${_i('cobrar')}<input id="pgc-tc" inputmode="decimal" placeholder="Cotización del dólar con que se cobró" autocomplete="off"></div>
+    <div class="cli-sin">${_i('edit')}<input id="pgc-ref" placeholder="Referencia u operación (opcional)" autocomplete="off" value="${esc(p.referencia || '')}"></div>
+    <div class="cli-sin">${_i('edit')}<input id="pgc-mot" placeholder="Por qué se corrige (obligatorio): se cargó efectivo pero pagó por transferencia…" autocomplete="off"></div>
+    <div class="m-foot"><button class="btn" onclick="pgVer(${c.id})">Cancelar</button><span class="spacer"></span><button class="btn primary" onclick="pgCambiarOk()">Corregir</button></div>`);
+}
+function pgcElegir(k) { window._PGC.medio = k; document.querySelectorAll('#pgc-m .pil').forEach(b => b.classList.toggle('on', b.dataset.m === k)); document.getElementById('pgc-tc-box').style.display = k === 'efectivo_usd' ? '' : 'none'; }
+async function pgCambiarOk() {
+  const D = window._PG, C = window._PGC, p = D.pagos.find(x => x.id === C.pid), c = D.comprobante; if (!p) return;
+  const motivo = document.getElementById('pgc-mot').value.trim(), ref = document.getElementById('pgc-ref').value.trim(), tc = num(document.getElementById('pgc-tc').value);
+  if (!C.medio) { toast('Elegí cómo se pagó', 'error'); return; }
+  if (C.medio === 'efectivo_usd' && !(tc > 0)) { toast('Poné la cotización del dólar', 'error'); document.getElementById('pgc-tc').focus(); return; }
+  if (!motivo) { toast('Contá por qué se corrige: queda anotado', 'error'); document.getElementById('pgc-mot').focus(); return; }
+  const aid = await autorizar('pago', 'Corregir la forma de pago · ' + pgComp(c) + ' · ' + p.nombre + ' → ' + medioNom(C.medio) + ' · ' + plata2(p.importe) + ' · ' + motivo); if (aid === null) { pgCambiar(C.pid); return; }
+  const { data, error } = await sb.rpc('pos_pago_cambiar', { p_pago_id: C.pid, p_medio: C.medio, p_referencia: ref || null, p_tc: C.medio === 'efectivo_usd' ? tc : null, p_motivo: motivo, p_autorizacion_id: aid || null });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  toast('Forma de pago corregida: ' + p.nombre + ' → ' + medioNom(C.medio) + (data.queda_sin_verificar ? '. Quedó «sin verificar»: cuando llegue el comprobante del cliente, verificalo.' : ''), 'success');
+  if (data.aviso) setTimeout(() => toast(data.aviso, 'error'), 1500);
+  pgVer(c.id); if (document.getElementById('c-lista')) cargarComprobantes();
 }
 async function traerComprobante(id) {
   const [{ data: c }, { data: det }, { data: pagos }] = await Promise.all([
@@ -5271,6 +5348,7 @@ async function verComprobante(id, recien) {
   modal(`<div class="m-head"><h3>${recien ? '✓ Emitido' : 'Comprobante'}</h3><span class="pils" style="margin-left:10px"><button class="pil on" id="pv-t2" onclick="pvTab(2)">Hoja A4</button><button class="pil" id="pv-t1" onclick="pvTab(1)">Comandera</button></span>${pvZoomHTML()}<span class="spacer"></span>
     ${x.c.pdf_url ? `<a class="btn ico primary-ico" href="${esc(x.c.pdf_url)}" target="_blank" rel="noopener" title="Abrir el PDF (hoja A4, el que va por mail)" aria-label="PDF">${_i('pdf')}</a>` : '<span class="mini" title="El PDF se arma solo apenas el comprobante tiene CAE">PDF en camino…</span>'}
     ${x.c.estado === 'emitido' && !x.c.destino_local ? `<button class="btn ico cm-wa" onclick="compWaPedir(${x.c.id})" title="Mandar el comprobante por WhatsApp" aria-label="WhatsApp">${WA_SVG}</button>` : ''}
+    ${(x.c.tipo === 'FC' || x.c.tipo === 'MA') && x.c.estado === 'emitido' ? `<button class="btn ico" onclick="pgVer(${x.c.id})" title="Pagos: verificar un pago o corregir la forma de pago" aria-label="Pagos">${_i('cobrar')}</button>` : ''}
     <button class="btn ico primary-ico" id="pv-print" onclick="pvImprimir()" title="Imprimir lo que se ve" aria-label="Imprimir">${_i('print')}</button>
     <button class="btn ico" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
     <div id="pv-1" class="tk-wrap">${ticketHTML(x)}</div>
@@ -5453,6 +5531,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=226"></script>
+<script src="manual.js?v=227"></script>
 </body>
 </html>
