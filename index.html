@@ -623,6 +623,13 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .pr-sw { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
 .pr-hist { margin-top: 14px; font-size: 12.5px; color: #64748b; display: flex; flex-direction: column; gap: 2px; }
 @media (max-width: 700px) { .pr-lb { min-width: 0; width: 100%; } .prv .sub { flex-wrap: wrap; } }
+.on-tiendas { margin: 0 0 10px; } .on-tiendas .pil { font-size: 14px; padding: 8px 18px; }
+.on-robot-btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; } .on-robot-btn .ico { width: 15px; height: 15px; }
+.on-t tr.on-fila { cursor: pointer; } .on-t tr.on-fila.abierto > td { background: #e0f2fe !important; } .on-t td { white-space: nowrap; } .on-t td:nth-child(2) { white-space: normal; }
+.on-det > td { background: #f8fafc !important; padding: 0 !important; } .on-res { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 10px 22px; padding: 12px 18px 14px; border-left: 4px solid #7dd3fc; }
+.on-it { display: flex; gap: 10px; align-items: baseline; font-size: 13px; padding: 2px 0; } .on-it .c { font-weight: 600; min-width: 92px; } .on-it .d { flex: 1; color: #475569; white-space: normal; } .on-it .n { color: #64748b; white-space: nowrap; } .on-it b { white-space: nowrap; min-width: 86px; text-align: right; }
+.on-it.tot { border-top: 1px dashed #cbd5e1; margin-top: 4px; padding-top: 5px; } .on-res-dat { display: flex; flex-direction: column; gap: 8px; font-size: 13px; white-space: normal; } .on-res-dat .pv-ico { width: 15px; height: 15px; vertical-align: -2px; color: #0369a1; }
+.on-atelier { line-height: 1.6; } @media (max-width: 760px) { .on-res { grid-template-columns: 1fr; } }
 .on-luz { display: inline-block; border-radius: 999px; padding: 3px 11px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
 .on-luz.az { background: #dbeafe; color: #1d4ed8; } .on-luz.am { background: #fef3c7; color: #92400e; } .on-luz.ve { background: #dcfce7; color: #166534; } .on-luz.ro { background: #fee2e2; color: #b91c1c; } .on-luz.gr { background: #f1f5f9; color: #475569; }
 .chip.on-ca { background: #e0f2fe; color: #075985; } .chip.on-fg { background: #f1f5f9; color: #475569; } .on-ok { color: #15803d; }
@@ -1033,11 +1040,13 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
       <div id="pr-lista"></div>
     </section>
     <section id="content-online" class="tab-content">
-      <div class="filters">
+      <div class="pils on-tiendas" id="on-tiendas"><button class="pil on" data-t="claudiaadorno" onclick="onTienda('claudiaadorno')">claudiaadorno.com</button><button class="pil" data-t="atelier" onclick="onTienda('atelier')">atelier.claudiaadorno.com</button></div>
+      <div class="filters" id="on-filtros">
         <input id="on-q" placeholder="Pedido, cliente, mail, DNI o CUIT" oninput="onDebounce()">
         <select id="on-emp" onchange="cargarOnline()"><option value="">Las dos empresas</option><option value="Claudia Adorno">Claudia Adorno</option><option value="Familia Garcia Regueira">Familia García</option></select>
         <select id="on-est" onchange="onRender()"><option value="">Todos los estados</option><option value="facturar">Para facturar</option><option value="Recibido">Recibido (azul)</option><option value="En proceso">En proceso (amarillo)</option><option value="Terminado">Terminado (verde)</option><option value="Cancelado">Cancelado</option></select>
         <span class="stat" id="on-stat"></span><span class="spacer"></span><span class="mini" id="on-robot"></span>
+        <button class="btn chico on-robot-btn" id="on-robot-btn" onclick="onRobot()" title="Que el robot lea ahora el panel de la web (pedidos nuevos, cambios y clientes), sin esperar la vuelta de cada 5 minutos"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Correr el robot</button>
       </div>
       <div id="on-lista"></div>
     </section>
@@ -1643,14 +1652,18 @@ async function prBaja(id) { const p = PR.lista.find(x => x.id === id); if (!p) r
 // Los pedidos de www.claudiaadorno.com de las dos empresas: el robot del servidor (pos_web_robot.py) los baja del panel de la web cada 5 minutos.
 // Los de Claudia Adorno se facturan con «Pago verificado» (pos_online_facturar): factura desde Oficina con los artículos, el envío y el cliente
 // del pedido, al mail del pedido, y la luz del panel pasa a amarillo (la cambia el robot). Los de Familia García solo se ven: los factura esa empresa.
-let ON = { lista: [], robot: null, hoy: '' };
+let ON = { lista: [], robot: null, hoy: '', tienda: 'claudiaadorno', abiertos: new Set(), esperando: null };
 let _onT = null; function onDebounce() { clearTimeout(_onT); _onT = setTimeout(cargarOnline, 350); }
 const ON_LUZ = { 'Recibido': ['az', 'Recibido'], 'En proceso': ['am', 'En proceso'], 'Terminado': ['ve', 'Terminado'], 'Cancelado': ['ro', 'Cancelado'] };
 const onEsCA = w => w.empresa === 'Claudia Adorno';
 const onFacturable = w => onEsCA(w) && !w.comprobante && !w.nro_factura && w.estado !== 'Cancelado' && !(Number(w.descuento) || 0);
 const onMedio = w => /transfer/i.test(w.pago_metodo || '') ? 'Transferencia' : /mercado/i.test(w.pago_metodo || '') ? 'Mercado Pago' : (w.pago_metodo || '—');
+const onMedioC = w => ({ 'Transferencia': 'Transf.', 'Mercado Pago': 'MP' })[onMedio(w)] || onMedio(w);   // (JP 19-nov) corto en la lista
+const onEmpC = w => onEsCA(w) ? 'CA' : 'FGR';
+const onFechaC = s => { if (!s) return ''; const d = new Date(s), o = { timeZone: 'America/Argentina/Buenos_Aires' };   // 29/10 17:14
+  return d.toLocaleDateString('es-AR', { ...o, day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('es-AR', { ...o, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); };
 const onCli = w => w.condicion === 'Factura A' ? (w.razon_social || w.nombre) : w.nombre;
-const onFecha = s => { if (!s) return ''; const d = new Date(s); return fechaAR(d.toLocaleDateString('sv-SE', { timeZone: 'America/Argentina/Buenos_Aires' })) + ' ' + d.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' }); };
+const onFecha = s => { if (!s) return ''; const d = new Date(s); return fechaAR(d.toLocaleDateString('sv-SE', { timeZone: 'America/Argentina/Buenos_Aires' })) + ' ' + d.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); };
 function onLuz(w) { const [c, t] = ON_LUZ[w.estado] || ['gr', w.estado || '—'];
   return `<span class="on-luz ${c}">${esc(t)}</span>${w.luz_pedida ? `<div class="mini" title="${esc(w.luz_error || 'El robot la cambia en el panel en la próxima vuelta')}">${w.luz_error ? '⚠ ' : ''}pasa a ${esc(({ 'Recibido': 'azul', 'En proceso': 'amarillo', 'Terminado': 'verde', 'Cancelado': 'cancelado' })[w.luz_pedida] || w.luz_pedida)}</div>` : ''}`; }
 function onFact(w) { const c = w.comprobante;
@@ -1664,25 +1677,70 @@ function onFact(w) { const c = w.comprobante;
   return `<button class="btn primary chico" onclick="onPagoOk(${w.nro})" title="Ya está el pago: emite la factura, la manda al cliente y pasa el pedido a amarillo">Pago verificado</button>`; }
 async function cargarOnline() {
   const box = document.getElementById('on-lista'); if (!ON.lista.length) box.innerHTML = '<div class="empty chico"><span class="spin"></span> Cargando…</div>';
-  const { data, error } = await sb.rpc('pos_online_listar', { p_q: document.getElementById('on-q').value.trim() || null, p_empresa: document.getElementById('on-emp').value || null, p_estado: null, p_dias: 60 });
+  const { data, error } = await sb.rpc('pos_online_listar', { p_tienda: ON.tienda, p_q: document.getElementById('on-q').value.trim() || null, p_empresa: document.getElementById('on-emp').value || null, p_estado: null, p_dias: 60 });
   if (error) { box.innerHTML = `<div class="empty">${esc(error.message.replace(/^.*?: /, ''))}</div>`; return; }
-  ON.lista = data.pedidos || []; ON.robot = data.ultimo_robot; ON.hoy = data.hoy; onRender();
+  ON.lista = data.pedidos || []; ON.robot = data.robot || null; ON.ultimo = data.ultimo_robot; ON.pend = data.robot_pendiente || null; ON.hoy = data.hoy; onRender();
+}
+// (JP 19-nov) la división principal: las dos tiendas (la del Atelier todavía no opera: queda preparada)
+function onTienda(t) { ON.tienda = t; ON.abiertos.clear(); document.querySelectorAll('#on-tiendas .pil').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  const at = t === 'atelier'; document.getElementById('on-emp').style.display = at ? 'none' : ''; document.getElementById('on-robot-btn').style.display = at ? 'none' : '';
+  ON.lista = []; cargarOnline(); }
+// «Correr el robot»: deja el pedido en la base; el robot del servidor lo atiende en segundos y la lista se actualiza sola
+async function onRobot() {
+  const { data, error } = await sb.rpc('pos_online_robot_correr', { p_tienda: ON.tienda });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  toast(data.ya_estaba ? 'El robot ya tiene un pedido de lectura: espero que termine' : 'Le pedí al robot que lea la web: arranca en unos segundos', 'success');
+  ON.esperando = { id: data.id, desde: Date.now() }; onRobotEstado();
+  const t0 = Date.now();
+  while (ON.esperando && Date.now() - t0 < 180000) {
+    await new Promise(r => setTimeout(r, 5000)); if (!ON.esperando) break;
+    await cargarOnline();
+    if (ON.robot && ON.robot.id >= ON.esperando.id) { const r = ON.robot; ON.esperando = null; toast(r.error ? 'El robot no pudo leer la web: ' + r.error : 'Listo: ' + (r.resultado || 'la web está al día'), r.error ? 'error' : 'success'); break; }
+  }
+  if (ON.esperando) { ON.esperando = null; toast('El robot todavía no respondió: puede que no esté andando en el servidor', 'error'); }
+  onRobotEstado();
+}
+function onRobotEstado() {
+  const el = document.getElementById('on-robot'), b = document.getElementById('on-robot-btn'); if (!el) return;
+  if (ON.tienda === 'atelier') { el.innerHTML = ''; return; }
+  const esp = ON.esperando || ON.pend;
+  b.disabled = !!ON.esperando;
+  if (esp) { const seg = Math.round((Date.now() - (ON.esperando ? ON.esperando.desde : new Date(ON.pend.pedido_at).getTime())) / 1000);
+    el.innerHTML = `<span class="spin"></span> ${seg > 60 ? 'esperando al robot del servidor…' : 'el robot está leyendo la web…'}`; return; }
+  const r = ON.robot, cuando = r ? r.termino_at : ON.ultimo;
+  if (!cuando) { el.innerHTML = '<span title="El robot todavía no leyó la web (falta instalarlo en el servidor)">robot: sin lecturas</span>'; return; }
+  const min = Math.round((Date.now() - new Date(cuando)) / 60000);
+  el.innerHTML = `<span class="${min > 20 || (r && r.error) ? 'rojo' : ''}" title="${esc(r ? (r.error ? 'Error: ' + r.error : (r.resultado || '')) + (r.origen === 'manual' ? ' · pedida por ' + (r.pedido_por || '') : '') : 'Última vez que el robot leyó el panel de la web')}">robot: hace ${min < 60 ? min + ' min' : Math.round(min / 60) + ' h'}${r && r.error ? ' · con error' : ''}</span>`;
 }
 function onRender() {
   const est = document.getElementById('on-est').value;
   const v = ON.lista.filter(w => !est || (est === 'facturar' ? onFacturable(w) : w.estado === est));
   const nf = ON.lista.filter(onFacturable).length;
   document.getElementById('on-stat').textContent = v.length + (v.length === 1 ? ' pedido' : ' pedidos') + (nf ? ' · ' + nf + ' para facturar' : '');
-  { const r = ON.robot ? Math.round((Date.now() - new Date(ON.robot)) / 60000) : null;
-    document.getElementById('on-robot').innerHTML = r == null ? '' : `<span class="${r > 20 ? 'rojo' : ''}" title="Última vez que el robot leyó el panel de la web">robot: hace ${r < 60 ? r + ' min' : Math.round(r / 60) + ' h'}</span>`; }
-  document.getElementById('on-lista').innerHTML = v.length ? `<table class="on-t"><thead><tr><th>Pedido</th><th>Cliente</th><th>Empresa</th><th class="num">Total</th><th>Pago</th><th>Estado</th><th>Factura</th></tr></thead><tbody>${v.map(w => `<tr>
-      <td><a href="#" onclick="onVer(${w.nro});return false" title="Abrir el pedido"><b>${w.nro}</b></a><div class="mini">${onFecha(w.fecha)}</div></td>
+  onRobotEstado();
+  if (ON.tienda === 'atelier' && !ON.lista.length) { document.getElementById('on-lista').innerHTML = '<div class="empty on-atelier"><b>atelier.claudiaadorno.com</b><br>La tienda del Atelier todavía no está operativa. Cuando arranque, sus pedidos van a aparecer acá con el mismo circuito: pago verificado → factura → mail al cliente.</div>'; return; }
+  document.getElementById('on-lista').innerHTML = v.length ? `<table class="on-t"><thead><tr><th>Pedido</th><th>Cliente</th><th>Empresa</th><th class="num">Total</th><th>Pago</th><th>Estado</th><th>Factura</th></tr></thead><tbody>${v.map(w => `<tr class="on-fila${ON.abiertos.has(w.nro) ? ' abierto' : ''}" onclick="onToggle(${w.nro}, event)" title="Tocá para ver el resumen del pedido">
+      <td><a href="#" onclick="onVer(${w.nro});return false" title="Abrir la ficha del pedido"><b>${w.nro}</b></a><div class="mini">${onFechaC(w.fecha)}</div></td>
       <td>${esc(onCli(w) || '')}<div class="mini">${esc(w.condicion === 'Factura A' ? 'CUIT ' + (w.cuit || '') : w.dni ? 'DNI ' + w.dni : '')}${w.email ? ' · ' + esc(w.email) : ''}</div></td>
-      <td><span class="chip ${onEsCA(w) ? 'on-ca' : 'on-fg'}">${onEsCA(w) ? 'Claudia Adorno' : 'Familia García'}</span></td>
+      <td><span class="chip ${onEsCA(w) ? 'on-ca' : 'on-fg'}" title="${onEsCA(w) ? 'Claudia Adorno' : 'Familia García Regueira'}">${onEmpC(w)}</span></td>
       <td class="num"><b>${plata(w.total)}</b><div class="mini">${(w.items || []).reduce((t, i) => t + Number(i.cant || 0), 0)} art.${Number(w.costo_envio) > 0 ? ' + envío' : ''}</div></td>
-      <td>${esc(onMedio(w))}${w.pago_ok_at ? `<div class="mini on-ok" title="${esc('Verificado por ' + (w.pago_ok_por || '') + ' · ' + onFecha(w.pago_ok_at) + (w.pago_ref ? ' · operación ' + w.pago_ref : ''))}">✓ pago verificado</div>` : ''}</td>
-      <td>${onLuz(w)}</td><td>${onFact(w)}</td></tr>`).join('')}</tbody></table>`
+      <td><span title="${esc(w.pago_metodo || '')}">${esc(onMedioC(w))}</span>${w.pago_ok_at ? `<div class="mini on-ok" title="${esc('Verificado por ' + (w.pago_ok_por || '') + ' · ' + onFecha(w.pago_ok_at) + (w.pago_ref ? ' · operación ' + w.pago_ref : ''))}">✓ verificado</div>` : ''}</td>
+      <td>${onLuz(w)}</td><td>${onFact(w)}</td></tr>${ON.abiertos.has(w.nro) ? onResumen(w) : ''}`).join('')}</tbody></table>`
     : `<div class="empty">${ON.lista.length ? 'No hay pedidos con ese filtro.' : 'Todavía no hay pedidos: los baja el robot del panel de la web.'}</div>`;
+}
+// (JP 19-nov) tocar el renglón despliega abajo el resumen del pedido (tocarlo de nuevo lo cierra)
+function onToggle(nro, ev) { if (ev && ev.target.closest('a, button, input')) return; if (ON.abiertos.has(nro)) ON.abiertos.delete(nro); else ON.abiertos.add(nro); onRender(); }
+function onResumen(w) {
+  const its = w.items || [], cc = w.cliente_compras;
+  const envio = [w.envio_metodo, w.envio_sucursal, w.envio_domicilio ? [w.envio_domicilio, w.envio_localidad, w.envio_provincia].filter(Boolean).join(', ') : ''].filter(Boolean).join(' · ');
+  return `<tr class="tr-det on-det"><td colspan="7"><div class="on-res">
+    <div class="on-res-its">${its.map(i => `<div class="on-it"><span class="c">${esc(i.codigo || '')}</span><span class="d">${esc(i.desc || '')}</span><span class="n">${Number(i.cant)} × ${plata(i.precio)}</span><b>${plata(i.total)}</b></div>`).join('')}
+      <div class="on-it tot"><span class="d">${Number(w.costo_envio) > 0 ? 'Envío ' + plata(w.costo_envio) + ' · ' : w.envio_bonificado ? 'Envío bonificado · ' : ''}${Number(w.descuento) ? 'Promoción ' + plata(w.descuento) + ' · ' : ''}Total</span><b>${plata(w.total)}</b></div></div>
+    <div class="on-res-dat">
+      <div>${PV_IC.cam} ${esc(envio || '—')}${w.tracking_id ? '<br><span class="mini">Seguimiento ' + esc(w.tracking_id) + '</span>' : ''}${w.es_regalo && /s[ií]/i.test(w.es_regalo) ? '<br><span class="mini">🎁 es un regalo</span>' : ''}</div>
+      <div>${PV_IC.per} ${esc(w.email || '')}${w.celular ? ' · ' + esc(w.celular) : ''}${cc && cc.n ? `<br><span class="mini">${cc.n} ${cc.n === 1 ? 'compra' : 'compras'} en la web · ${plata(cc.total)}${cc.primera ? ' · desde ' + fechaAR(String(cc.primera).slice(0, 10)) : ''}</span>` : ''}</div>
+      <div>💳 ${esc(w.pago_metodo || '')}${w.pago_ok_at ? `<br><span class="mini on-ok">✓ verificado por ${esc(w.pago_ok_por || '')} · ${onFechaC(w.pago_ok_at)}${w.pago_ref ? ' · op. ' + esc(w.pago_ref) : ''}</span>` : ''}</div>
+    </div></div></td></tr>`;
 }
 function onVer(nro) {
   const w = ON.lista.find(x => x.nro === nro); if (!w) return;
@@ -5003,6 +5061,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=214"></script>
+<script src="manual.js?v=215"></script>
 </body>
 </html>
