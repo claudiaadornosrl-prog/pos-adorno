@@ -629,7 +629,13 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .on-det > td { background: #f8fafc !important; padding: 0 !important; } .on-res { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 10px 22px; padding: 12px 18px 14px; border-left: 4px solid #7dd3fc; }
 .on-it { display: flex; gap: 10px; align-items: baseline; font-size: 13px; padding: 2px 0; } .on-it .c { font-weight: 600; min-width: 92px; } .on-it .d { flex: 1; color: #475569; white-space: normal; } .on-it .n { color: #64748b; white-space: nowrap; } .on-it b { white-space: nowrap; min-width: 86px; text-align: right; }
 .on-it.tot { border-top: 1px dashed #cbd5e1; margin-top: 4px; padding-top: 5px; } .on-res-dat { display: flex; flex-direction: column; gap: 8px; font-size: 13px; white-space: normal; } .on-res-dat .pv-ico { width: 15px; height: 15px; vertical-align: -2px; color: #0369a1; }
-.on-atelier { line-height: 1.6; } @media (max-width: 760px) { .on-res { grid-template-columns: 1fr; } }
+.on-b { margin-top: 3px; border-radius: 999px; } .on-fa { font-weight: 600; } .on-nc { display: block; font-size: 12px; color: #b45309; margin-top: 2px; }
+.on-nc-t { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow: auto; } .on-nc-f { display: flex; align-items: center; gap: 10px; background: #f8fafc; border-radius: 16px; padding: 6px 12px; }
+.on-nc-f .c { font-weight: 600; min-width: 90px; } .on-nc-f .d { flex: 1; font-size: 13px; } .on-nc-tot { margin-top: 10px; text-align: right; font-size: 15px; }
+.onv .on-pie { justify-content: flex-start; gap: 30px; } .on-t td .rojo { color: #b91c1c; white-space: normal; max-width: 220px; }
+.on-atelier { line-height: 1.6; }
+.on-ct { display: inline-flex; align-items: center; gap: 5px; color: #0369a1; text-decoration: none; border-radius: 999px; padding: 2px 10px; background: #e0f2fe; margin: 2px 4px 2px 0; white-space: nowrap; }
+.on-ct:hover { background: #bae6fd; } .on-ct.wa { color: #15803d; background: #dcfce7; } .on-ct.wa:hover { background: #bbf7d0; } .on-ct svg { width: 15px; height: 15px; } @media (max-width: 760px) { .on-res { grid-template-columns: 1fr; } }
 .on-luz { display: inline-block; border-radius: 999px; padding: 3px 11px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
 .on-luz.az { background: #dbeafe; color: #1d4ed8; } .on-luz.am { background: #fef3c7; color: #92400e; } .on-luz.ve { background: #dcfce7; color: #166534; } .on-luz.ro { background: #fee2e2; color: #b91c1c; } .on-luz.gr { background: #f1f5f9; color: #475569; }
 .chip.on-ca { background: #e0f2fe; color: #075985; } .chip.on-fg { background: #f1f5f9; color: #475569; } .on-ok { color: #15803d; }
@@ -1666,15 +1672,33 @@ const onCli = w => w.condicion === 'Factura A' ? (w.razon_social || w.nombre) : 
 const onFecha = s => { if (!s) return ''; const d = new Date(s); return fechaAR(d.toLocaleDateString('sv-SE', { timeZone: 'America/Argentina/Buenos_Aires' })) + ' ' + d.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); };
 function onLuz(w) { const [c, t] = ON_LUZ[w.estado] || ['gr', w.estado || '—'];
   return `<span class="on-luz ${c}">${esc(t)}</span>${w.luz_pedida ? `<div class="mini" title="${esc(w.luz_error || 'El robot la cambia en el panel en la próxima vuelta')}">${w.luz_error ? '⚠ ' : ''}pasa a ${esc(({ 'Recibido': 'azul', 'En proceso': 'amarillo', 'Terminado': 'verde', 'Cancelado': 'cancelado' })[w.luz_pedida] || w.luz_pedida)}</div>` : ''}`; }
+const onCompNom = c => (c.tipo === 'FC' ? 'Factura ' : c.tipo === 'NC' ? 'NC ' : c.tipo + ' ') + c.letra + ' ' + fmtNum(c.punto_venta, c.numero);
+const onNcResta = c => (c && c.det || []).reduce((t, d) => t + Math.max(0, Number(d.cantidad) - Number(d.devuelto || 0)), 0);
+// Pago: a verificar (botón) o verificado
+function onPago(w) {
+  const med = `<span title="${esc(w.pago_metodo || '')}">${esc(onMedioC(w))}</span>`;
+  if (w.pago_ok_at) return med + `<div class="mini on-ok" title="${esc('Verificado por ' + (w.pago_ok_por || '') + ' · ' + onFecha(w.pago_ok_at) + (w.pago_ref ? ' · operación ' + w.pago_ref : ''))}">✓ verificado</div>`;
+  if (!onEsCA(w)) return med + '<div class="mini">lo controla FGR</div>';
+  if (w.comprobante || w.nro_factura) return med + '<div class="mini on-ok">✓ facturado</div>';
+  if (w.estado === 'Cancelado') return med;
+  return med + `<div><button class="btn primary chico on-b" onclick="onPagoOk(${w.nro})" title="Ya entró el pago: queda verificado, el pedido pasa a amarillo y se factura solo">Pago verificado</button></div>`;
+}
+// Facturación: la factura asociada (y sus notas de crédito) o «Facturar»; «NC parcial» cuando falta mercadería
 function onFact(w) { const c = w.comprobante;
-  if (c) { const nom = (c.tipo === 'FC' ? 'Factura ' : c.tipo + ' ') + c.letra + ' ' + fmtNum(c.punto_venta, c.numero);
+  if (c) {
     const st = c.cae_estado === 'ok' ? (c.mail_enviado_at ? 'mail enviado' : c.mail_error ? '⚠ ' + c.mail_error : 'mail en camino') : c.cae_estado === 'error' ? '⚠ CAE con error' : 'esperando CAE';
-    return `<a href="#" onclick="verComprobante(${c.id});return false"><b>${esc(nom)}</b></a><div class="mini">${esc(st)}</div>`; }
-  if (!onEsCA(w)) return `<span class="mini">${w.nro_factura ? 'Familia García · ' + esc(w.nro_factura) : 'la factura Familia García'}</span>`;
+    const ncs = (c.ncs || []).map(n => `<a class="on-nc" href="#" onclick="verComprobante(${n.id});return false" title="Nota de crédito parcial">${esc(onCompNom({ ...n, tipo: 'NC' }))} · ${plata(n.total)}</a>`).join('');
+    return `<a class="on-fa" href="#" onclick="verComprobante(${c.id});return false" title="Abrir la factura">${esc(onCompNom(c))}</a><div class="mini">${esc(st)}${c.es_prueba ? ' · de prueba' : ''}</div>${ncs}${onNcResta(c) > 0 && c.estado !== 'anulado' ? `<div><button class="btn chico on-b" onclick="onNC(${w.nro})" title="Faltó mercadería: nota de crédito por lo que no se manda">NC parcial</button></div>` : ''}`; }
+  if (!onEsCA(w)) return `<span class="mini">${w.nro_factura ? 'FGR · ' + esc(w.nro_factura) : 'la factura FGR'}</span>`;
   if (w.nro_factura) return `<span class="mini" title="Ya tiene la factura cargada en la web (hecha en el Dragon)">facturado · ${esc(w.nro_factura)}</span>`;
   if (w.estado === 'Cancelado') return '<span class="mini">cancelado</span>';
   if (Number(w.descuento) || 0) return `<span class="chip amber" title="Trae una promoción o gift card de la web (${esc(w.cupon || '')}): se factura a mano desde Vender">facturar a mano</span>`;
-  return `<button class="btn primary chico" onclick="onPagoOk(${w.nro})" title="Ya está el pago: emite la factura, la manda al cliente y pasa el pedido a amarillo">Pago verificado</button>`; }
+  return `${w.online_error ? `<div class="mini rojo" title="${esc(w.online_error)}">⚠ no salió: ${esc(w.online_error.slice(0, 60))}</div>` : ''}<button class="btn chico on-b" onclick="onFacturar(${w.nro})" title="Emitir ya la factura de este pedido desde el POS">Facturar</button>`; }
+// Envío: lo que dice la web (más adelante, el estado de OCA automático)
+function onEnvio(w) {
+  const m = w.envio_metodo || '', t = /OCA/i.test(m) ? 'Sucursal OCA' : /domicilio/i.test(m) ? 'Domicilio' : /take/i.test(m) ? 'Retira' : (m || '—');
+  return `<span title="${esc([m, w.envio_sucursal, w.envio_localidad].filter(Boolean).join(' · '))}">${esc(t)}</span>${w.tracking_id ? `<div class="mini" title="Seguimiento de OCA">OCA ${esc(String(w.tracking_id).slice(-8))}</div>` : ''}`;
+}
 async function cargarOnline() {
   const box = document.getElementById('on-lista'); if (!ON.lista.length) box.innerHTML = '<div class="empty chico"><span class="spin"></span> Cargando…</div>';
   const { data, error } = await sb.rpc('pos_online_listar', { p_tienda: ON.tienda, p_q: document.getElementById('on-q').value.trim() || null, p_empresa: document.getElementById('on-emp').value || null, p_estado: null, p_dias: 60 });
@@ -1719,26 +1743,33 @@ function onRender() {
   document.getElementById('on-stat').textContent = v.length + (v.length === 1 ? ' pedido' : ' pedidos') + (nf ? ' · ' + nf + ' para facturar' : '');
   onRobotEstado();
   if (ON.tienda === 'atelier' && !ON.lista.length) { document.getElementById('on-lista').innerHTML = '<div class="empty on-atelier"><b>atelier.claudiaadorno.com</b><br>La tienda del Atelier todavía no está operativa. Cuando arranque, sus pedidos van a aparecer acá con el mismo circuito: pago verificado → factura → mail al cliente.</div>'; return; }
-  document.getElementById('on-lista').innerHTML = v.length ? `<table class="on-t"><thead><tr><th>Pedido</th><th>Cliente</th><th>Empresa</th><th class="num">Total</th><th>Pago</th><th>Estado</th><th>Factura</th></tr></thead><tbody>${v.map(w => `<tr class="on-fila${ON.abiertos.has(w.nro) ? ' abierto' : ''}" onclick="onToggle(${w.nro}, event)" title="Tocá para ver el resumen del pedido">
+  document.getElementById('on-lista').innerHTML = v.length ? `<table class="on-t"><thead><tr><th>Pedido</th><th>Cliente</th><th>Empresa</th><th class="num">Total</th><th>Estado</th><th>Pago</th><th>Facturación</th><th>Envío</th></tr></thead><tbody>${v.map(w => `<tr class="on-fila${ON.abiertos.has(w.nro) ? ' abierto' : ''}" onclick="onToggle(${w.nro}, event)" title="Tocá para ver el resumen del pedido">
       <td><a href="#" onclick="onVer(${w.nro});return false" title="Abrir la ficha del pedido"><b>${w.nro}</b></a><div class="mini">${onFechaC(w.fecha)}</div></td>
       <td>${esc(onCli(w) || '')}<div class="mini">${esc(w.condicion === 'Factura A' ? 'CUIT ' + (w.cuit || '') : w.dni ? 'DNI ' + w.dni : '')}${w.email ? ' · ' + esc(w.email) : ''}</div></td>
       <td><span class="chip ${onEsCA(w) ? 'on-ca' : 'on-fg'}" title="${onEsCA(w) ? 'Claudia Adorno' : 'Familia García Regueira'}">${onEmpC(w)}</span></td>
       <td class="num"><b>${plata(w.total)}</b><div class="mini">${(w.items || []).reduce((t, i) => t + Number(i.cant || 0), 0)} art.${Number(w.costo_envio) > 0 ? ' + envío' : ''}</div></td>
-      <td><span title="${esc(w.pago_metodo || '')}">${esc(onMedioC(w))}</span>${w.pago_ok_at ? `<div class="mini on-ok" title="${esc('Verificado por ' + (w.pago_ok_por || '') + ' · ' + onFecha(w.pago_ok_at) + (w.pago_ref ? ' · operación ' + w.pago_ref : ''))}">✓ verificado</div>` : ''}</td>
-      <td>${onLuz(w)}</td><td>${onFact(w)}</td></tr>${ON.abiertos.has(w.nro) ? onResumen(w) : ''}`).join('')}</tbody></table>`
+      <td>${onLuz(w)}</td><td>${onPago(w)}</td><td>${onFact(w)}</td><td>${onEnvio(w)}</td></tr>${ON.abiertos.has(w.nro) ? onResumen(w) : ''}`).join('')}</tbody></table>`
     : `<div class="empty">${ON.lista.length ? 'No hay pedidos con ese filtro.' : 'Todavía no hay pedidos: los baja el robot del panel de la web.'}</div>`;
 }
 // (JP 19-nov) tocar el renglón despliega abajo el resumen del pedido (tocarlo de nuevo lo cierra)
+function onContacto(w) {
+  const pila_ = n => String(n || '').trim().split(/\s+/)[0] || '', nom = w.condicion === 'Factura A' ? '' : pila_(w.nombre);
+  const asunto = 'Tu pedido web ' + w.nro + ' · Claudia Adorno', saludo = 'Hola' + (nom ? ' ' + nom.charAt(0).toUpperCase() + nom.slice(1).toLowerCase() : '') + '! Te escribimos de Claudia Adorno por tu pedido web ' + w.nro + '.';
+  const n = w.celular ? pdWaNum(w.celular) : '';
+  const mail = w.email ? `<a class="on-ct" href="mailto:${esc(w.email)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(saludo + '\n\n')}" title="Escribirle un mail">✉ ${esc(w.email)}</a>` : '';
+  const wa = n ? `<a class="on-ct wa" href="https://wa.me/${n}?text=${encodeURIComponent(saludo)}" title="Abrir WhatsApp con el cliente (${esc(w.celular)})">${WA_LOGO} ${esc(w.celular)}</a>` : '';
+  return [mail, wa].filter(Boolean).join(' ') || '<span class="mini">sin mail ni celular</span>';
+}
 function onToggle(nro, ev) { if (ev && ev.target.closest('a, button, input')) return; if (ON.abiertos.has(nro)) ON.abiertos.delete(nro); else ON.abiertos.add(nro); onRender(); }
 function onResumen(w) {
   const its = w.items || [], cc = w.cliente_compras;
   const envio = [w.envio_metodo, w.envio_sucursal, w.envio_domicilio ? [w.envio_domicilio, w.envio_localidad, w.envio_provincia].filter(Boolean).join(', ') : ''].filter(Boolean).join(' · ');
-  return `<tr class="tr-det on-det"><td colspan="7"><div class="on-res">
+  return `<tr class="tr-det on-det"><td colspan="8"><div class="on-res">
     <div class="on-res-its">${its.map(i => `<div class="on-it"><span class="c">${esc(i.codigo || '')}</span><span class="d">${esc(i.desc || '')}</span><span class="n">${Number(i.cant)} × ${plata(i.precio)}</span><b>${plata(i.total)}</b></div>`).join('')}
       <div class="on-it tot"><span class="d">${Number(w.costo_envio) > 0 ? 'Envío ' + plata(w.costo_envio) + ' · ' : w.envio_bonificado ? 'Envío bonificado · ' : ''}${Number(w.descuento) ? 'Promoción ' + plata(w.descuento) + ' · ' : ''}Total</span><b>${plata(w.total)}</b></div></div>
     <div class="on-res-dat">
       <div>${PV_IC.cam} ${esc(envio || '—')}${w.tracking_id ? '<br><span class="mini">Seguimiento ' + esc(w.tracking_id) + '</span>' : ''}${w.es_regalo && /s[ií]/i.test(w.es_regalo) ? '<br><span class="mini">🎁 es un regalo</span>' : ''}</div>
-      <div>${PV_IC.per} ${esc(w.email || '')}${w.celular ? ' · ' + esc(w.celular) : ''}${cc && cc.n ? `<br><span class="mini">${cc.n} ${cc.n === 1 ? 'compra' : 'compras'} en la web · ${plata(cc.total)}${cc.primera ? ' · desde ' + fechaAR(String(cc.primera).slice(0, 10)) : ''}</span>` : ''}</div>
+      <div>${PV_IC.per} ${onContacto(w)}${cc && cc.n ? `<br><span class="mini">${cc.n} ${cc.n === 1 ? 'compra' : 'compras'} en la web · ${plata(cc.total)}${cc.primera ? ' · desde ' + fechaAR(String(cc.primera).slice(0, 10)) : ''}</span>` : ''}</div>
       <div>💳 ${esc(w.pago_metodo || '')}${w.pago_ok_at ? `<br><span class="mini on-ok">✓ verificado por ${esc(w.pago_ok_por || '')} · ${onFechaC(w.pago_ok_at)}${w.pago_ref ? ' · op. ' + esc(w.pago_ref) : ''}</span>` : ''}</div>
     </div></div></td></tr>`;
 }
@@ -1746,25 +1777,74 @@ function onVer(nro) {
   const w = ON.lista.find(x => x.nro === nro); if (!w) return;
   const its = w.items || [];
   modal(`<div class="pv pv1 onv"><div class="cab"><div class="t"><h3>Pedido web ${w.nro}</h3><span class="chip ${onEsCA(w) ? 'on-ca' : 'on-fg'}">${onEsCA(w) ? 'Claudia Adorno' : 'Familia García'}</span>${onLuz(w)}<span class="spacer"></span><button class="pv-x" onclick="cerrarModal()" aria-label="Cerrar">${_i('x')}</button></div>
-    <div class="sub"><span>${PV_IC.cal} ${onFecha(w.fecha)}</span><span>${PV_IC.per} <b>${esc(onCli(w) || '')}</b> ${esc(w.condicion === 'Factura A' ? '· CUIT ' + (w.cuit || '') : w.dni ? '· DNI ' + w.dni : '')}</span><span>${esc(w.email || '')}${w.celular ? ' · ' + esc(w.celular) : ''}</span></div>
+    <div class="sub"><span>${PV_IC.cal} ${onFecha(w.fecha)}</span><span>${PV_IC.per} <b>${esc(onCli(w) || '')}</b> ${esc(w.condicion === 'Factura A' ? '· CUIT ' + (w.cuit || '') : w.dni ? '· DNI ' + w.dni : '')}</span><span>${onContacto(w)}</span></div>
     <div class="avs" style="display:block">${PV_IC.cam} ${esc(w.envio_metodo || '')}${w.envio_sucursal ? ' · ' + esc(w.envio_sucursal) : ''}${w.envio_domicilio ? ' · ' + esc([w.envio_domicilio, w.envio_localidad, w.envio_provincia].filter(Boolean).join(', ')) : ''}${w.tracking_id ? ' · seguimiento ' + esc(w.tracking_id) : ''}${w.es_regalo && /s[ií]/i.test(w.es_regalo) ? ' · 🎁 es un regalo' : ''}</div></div>
     <div class="pv-cuerpo"><table class="pd-items pd-t"><thead><tr><th>Artículo</th><th class="num">Precio</th><th class="num">Cant.</th><th class="num">Total</th></tr></thead><tbody>${its.map(i => `<tr><td><div class="art">${foto(String(i.codigo || '').toUpperCase(), 'chica')}<div><b>${esc(i.codigo || '')}</b><div class="mini">${esc(i.desc || '')}</div></div></div></td><td class="num">${plata(i.precio)}</td><td class="num">${Number(i.cant)}</td><td class="num">${plata(i.total)}</td></tr>`).join('')}</tbody></table>
     <div class="pv-tot">Subtotal ${plata(w.subtotal)}${Number(w.costo_envio) > 0 ? ' · envío ' + plata(w.costo_envio) : w.envio_bonificado ? ' · envío bonificado' : ''}${Number(w.descuento) ? ' · promoción ' + plata(w.descuento) + (w.cupon ? ' (' + esc(w.cupon) + ')' : '') : ''} · <b>total ${plata(w.total)}</b> · ${esc(w.pago_metodo || '')}</div>
-    <div class="on-pie">${onFact(w)}</div></div></div>`, 'pastilla');
+    <div class="on-pie"><div><b class="mini">Pago</b><div>${onPago(w)}</div></div><div><b class="mini">Facturación</b><div>${onFact(w)}</div></div></div></div></div>`, 'pastilla');
 }
-async function onPagoOk(nro) {
-  const w = ON.lista.find(x => x.nro === nro); if (!w || !onFacturable(w)) return;
-  const a = w.condicion === 'Factura A', mp = onMedio(w) === 'Mercado Pago';
-  const ref = await new Promise(res => { const d = _dlg(`<div class="dlg-msg"><b>Pedido web ${w.nro} · ${plata(w.total)}</b><br>Se emite la <b>Factura ${a ? 'A' : 'B'}</b> desde Oficina a <b>${esc(onCli(w) || '')}</b> (${a ? 'CUIT ' + esc(w.cuit || '') : 'DNI ' + esc(w.dni || '')}) con ${mp ? 'Mercado Pago (tienda web)' : 'transferencia (tienda web)'}, se manda a <b>${esc(w.email || 'su mail')}</b> y el pedido pasa a amarillo en la web para que lo preparen.</div>
-      <div style="margin:10px 0 2px"><input id="on-ref" class="pr-in" style="width:100%" placeholder="${mp ? 'Nº de operación de Mercado Pago (opcional)' : 'Referencia de la transferencia (opcional)'}" autocomplete="off"></div>
-      <div class="m-foot"><button class="btn" id="dlg-no">Cancelar</button><span class="spacer"></span><button class="btn primary" id="dlg-si">Facturar</button></div>`);
+// «Pago verificado»: queda verificado, el pedido pasa a amarillo y, si es de Claudia Adorno, se factura solo
+function onDlgRef(titulo, cuerpo, ph, boton) {
+  return new Promise(res => { const d = _dlg(`<div class="dlg-msg"><b>${titulo}</b><br>${cuerpo}</div>
+      <div style="margin:10px 0 2px"><input id="on-ref" class="pr-in" style="width:100%" placeholder="${ph}" autocomplete="off"></div>
+      <div class="m-foot"><button class="btn" id="dlg-no">Cancelar</button><span class="spacer"></span><button class="btn primary" id="dlg-si">${boton}</button></div>`);
     const fin = v => { d.style.display = 'none'; d.innerHTML = ''; res(v); }; d.querySelector('#dlg-no').onclick = () => fin(null); d.querySelector('#dlg-si').onclick = () => fin(d.querySelector('#on-ref').value.trim()); setTimeout(() => d.querySelector('#on-ref').focus(), 50); });
+}
+const onFactTxt = w => { const a = w.condicion === 'Factura A'; return `la <b>Factura ${a ? 'A' : 'B'}</b> desde Oficina a <b>${esc(onCli(w) || '')}</b> (${a ? 'CUIT ' + esc(w.cuit || '') : 'DNI ' + esc(w.dni || '')}) y se manda a <b>${esc(w.email || 'su mail')}</b>`; };
+async function onPagoOk(nro) {
+  const w = ON.lista.find(x => x.nro === nro); if (!w) return;
+  const mp = onMedio(w) === 'Mercado Pago', fact = !w.comprobante && !w.nro_factura && !(Number(w.descuento) || 0);
+  const ref = await onDlgRef(`Pago del pedido web ${w.nro} · ${plata(w.total)} · ${mp ? 'Mercado Pago' : 'transferencia'}`,
+    `Queda verificado, el pedido pasa a amarillo en la web para que lo preparen${fact ? ' y se emite ' + onFactTxt(w) : ''}.`,
+    mp ? 'Nº de operación de Mercado Pago (opcional)' : 'Referencia de la transferencia (opcional)', 'Pago verificado');
+  if (ref === null) return;
+  const { data, error } = await sb.rpc('pos_online_pago_ok', { p_nro: nro, p_ref: ref || null, p_facturar: true });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); cargarOnline(); return; }
+  cerrarModal();
+  if (data.factura) toast('Pago verificado · Factura ' + data.factura.letra + ' ' + data.factura.numero_fmt + (data.factura.prueba ? ' (de prueba)' : '') + ' emitida: el mail sale cuando tenga el CAE', 'success');
+  else if (data.factura_error) toast('Pago verificado, pero la factura no salió: ' + data.factura_error + '. Probá con «Facturar».', 'error');
+  else toast('Pago verificado', 'success');
+  cargarOnline();
+}
+// «Facturar»: emite ya la factura del pedido (también deja el pago verificado)
+async function onFacturar(nro) {
+  const w = ON.lista.find(x => x.nro === nro); if (!w || !onFacturable(w)) return;
+  const mp = onMedio(w) === 'Mercado Pago';
+  const ref = await onDlgRef(`Facturar el pedido web ${w.nro} · ${plata(w.total)}`, `Se emite ${onFactTxt(w)}, con ${mp ? 'Mercado Pago (tienda web)' : 'transferencia (tienda web)'}.${w.pago_ok_at ? '' : ' El pago queda verificado y el pedido pasa a amarillo en la web.'}`,
+    mp ? 'Nº de operación de Mercado Pago (opcional)' : 'Referencia de la transferencia (opcional)', 'Facturar');
   if (ref === null) return;
   toast('Facturando el pedido ' + nro + '…', 'success');
   const { data, error } = await sb.rpc('pos_online_facturar', { p_nro: nro, p_ref: ref || null });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); cargarOnline(); return; }
   cerrarModal(); toast('Factura ' + data.letra + ' ' + data.numero_fmt + (data.prueba ? ' (de prueba)' : '') + ' emitida · el mail sale a ' + (data.mail || 'su mail') + ' cuando tenga el CAE', 'success'); cargarOnline();
 }
+// «NC parcial»: faltó mercadería → nota de crédito por esos artículos (mismo precio de la factura, devolución por el mismo medio)
+async function onNC(nro) {
+  const w = ON.lista.find(x => x.nro === nro); const c = w && w.comprobante; if (!c) return;
+  const its = (c.det || []).filter(d => String(d.sku).toUpperCase() !== 'ENVIO' || true).map(d => ({ ...d, max: Math.max(0, Number(d.cantidad) - Number(d.devuelto || 0)) })).filter(d => d.max > 0);
+  const mp = onMedio(w) === 'Mercado Pago';
+  const res = await new Promise(res => { const d = _dlg(`<div class="dlg-msg"><b>Nota de crédito parcial · pedido web ${w.nro}</b><br>Sobre la ${esc(onCompNom(c))}. Poné cuántos de cada artículo faltaron.</div>
+      <div class="on-nc-t">${its.map((x, i) => `<div class="on-nc-f"><span class="c">${esc(x.sku)}</span><span class="d">${esc(x.descripcion || '')}<span class="mini"> · ${plata(x.precio_unit)} c/u · facturados ${Number(x.cantidad)}${Number(x.devuelto) ? ', ya devueltos ' + Number(x.devuelto) : ''}</span></span>
+        <input class="pr-in num on-nc-q" data-i="${i}" inputmode="numeric" value="" placeholder="0" style="width:64px" oninput="onNcTot()"><span class="mini">de ${x.max}</span></div>`).join('')}</div>
+      <div class="on-nc-tot">Devolución: <b id="on-nc-tot">$ 0</b></div>
+      <div style="margin:6px 0 2px"><input id="on-nc-mot" class="pr-in" style="width:100%" placeholder="Motivo (opcional): por ejemplo «sin stock»" autocomplete="off"></div>
+      <div class="mini" style="margin-top:6px">La nota de crédito se manda al cliente por mail. ${mp ? '<b>La plata se devuelve a mano en Mercado Pago</b> (cuenta de la web), por el mismo importe.' : '<b>La plata se devuelve a mano</b> por transferencia, por el mismo importe.'}</div>
+      <div class="m-foot"><button class="btn" id="dlg-no">Cancelar</button><span class="spacer"></span><button class="btn primary" id="dlg-si">Emitir la NC</button></div>`);
+    window._onNcIts = its;
+    const fin = v => { d.style.display = 'none'; d.innerHTML = ''; res(v); };
+    d.querySelector('#dlg-no').onclick = () => fin(null);
+    d.querySelector('#dlg-si').onclick = () => { const sel = [...d.querySelectorAll('.on-nc-q')].map(q => ({ sku: its[q.dataset.i].sku, cantidad: Math.max(0, Math.min(its[q.dataset.i].max, Math.round(num(q.value)))) })).filter(x => x.cantidad > 0);
+      if (!sel.length) { toast('Poné cuántos faltaron de al menos un artículo', 'error'); return; } fin({ sel, mot: d.querySelector('#on-nc-mot').value.trim() }); };
+    setTimeout(() => { const q = d.querySelector('.on-nc-q'); if (q) q.focus(); }, 50); });
+  if (!res) return;
+  toast('Emitiendo la nota de crédito…', 'success');
+  const { data, error } = await sb.rpc('pos_online_nc', { p_nro: nro, p_items: res.sel, p_motivo: res.mot || null });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  toast('NC ' + data.letra + ' ' + data.numero_fmt + (data.prueba ? ' (de prueba)' : '') + ' por ' + plata(data.total) + ' emitida · se manda a ' + (data.mail || 'su mail') + '. Acordate de devolver la plata.', 'success'); cargarOnline();
+}
+function onNcTot() { const its = window._onNcIts || []; let t = 0;
+  document.querySelectorAll('.on-nc-q').forEach(q => { const x = its[q.dataset.i]; if (!x) return; let n = Math.round(num(q.value)); if (n > x.max) { n = x.max; q.value = n; } if (n > 0) t += n * Number(x.precio_unit); });
+  const el = document.getElementById('on-nc-tot'); if (el) el.textContent = plata(t); }
 function onTab(k) { if (k !== 'remitos') rmModo('lista'); if (k === 'remitos') cargarRemitos(); if (k === 'etiquetas') { etRender(); setTimeout(() => document.getElementById('et-q').focus(), 50); } if (k === 'pedidos') pdVista(LOCAL === 'oficina' ? 'piden' : PD.vista); if (k === 'comprobantes') cargarComprobantes(); if (k === 'vales') cargarVales(); if (k === 'promociones') cargarPromos(); if (k === 'online') cargarOnline(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
 
 // ═══ Vender · productos ════════════════════════════════════════════════
@@ -5061,6 +5141,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=215"></script>
+<script src="manual.js?v=217"></script>
 </body>
 </html>
