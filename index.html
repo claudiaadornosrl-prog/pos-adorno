@@ -698,7 +698,8 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .cli-mail.falta { border-color: var(--amber); background: #fffbeb; } .cli-mail.falta #v-mail-st { color: #b45309; font-weight: 600; white-space: nowrap; }
 #ov .box.ficha { max-width: 940px; padding: 0; overflow: hidden; }
 #ov .box.ficha-prod { max-width: 1100px; width: 96vw; padding: 10px 12px 12px; } .prod-if { width: 100%; height: 80vh; border: none; border-radius: 12px; background: #fff; margin-top: 8px; } .pf-link { color: var(--primary-dark); white-space: nowrap; }
-#ov .box.preview { max-width: 900px; width: 96vw; } .pv-a4 { background: #cfcac0; padding: 10px; border-radius: 10px; display: block; overflow: auto; max-height: calc(100vh - 150px); } .pv-zoom { display: inline-flex; align-items: center; gap: 2px; margin-left: 10px; } .pv-a4 iframe { pointer-events: none; } .pv-a4, #pv-1.tk-wrap { cursor: grab; } .pv-a4.arrastrando, #pv-1.arrastrando { cursor: grabbing; user-select: none; } .pv-zoom .pil { min-width: 64px; justify-content: center; } #pv-1.tk-wrap { overflow: auto; max-height: calc(100vh - 150px); } .pv-a4 iframe { width: 794px; height: 1123px; border: 0; background: white; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
+#ov .box.preview { max-width: 900px; width: 96vw; } .pv-a4 { background: #cfcac0; padding: 10px; border-radius: 10px; display: block; overflow: auto; max-height: calc(100vh - 150px); } .todos-locales #c-lista td.acc .btn:not(.pg-btn) { display: none; }   /* «Todos los locales»: solo ver y pagos */
+.pv-zoom { display: inline-flex; align-items: center; gap: 2px; margin-left: 10px; } .pv-a4 iframe { pointer-events: none; } .pv-a4, #pv-1.tk-wrap { cursor: grab; } .pv-a4.arrastrando, #pv-1.arrastrando { cursor: grabbing; user-select: none; } .pv-zoom .pil { min-width: 64px; justify-content: center; } #pv-1.tk-wrap { overflow: auto; max-height: calc(100vh - 150px); } .pv-a4 iframe { width: 794px; height: 1123px; border: 0; background: white; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
 .fb { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-height: 90vh; }
 .fb-side { background: var(--primary-dark); color: #fff; padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: auto; }
 .fb-x { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; opacity: .85; }
@@ -1175,7 +1176,7 @@ function toast(msg, tipo) { const t = document.createElement('div'); t.className
 function toggleTabsMenu(ev) { ev.stopPropagation(); document.getElementById('tabs').classList.toggle('open'); }
 function switchTab(k) {
   document.getElementById('tabs').classList.remove('open');
-  if (typeof tabOk === 'function' && !tabOk(k) && !(k === 'vender' && window._tabLibre)) { if (typeof toast === 'function') toast('Tu usuario no tiene esa parte del POS', 'error'); return; }
+  if (typeof tabOk === 'function' && !tabOk(k) && !(k === 'vender' && window._tabLibre)) { if (typeof toast === 'function') toast(typeof esTodos === 'function' && esTodos() ? 'En «Todos los locales» solo se miran los comprobantes: elegí un local arriba para emitir u operar' : 'Tu usuario no tiene esa parte del POS', 'error'); return; }
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.id === 'tab-' + k));
   document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === 'content-' + k));
   if (typeof onTab === 'function') onTab(k);
@@ -1346,7 +1347,7 @@ async function init() {
   if (tp) { TOPE.valor = Number(tp.valor_num) || TOPE.valor; TOPE.at = tp.actualizado_at; TOPE.error = tp.error; }
   await cargarArticulos();
   vRender();
-  setTimeout(async () => { try { const eq = await caraEquipo(); if (eq.some(e => e.cara)) caraPrecalentar().catch(() => {}); } catch (e) {} }, 2500);   // (JP 19-nov) que la primera factura no espere a la cámara
+  setTimeout(async () => { if (esTodos()) return; try { const eq = await caraEquipo(); if (eq.some(e => e.cara)) caraPrecalentar().catch(() => {}); } catch (e) {} }, 2500);   // (JP 19-nov) que la primera factura no espere a la cámara
   document.getElementById('v-q').addEventListener('input', vBuscarDebounce);
   document.getElementById('v-q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); vEscanear(); } });
   document.getElementById('v-q').focus();
@@ -1360,7 +1361,8 @@ const misLocales = () => PERFIL && Array.isArray(PERFIL.locales) && PERFIL.local
 const TAB_AP = { vender: 'Vender', comprobantes: 'Vender', remitos: 'Mercadería', pedidos: 'Mercadería', etiquetas: 'Mercadería', vales: 'Vales', promociones: 'Promociones', online: 'Online', caja: 'Caja y ajustes', ajustes: 'Caja y ajustes' };
 const apOculto = k => !!PERFIL && Array.isArray(PERFIL.ocultos) && PERFIL.ocultos.includes(TAB_AP[k]);
 const onlineOk = () => !!PERFIL && (PERFIL.es_admin || hubF('pos.online') === 'h');
-const tabOk = k => (k !== 'online' || onlineOk()) && (!PERFIL || !Array.isArray(PERFIL.tabs) || PERFIL.tabs.includes(k)) && !(PERFIL && HUB_TAB[k] && hubF(HUB_TAB[k]) === 'o') && !apOculto(k);
+const esTodos = () => LOCAL === 'todos';   // (JP 19-nov) el admin mirando todos los locales juntos: solo Comprobantes
+const tabOk = k => (!esTodos() || k === 'comprobantes') && (k !== 'online' || onlineOk()) && (!PERFIL || !Array.isArray(PERFIL.tabs) || PERFIL.tabs.includes(k)) && !(PERFIL && HUB_TAB[k] && hubF(HUB_TAB[k]) === 'o') && !apOculto(k);
 const soloVer = () => !!PERFIL && !PERFIL.es_admin && !PERFIL.opera_todo && !!PERFIL.ve_todo && !misLocales().includes(LOCAL);   // la oficina mirando un local: no opera
 const prestado = () => !!PERFIL && !PERFIL.es_admin && !PERFIL.opera_todo && LOCAL === 'oficina' && !misLocales().includes('oficina');
 function prestadoUI() {
@@ -1379,16 +1381,25 @@ function pintarLocal() {
   const el = document.getElementById('h-local');
   // Admin: cualquier local. Vendedora/encargada: su local y, si su local está habilitado (pos_parametros.fc_oficina_locales), Oficina. Nunca el otro local.
   const permitidos = PERFIL.es_admin || PERFIL.opera_todo ? Object.keys(LOCALES) : PERFIL.ve_todo ? [...misLocales(), ...Object.keys(LOCALES).filter(k => !misLocales().includes(k))] : [...new Set(PERFIL.fc_oficina === false || hubF('pos.fc_oficina') === 'o' ? misLocales() : [...misLocales(), 'oficina'])];
-  if (!permitidos.includes(LOCAL)) LOCAL = permitidos[0];
+  if (!permitidos.includes(LOCAL) && !(LOCAL === 'todos' && PERFIL.es_admin)) LOCAL = permitidos[0];
+  const opciones = PERFIL.es_admin ? [...permitidos, 'todos'] : permitidos;   // (JP 19-nov) el admin ve todos los locales juntos
   // (JP 6-nov) Oficina no pide desde el POS: sus pedidos a proveedores van por Compras. Pedidos es para que el local le pida a Oficina (o a Familia García).
   pdOficina(); prestadoUI();
-  el.innerHTML = permitidos.length > 1
-    ? `<select onchange="cambiarLocal(this.value)" title="Desde qué local facturás">${permitidos.map(k => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${LOCALES[k]}${PERFIL.ve_todo && !PERFIL.es_admin && !PERFIL.opera_todo && !misLocales().includes(k) ? ' · solo ver' : ''}</option>`).join('')}</select>`
+  todosUI();
+  el.innerHTML = opciones.length > 1
+    ? `<select onchange="cambiarLocal(this.value)" title="Desde qué local facturás">${opciones.map(k => `<option value="${k}"${k === LOCAL ? ' selected' : ''}>${k === 'todos' ? 'Todos los locales' : LOCALES[k]}${PERFIL.ve_todo && !PERFIL.es_admin && !PERFIL.opera_todo && !misLocales().includes(k) ? ' · solo ver' : ''}</option>`).join('')}</select>`
     : `<span>${esc(LOCALES[LOCAL] || LOCAL)}</span>`;
 }
-async function cambiarLocal(l) { LOCAL = l; if (soloVer()) toast('Estás mirando ' + LOCALES[l] + ' en solo lectura: comprobantes, caja y pedidos. Para operar, volvé a ' + LOCALES[misLocales()[0]], 'success'); _fStock = {}; FICHA = null; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); pdOficina(); prestadoUI(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
+// (JP 19-nov) en «Todos los locales» quedan solo los Comprobantes; al volver a un local vuelven las pestañas
+function todosUI() {
+  const t = esTodos(); document.body.classList.toggle('todos-locales', t);
+  if (PERFIL && PERFIL.es_admin) document.querySelectorAll('#tabs button[id^="tab-"]').forEach(b => { b.style.display = tabOk(b.id.slice(4)) ? '' : 'none'; });
+  if (t) { const act = document.querySelector('.tab-content.active'); if (act && act.id !== 'content-comprobantes') switchTab('comprobantes'); }
+}
+async function cambiarLocal(l) { LOCAL = l; todosUI(); if (soloVer()) toast('Estás mirando ' + LOCALES[l] + ' en solo lectura: comprobantes, caja y pedidos. Para operar, volvé a ' + LOCALES[misLocales()[0]], 'success'); _fStock = {}; FICHA = null; localStorage.setItem('pos_local', l); pMontar(); vVaciar(); pdOficina(); prestadoUI(); await cargarArticulos(); cargarComprobantes(); cargarCaja(); }
 async function cargarArticulos() {
   // Catálogo del local en memoria (≈5.000 filas): búsqueda instantánea y escaneo sin ir a la base.
+  if (esTodos()) { ARTS = []; return; }   // «Todos los locales»: no se vende
   const out = []; let desde = 0;
   for (;;) {
     const { data, error } = await sb.from('stock_articulos').select('sku,descripcion,descripcion_adicional,stock,precio,material,proveedor,discontinuado').eq('local', LOCAL).order('sku').range(desde, desde + 999);   // con orden fijo: sin él las páginas vienen mezcladas (repetidos y faltantes)
@@ -5158,9 +5169,10 @@ let C_SV = false, PG_PEND = {};
 function cSinVerif() { C_SV = !C_SV; cargarComprobantes(); }
 async function cargarComprobantes() {
   const d = document.getElementById('c-desde').value, h = document.getElementById('c-hasta').value, tipo = document.getElementById('c-tipo').value, q = document.getElementById('c-q').value.trim();
-  try { const { data: pp } = await sb.rpc('pos_pagos_pendientes', { p_local: LOCAL }); PG_PEND = {}; (pp || []).forEach(x => { PG_PEND[x.comprobante_id] = x; }); } catch (e) { PG_PEND = {}; }
+  try { PG_PEND = {}; const rs = await Promise.all((esTodos() ? Object.keys(LOCALES) : [LOCAL]).map(l => sb.rpc('pos_pagos_pendientes', { p_local: l }))); rs.forEach(r => (r.data || []).forEach(x => { PG_PEND[x.comprobante_id] = x; })); } catch (e) { PG_PEND = {}; }
   { const n = Object.keys(PG_PEND).length, b = document.getElementById('c-sv-n'); if (b) { b.textContent = n || ''; b.style.display = n ? '' : 'none'; } const pl = document.getElementById('c-sv'); if (pl) pl.classList.toggle('on', C_SV); }
-  let qry = sb.from('pos_comprobantes').select('*').eq('local', LOCAL).order('id', { ascending: false }).limit(500);
+  let qry = sb.from('pos_comprobantes').select('*').order('id', { ascending: false }).limit(500);
+  if (!esTodos()) qry = qry.eq('local', LOCAL);   // (JP 19-nov) «Todos los locales»: todos juntos
   if (C_SV) qry = qry.in('id', Object.keys(PG_PEND).map(Number).concat([0]));   // todas las pendientes, de cualquier fecha
   else { if (d) qry = qry.gte('fecha', d); if (h) qry = qry.lte('fecha', h); }   // vacío = sin límite de ese lado
   if (tipo) qry = qry.eq('tipo', tipo);
@@ -5170,16 +5182,17 @@ async function cargarComprobantes() {
   if (q) { await cIndice(COMPS); lista = COMPS.filter(c => coincide(q, cTexto(c), cMontos(c))); }
   window._cVis = lista;
   const puedeAnular = true;   // el genérico ve todo; anular pide autorización
-  document.getElementById('c-stat').textContent = lista.length + ' comprobantes · ' + plata(lista.filter(c => c.estado === 'emitido').reduce((s, c) => s + c.signo * Number(c.total), 0)) + (COMPS.length >= 500 ? ' · se muestran los 500 más nuevos: acotá las fechas para ver los anteriores' : '');
+  const porLocal = esTodos() ? Object.keys(LOCALES).map(l => { const v = lista.filter(c => c.local === l && c.estado === 'emitido').reduce((s, c) => s + c.signo * Number(c.total), 0); return v ? ' · ' + LOCALES[l] + ' ' + plata(v) : ''; }).join('') : '';
+  document.getElementById('c-stat').textContent = (esTodos() ? 'Todos los locales · ' : '') + lista.length + ' comprobantes · ' + plata(lista.filter(c => c.estado === 'emitido').reduce((s, c) => s + c.signo * Number(c.total), 0)) + porLocal + (COMPS.length >= 500 ? ' · se muestran los 500 más nuevos: acotá las fechas para ver los anteriores' : '');
   document.getElementById('c-lista').innerHTML = lista.length ? `<table><thead><tr><th>Comprobante</th><th>Fecha</th><th>Cliente</th><th>Vendedora</th><th class="num">Total</th><th>Estado</th><th></th></tr></thead><tbody>` +
     lista.map(c => `<tr class="${c.estado === 'anulado' ? 'dim' : ''}">
-      <td><a href="#" onclick="verComprobante(${c.id});return false" title="Abrir el comprobante para verlo o imprimirlo"><b>${TIPO_NOM[c.tipo]}${c.tipo === 'RE' ? '' : ' ' + c.letra}</b> ${fmtNum(c.punto_venta, c.numero)}</a>${c.relacionado_id ? '<div class="mini">devuelve #' + c.relacionado_id + '</div>' : ''}${c.reemplaza_id ? '<div class="mini">reemplaza a #' + c.reemplaza_id + '</div>' : ''}${c.remito_id ? '<div class="mini">sobre un remito</div>' : ''}${c.local_venta && c.local_venta !== c.local ? '<div><span class="chip viol" title="Facturada con la sucursal ' + esc(LOCALES[c.local] || c.local) + ' por ' + esc(LOCALES[c.local_venta] || c.local_venta) + ': la venta se le computa a ' + esc(LOCALES[c.local_venta] || c.local_venta) + ' (columna Fc Oficina)">venta de ' + esc(LOCALES[c.local_venta] || c.local_venta) + '</span></div>' : ''}</td>
+      <td><a href="#" onclick="verComprobante(${c.id});return false" title="Abrir el comprobante para verlo o imprimirlo"><b>${TIPO_NOM[c.tipo]}${c.tipo === 'RE' ? '' : ' ' + c.letra}</b> ${fmtNum(c.punto_venta, c.numero)}</a>${c.relacionado_id ? '<div class="mini">devuelve #' + c.relacionado_id + '</div>' : ''}${c.reemplaza_id ? '<div class="mini">reemplaza a #' + c.reemplaza_id + '</div>' : ''}${c.remito_id ? '<div class="mini">sobre un remito</div>' : ''}${esTodos() ? '<div><span class="chip gray">' + esc(LOCALES[c.local] || c.local) + '</span></div>' : ''}${c.local_venta && c.local_venta !== c.local ? '<div><span class="chip viol" title="Facturada con la sucursal ' + esc(LOCALES[c.local] || c.local) + ' por ' + esc(LOCALES[c.local_venta] || c.local_venta) + ': la venta se le computa a ' + esc(LOCALES[c.local_venta] || c.local_venta) + ' (columna Fc Oficina)">venta de ' + esc(LOCALES[c.local_venta] || c.local_venta) + '</span></div>' : ''}</td>
       <td>${fechaAR(c.fecha)} <span class="mini">${String(c.hora).slice(0, 5)}</span></td>
       <td>${esc(c.cliente_nombre)}<div class="mini">${c.cliente_doc ? (c.cliente_doc_tipo || '') + ' ' + c.cliente_doc : ''}${c.cliente_informado === false && c.cliente_interno ? '<span title="Cliente registrado en nuestra base; a ARCA fue como Consumidor Final">👤 ' + esc(c.cliente_interno) + '</span>' : (!c.cliente_globalid && !c.cliente_doc && c.tipo !== 'NC' ? '<span title="Se vendió sin cargar cliente">sin cliente</span>' : '')}</div></td>
       <td class="mini">${esc(c.vendedora_nombre || '')}${c.atendio_nombre && c.atendio_nombre !== c.vendedora_nombre ? '<div>atendió ' + esc(pila(c.atendio_nombre)) + '</div>' : c.atendio_nadie ? '<div>' + QE_NADIE.toLowerCase() + '</div>' : ''}${c.autorizado_por && c.autorizado_modo !== 'propia' ? '<div>autorizó ' + esc(pila(c.autorizado_por)) + ' <span class="chip green">' + c.autorizado_modo + '</span></div>' : ''}</td>
       <td class="num"><b>${c.signo < 0 ? '- ' : ''}${plata(c.total)}</b></td>
       <td>${c.estado === 'anulado' ? '<span class="chip red" title="' + esc(c.anulado_motivo || '') + '">Anulado</span>' : c.cae_estado === 'prueba' ? '<span class="chip red" title="Comprobante de prueba: no fue a ARCA y no tiene valor fiscal">Prueba</span>' : c.cae_estado === 'pendiente' ? (String(c.cae_error || '').startsWith('En espera') ? '<span class="chip amber" title="' + esc(c.cae_error) + '">En espera</span>' : '<span class="chip amber" title="Esperando el CAE de ARCA">CAE…</span>') : c.cae_estado === 'ok' ? '<span class="chip green" title="CAE ' + esc(c.cae) + '">CAE</span>' : c.cae_estado === 'error' ? '<span class="chip red" title="' + esc(c.cae_error || '') + '">CAE rechazado</span>' : c.tipo === 'RE' ? (c.destino_local ? '<span class="chip viol">Traslado → ' + esc(LOCALES[c.destino_local]) + '</span> ' + trChip(c) : c.facturado_en ? '<span class="chip green">Remito facturado</span>' : '<span class="chip amber">Remito sin facturar</span>') : c.tipo === 'PR' ? '<span class="chip amber">Presupuesto</span>' : '<span class="chip gray">Manual</span>'}${c.es_sena ? ' <span class="chip blue">Seña</span>' : ''}${Number(c.gift_desc) > 0 ? ' <span class="chip blue" title="Descontó una gift card ya facturada de ' + plata(c.gift_desc) + '">Usa gift</span>' : ''}${Number(c.sena_monto) > 0 ? ' <span class="chip blue" title="Descontó una seña de ' + plata(c.sena_monto) + '">Usa seña</span>' : ''}${PG_PEND[c.id] ? ` <a href="#" class="chip amber" onclick="pgVer(${c.id});return false" title="Tiene ${PG_PEND[c.id].pagos === 1 ? 'un pago' : PG_PEND[c.id].pagos + ' pagos'} de ${plata(PG_PEND[c.id].importe)} sin verificar: tocá para verificarlo">Pago sin verificar</a>` : ''}</td>
-      <td class="acc">${(c.tipo === 'FC' || c.tipo === 'MA') && c.estado === 'emitido' ? `<button class="btn ico" onclick="pgVer(${c.id})" title="Pagos: verificar un pago o corregir la forma de pago" aria-label="Pagos">${_i('cobrar')}</button>` : ''}${c.tipo === 'RE' && c.estado === 'emitido' && !c.facturado_en && !c.destino_local ? `<button class="btn ico" onclick="rmFacturar(${c.id})" title="Facturar este remito" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo === 'PR' && c.estado === 'emitido' ? `<button class="btn ico" onclick="prFacturar(${c.id})" title="Facturar este presupuesto" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo !== 'NC' && c.tipo !== 'RE' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
+      <td class="acc">${(c.tipo === 'FC' || c.tipo === 'MA') && c.estado === 'emitido' ? `<button class="btn ico pg-btn" onclick="pgVer(${c.id})" title="Pagos: verificar un pago o corregir la forma de pago" aria-label="Pagos">${_i('cobrar')}</button>` : ''}${c.tipo === 'RE' && c.estado === 'emitido' && !c.facturado_en && !c.destino_local ? `<button class="btn ico" onclick="rmFacturar(${c.id})" title="Facturar este remito" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo === 'PR' && c.estado === 'emitido' ? `<button class="btn ico" onclick="prFacturar(${c.id})" title="Facturar este presupuesto" aria-label="Facturar">${_i('cobrar')}</button>` : c.tipo !== 'NC' && c.tipo !== 'RE' && c.estado === 'emitido' ? `<button class="btn ico" onclick="iniciarNC(${c.id})" title="Hacer nota de crédito (devolución)" aria-label="Nota de crédito">${_i('nc')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && c.cae_estado === 'error' ? `<button class="btn ico" onclick="reintentarCAE(${c.id})" title="Pedir el CAE de nuevo a ARCA" aria-label="Reintentar CAE">${_i('nc')}</button>` : ''}
         ${(c.tipo === 'PR' || c.tipo === 'MA' || (c.tipo === 'FC' && c.letra !== 'X' && (c.cae_estado === 'ok' || c.cae_estado === 'prueba') && !c.sena_id && !(Number(c.gift_desc) > 0))) && c.estado === 'emitido' && !c.es_sena && !c.gift_codigos && !c.remito_id ? `<button class="btn ico" onclick="modificar(${c.id})" title="${c.tipo === 'FC' ? 'Modificar la factura: al emitir salen la nota de crédito y la factura nueva' : c.tipo === 'PR' ? 'Modificar el presupuesto' : 'Modificar el comprobante X (pide autorización de la encargada)'}" aria-label="Modificar">${_i('edit')}</button>` : ''}
         ${puedeAnular && c.estado === 'emitido' && c.cae_estado !== 'ok' && c.cae_estado !== 'pendiente' ? `<button class="btn ico peligro" onclick="anular(${c.id})" title="Anular" aria-label="Anular">${_i('anular')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
@@ -5482,6 +5495,7 @@ async function anular(id) {
 
 // ═══ Caja ═══════════════════════════════════════════════════════════════
 async function cargarCaja() {
+  if (esTodos()) return;   // «Todos los locales»: la caja es de cada local
   const f = document.getElementById('k-fecha').value;
   const [{ data: caja, error }, { data: comps }] = await Promise.all([
     sb.rpc('pos_caja_dia', { p_local: LOCAL, p_fecha: f }),
@@ -5531,6 +5545,6 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=227"></script>
+<script src="manual.js?v=228"></script>
 </body>
 </html>
