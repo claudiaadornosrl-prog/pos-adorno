@@ -100,17 +100,27 @@ window.ADORNO_ASISTENTE = (function () {
     if (location.pathname.replace(/index\.html$/, '') === m.ruta) return '';   // ya está en ese módulo
     return m.ruta + (m.pestana ? '#clodi-ir=' + encodeURIComponent(String(m.pestana).slice(0, 60)) : '');
   }
+  // (19-nov-2026, 2ª vuelta) el módulo puede avisar que tiene algo sin guardar: window.ADORNO_ASISTENTE_SIN_GUARDAR = () => 'hay un ticket armado'
+  function sinGuardar() { try { const f = window.ADORNO_ASISTENTE_SIN_GUARDAR; const r = typeof f === 'function' ? f() : ''; return r ? (typeof r === 'string' ? r : 'hay algo sin guardar') : ''; } catch (_) { return ''; } }
   function irModulo(m) {   // solo cuando pidió que la lleven: espera a que termine de hablar y va
-    const u = irUrl(m); if (!u) return; let n = 0;
+    const u = irUrl(m); if (!u || sinGuardar()) return; let n = 0;
     const t = setInterval(() => { n++; let habla = false; try { habla = 'speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending); } catch (_) {} if ((n > 3 && !habla) || n > 60) { clearInterval(t); location.href = u; } }, 400);
   }
   function llegar() {   // al entrar desde el botón de Clodi: abre la pestaña que venía pedida (espera a que el módulo arme sus pestañas)
     const m = /[#&]clodi-ir=([^&]+)/.exec(location.hash || ''); if (!m) return;
     let q = ''; try { q = decodeURIComponent(m[1]).toLowerCase(); } catch (_) { return; }
     try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
-    let n = 0; const t = setInterval(() => {
+    // (2ª vuelta) hay módulos que cargan permisos o datos después de dibujar las pestañas y el primer toque se pierde:
+    // se toca, se comprueba que quedó abierta y, si no, se vuelve a tocar (hasta 20 s)
+    const abierta = (el) => /(^|\s)(active|activa|on|act|sel|selected|current)(\s|$)/.test(el.className || '') || el.getAttribute('aria-selected') === 'true' || el.getAttribute('aria-current') === 'page';
+    let n = 0, toques = 0; const t = setInterval(() => {
+      if (++n > 40) { clearInterval(t); return; }
       const ps = pestanas(); const p = ps.find((x) => x.lb.toLowerCase() === q) || ps.find((x) => x.lb.toLowerCase().includes(q) || q.includes(x.lb.toLowerCase()));
-      if (p) { clearInterval(t); irA(p.lb); } else if (++n > 40) clearInterval(t);
+      if (!p) return;
+      if (abierta(p.el)) { clearInterval(t); return; }
+      const seVe = ps.some((x) => abierta(x.el));   // ¿este módulo marca la pestaña abierta de una forma que se puede leer?
+      if (seVe || toques === 0 || n === 6 || n === 14) { toques++; irA(p.lb); }
+      if (!seVe && toques >= 3) clearInterval(t);
     }, 500);
   }
   function irA(nombre) {
@@ -382,6 +392,7 @@ window.ADORNO_ASISTENTE = (function () {
     else if (tipo === 'err') { d.className = 'asist-err'; d.textContent = texto; }
     else if (tipo === 'wait') { d.className = 'asist-fila'; d.innerHTML = `<span class="asist-av">${CLODI('cara')}</span><div class="asist-a asist-wait"><i>Clodi está buscando en el manual…</i></div>`; d.querySelector('.clodi').classList.add('piensa'); }
     else { d.className = 'asist-fila'; d.innerHTML = `<span class="asist-av">${CLODI('cara')}</span><div class="asist-a"></div>`; d.lastChild.innerHTML = esc(texto.respuesta) + (texto.pestana ? `<br><i>→ pestaña <b>${esc(texto.pestana)}</b></i>` : '') + (irUrl(texto.ir_modulo) ? `<div class="asist-bts"><a class="asist-bt si asist-ir" href="${esc(irUrl(texto.ir_modulo))}">Ir a ${esc(texto.ir_modulo.nombre || 'ese módulo')} →</a></div>` : '') + ('speechSynthesis' in window ? ` <button class="asist-ib" title="Escuchar la respuesta" data-a="leer" data-t="${esc(texto.respuesta)}">${ICO.voz}</button>` : ''); }
+    { const ir = d.querySelector && d.querySelector('a.asist-ir'); if (ir) ir.addEventListener('click', (ev) => { const sg = sinGuardar(); if (sg && !window.confirm('Ojo: ' + sg + '. Si salís ahora, se pierde. ¿Salgo igual?')) ev.preventDefault(); }); }
     l.appendChild(d); l.scrollTop = l.scrollHeight; return d;
   }
   async function prepararAccion(acc, porVoz) {   // completa el formulario del módulo; se envía SOLO con el botón Enviar
@@ -419,6 +430,7 @@ window.ADORNO_ASISTENTE = (function () {
       const j = await r.json().catch(() => ({}));
       w.remove();
       if (!r.ok || !j.ok) throw new Error(j.error || ('Error ' + r.status));
+      if (j.ir_modulo && j.ir_modulo.llevar && !j.accion && irUrl(j.ir_modulo)) { const sg = sinGuardar(); if (sg) { j.ir_modulo.llevar = false; j.respuesta = 'No te llevo todavía porque ' + sg + '. Cuando termines, tocá el botón para ir a ' + (j.ir_modulo.nombre || 'ese módulo') + '.'; } }
       hist.push({ q, a: j.respuesta }); log('a', j);
       if (j.pestana && !j.accion) irA(j.pestana);
       if (j.ir_modulo && j.ir_modulo.llevar && !j.accion) irModulo(j.ir_modulo);
@@ -658,30 +670,6 @@ main .tab-content { zoom: var(--pos-esc, 1); }   /* A−/A+ del banner: letra, n
 .onv .on-pie { justify-content: flex-start; gap: 30px; } .on-t td .rojo { color: #b91c1c; white-space: normal; max-width: 220px; }
 .on-atelier { line-height: 1.6; }
 /* (JP 19-nov) títulos de tabla como en Excel */
-th.xl-th { cursor: pointer; user-select: none; white-space: nowrap; } th.xl-th:hover, th.xl-oon { color: #0369a1; }
-th.xl-th .xl-o { font-size: 10px; margin-left: 4px; color: #0369a1; }
-.xl-f { background: none; border: 0; padding: 2px 3px; margin-left: 2px; cursor: pointer; vertical-align: middle; opacity: .3; line-height: 0; color: inherit; }
-.xl-f svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
-th.xl-th:hover .xl-f { opacity: .8; } th.xl-fon .xl-f { opacity: 1; color: #0369a1; } th.xl-fon .xl-f svg { fill: currentColor; }
-.xl-oculta { display: none !important; }
-.xl-aviso { display: flex; align-items: center; gap: 10px; background: #e0f2fe; color: #075985; border-radius: 999px; padding: 4px 6px 4px 14px; margin: 0 0 8px; font-size: 13px; width: fit-content; }
-.xl-aviso svg { width: 13px; height: 13px; fill: currentColor; vertical-align: -2px; } .xl-aviso .xl-q { background: #fff; border: 0; border-radius: 999px; padding: 3px 12px; cursor: pointer; color: #075985; font: inherit; font-size: 12.5px; }
-.xl-pop { position: absolute; z-index: 10000; background: #fff; border-radius: 20px; box-shadow: 0 10px 30px rgba(15,23,42,.22); padding: 12px; width: 310px; font-size: 13px; font-weight: 400; color: #0f172a; text-align: left; }
-.xl-ord { display: flex; gap: 6px; margin-bottom: 8px; } .xl-ord button { flex: 1; background: #f1f5f9; border: 0; border-radius: 999px; padding: 6px 8px; cursor: pointer; font: inherit; font-size: 12.5px; } .xl-ord button:hover { background: #e0f2fe; }
-.xl-bus { width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: 999px; padding: 6px 12px; font: inherit; margin-bottom: 6px; }
-.xl-vals { max-height: 240px; overflow: auto; overscroll-behavior: contain; }
-.xl-v { display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 999px; cursor: pointer; } .xl-v:hover { background: #f8fafc; } .xl-v span:first-of-type { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .xl-v .n { color: #94a3b8; font-size: 11.5px; }
-.xl-pie { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-.xl-r { position: absolute; top: 0; right: 0; width: 8px; height: 100%; cursor: col-resize; z-index: 2; touch-action: none; }
-.xl-r::after { content: ''; position: absolute; right: 2px; top: 22%; bottom: 22%; width: 2px; border-radius: 2px; background: transparent; }
-th:hover > .xl-r::after { background: #cbd5e1; } .xl-r:hover::after, body.xl-arrastra .xl-r:hover::after { background: #0369a1; }
-body.xl-arrastra, body.xl-arrastra * { cursor: col-resize !important; user-select: none !important; }
-table.xl-fijo { table-layout: fixed; } table.xl-fijo th { box-sizing: border-box; } table.xl-fijo th, table.xl-fijo td { overflow: hidden; text-overflow: ellipsis; }
-.xl-col-oculta { display: none !important; }
-.xl-cols { display: flex; gap: 6px; margin-top: 8px; } .xl-cols button { flex: 1; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: #f1f5f9; border: 0; border-radius: 999px; padding: 6px 8px; cursor: pointer; font: inherit; font-size: 12.5px; } .xl-cols button:hover { background: #e0f2fe; }
-.xl-cols svg, .xl-aviso svg.ojo { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-.xl-aviso { flex-wrap: wrap; } .xl-aviso .xl-hs { margin-left: 4px; } .xl-aviso .xl-mos { background: #fff; border: 0; border-radius: 999px; padding: 3px 12px; cursor: pointer; color: #075985; font: inherit; font-size: 12.5px; }
-@media print { .xl-f, .xl-o, .xl-aviso, .xl-r { display: none !important; } }
 .mp-t tr.mp-fila { cursor: pointer; } .mp-t td { vertical-align: top; } .mp-t td:first-child { white-space: normal; max-width: 420px; } .mp-t .mp-nota { color: #92400e; } .mp-t td .chip { margin: 2px 4px 0 0; }
 .gw-pil { margin-left: 10px; } .chip.gw-c { background: #f5ede3; color: #7c5a2e; font-family: ui-monospace, Consolas, monospace; letter-spacing: .04em; }
 .gw-t td { white-space: nowrap; vertical-align: top; } .gw-t td:nth-child(2) { white-space: normal; } .gw-t td.gw-us { white-space: normal; font-size: 12.5px; color: #475569; min-width: 190px; max-width: 320px; } .gw-t .rojo { color: #b91c1c; }
@@ -799,11 +787,10 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 .pd-c-tabla { border: 1px solid #e2e8f0; border-radius: 18px; overflow: hidden; } .pd-c-tabla table.pd-items { margin: 0; box-shadow: none; } .pd-c-tabla thead th { background: #f1f5f9; }
 .pd-conf .pd-nota-box { margin: 12px 0 8px; } .pd-c-mail { font-size: 13px; color: var(--muted); }
 .pd-c-pie { display: flex; align-items: center; gap: 8px; margin-top: 12px; } .pd-c-pie .btn { border-radius: 999px; padding: 9px 20px; }
-:where(table:has(> thead):not(.renglones *):not(.tk-det) > tbody > tr:nth-child(even of :not(.tr-det))) > td { background: #eef6f8; }
+/* (19-nov) tablas tipo Excel: la pieza común adorno-tablas.js hace los títulos fijos y la cebra; acá solo sus colores con los del POS */
+:root { --tt-cebra: rgba(14,116,144,.07); --tt-hover: rgba(14,116,144,.13); --bd: var(--border); --tx: var(--text); --mut: var(--muted); }
 :root { --tope: 56px; }
 table:has(> thead), .pd-c-tabla { overflow: clip; }   /* (JP 18-nov) con overflow:hidden el título no puede quedar fijo; clip redondea igual */
-:where(table:has(> thead):not(.renglones *):not(.tk-det) > thead) th { position: sticky; top: var(--tope); z-index: 5; }   /* títulos fijos al bajar */
-:where(#ov, .rm-ov) :where(table > thead) th { top: 0; }   /* en las ventanas, pegados arriba de la ventana */   /* (JP 18-nov) colores alternos en todas las tablas del POS */
 .pv { background: #fff; border-radius: 28px; width: 760px; max-width: 94vw; max-height: 90vh; overflow: auto; box-shadow: 0 12px 40px rgba(15,23,42,.28); box-sizing: border-box; }
 .pv-cuerpo { padding: 16px 22px 16px; } .pv-tot { font-size: 13px; color: var(--muted); margin: 10px 2px 0; }
 .pv-pie { display: flex; align-items: center; gap: 6px; margin-top: 12px; } .pv-pie .ib { color: #2563eb; display: inline-flex; padding: 6px; border-radius: 999px; } .pv-pie .ib:hover { background: #f1f5f9; } .pv-pie .ib svg { width: 26px; height: 26px; } .pv-pie .pd-xls-ico svg { width: 26px !important; height: 26px !important; } .pv-pie .btn.primary { border-radius: 999px; padding: 9px 22px; }
@@ -824,8 +811,8 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
 @media (max-width: 760px) { .lk1 { flex-wrap: wrap; justify-content: center; border-radius: 30px; padding: 14px; } .lk1 .lk-in { width: 100%; } }
 .pd-avisos { display: flex; gap: 8px; margin-top: 5px; align-items: center; } .pd-av { display: inline-flex; } .pd-av svg { width: 17px; height: 17px; }
 .pd-av.ok { color: #16a34a; } .pd-av.esp { color: #cbd5e1; } .pd-av.mal { color: #dc2626; } .pd-wa-ico { display: inline-flex; color: #16a34a; } .pd-xls-ico { display: inline-flex; flex: none; vertical-align: middle; } .pd-xls-ico svg { width: 21px !important; height: 21px !important; flex: none; } .pd-xls-ico svg * { stroke: none !important; } .pd-wa-ico svg { width: 19px; height: 19px; }
-.pd-t tbody tr:nth-child(odd):not(.pd-sub):not(.pd-prov):not(.pd-junto):not(.emb) > td:not(.pd-gq) { background: #fff; }
-.pd-t tbody tr:nth-child(even):not(.pd-sub):not(.pd-prov):not(.pd-junto):not(.emb) > td:not(.pd-gq) { background: #eef6f8; }
+.pd-t.pd-falta tbody tr:nth-child(odd):not(.pd-sub):not(.pd-prov):not(.pd-junto):not(.emb) > td:not(.pd-gq) { background: #fff; }   /* (19-nov) solo Qué falta: las demás tablas usan la cebra de la pieza común */
+.pd-t.pd-falta tbody tr:nth-child(even):not(.pd-sub):not(.pd-prov):not(.pd-junto):not(.emb) > td:not(.pd-gq) { background: #eef6f8; }
 .pd-t tr.pd-chico > td:not(:first-child) { opacity: .5; } .pd-t tr.pd-chico .chip.amber { opacity: 1; }   /* (JP 18-nov) renglones en colores alternos en todas las planillas de Pedidos */
 .pd-ficha { flex-wrap: nowrap; gap: 8px; padding: 10px 12px 10px 24px; } .pd-f-tit { font-size: 17px; white-space: nowrap; }
 .pd-f-num { border: 1.5px solid #cbd5e1; border-radius: 999px; padding: 9px 14px; font: inherit; font-size: 15px; width: 170px; height: 42px; box-sizing: border-box; background: #fff; }
@@ -1256,7 +1243,7 @@ async function entrar(user) {
   document.getElementById('franja-prueba').style.display = MODO_PRUEBA ? 'block' : 'none';
   await init();
 }
-async function doLogout() { await sb.auth.signOut(); location.reload(); }
+async function doLogout() { if (typeof ticketArmado === 'function' && ticketArmado() && !await confirmar('Hay un ticket armado sin emitir: si salís, se pierde. ¿Salir igual?')) return; _sinAviso = Date.now(); await sb.auth.signOut(); location.reload(); }
 (async () => {
   const { data: { session: s } } = await sb.auth.getSession();
   if (s && ADORNO_SSO.entraDirecto(MODULO, s.user?.email)) await entrar(s.user);
@@ -1267,6 +1254,17 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-wo
 // ═══ POS · estado ══════════════════════════════════════════════════════
 let PERFIL = null, LOCAL = null, ARTS = [], ARTS_AT = 0, MEDIOS = [], PV = [], IMGS = {}, RESERVAS = {}, TERMS = [];
 const T = { tipo: 'FC', letra: 'B', items: [], cliente: null, sin_cliente: false, nc_de: null, gift: null };
+// (JP 19-nov) si hay un ticket armado (artículos, gift card o seña) y algo saca la página del POS —cerrar la ventana, recargar,
+// el Hub, el botón «Ir a…» de Clodi o «llevame a…»—, Chrome pregunta «¿Salir del sitio?» antes de irse: «Cancelar» deja todo como estaba.
+// Abrir la app de WhatsApp, un mail o un teléfono no es irse del POS: no pregunta.
+const ticketArmado = () => !!(T.items.length || T.gift || T.sena);
+let _sinAviso = 0;
+window.addEventListener('beforeunload', e => { if (Date.now() - _sinAviso < 3000 || !ticketArmado()) return; e.preventDefault(); e.returnValue = ''; });
+document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (a && /^(mailto|tel|whatsapp|sms):/i.test(a.getAttribute('href') || '')) _sinAviso = Date.now(); }, true);
+// Clodi (panel común, 2ª vuelta del «Ir a …»): con un ticket armado no cambia de módulo sola y su botón «Ir a …» pregunta antes;
+// si la persona ya dijo que sí en esa pregunta, Chrome no vuelve a preguntar
+window.ADORNO_ASISTENTE_SIN_GUARDAR = () => !ticketArmado() ? '' : T.gift ? 'hay una gift card armada sin emitir' : T.sena ? 'hay una seña armada sin emitir' : 'hay un ticket armado sin emitir';
+document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a.asist-ir'); if (a && !e.defaultPrevented) _sinAviso = Date.now(); });
 const GIFT_URL = 'https://claudiaadornosrl-prog.github.io/pos-adorno/gift/?c=';
 // Tope de ARCA (pos_parametros.tope_cf_arca): desde ese importe la factura va identificada sí o sí.
 const TOPE = { valor: 10000000, at: null, error: null };
@@ -1322,7 +1320,7 @@ function waConvertir(url) {
   if (modo === 'web') return { url: `https://web.whatsapp.com/send?phone=${phone}${text}`, app: false };
   return null;
 }
-function waAbrir(url) { const c = waConvertir(url); if (!c) return _winOpenOrig(url, '_blank'); if (c.app) { location.href = c.url; return null; } return _winOpenOrig(c.url, 'crm_whatsapp'); }
+function waAbrir(url) { const c = waConvertir(url); if (!c) return _winOpenOrig(url, '_blank'); if (c.app) { _sinAviso = Date.now(); location.href = c.url; return null; } return _winOpenOrig(c.url, 'crm_whatsapp'); }
 window.open = function (url, name, feats) { if (typeof url === 'string' && waConvertir(url)) return waAbrir(url); return _winOpenOrig(url, name, feats); };
 document.addEventListener('click', e => { const a = e.target && e.target.closest ? e.target.closest('a[href^="https://wa.me/"]') : null; if (!a || !waConvertir(a.getAttribute('href'))) return; e.preventDefault(); waAbrir(a.getAttribute('href')); }, true);
 function waAjustes() { const el = document.getElementById('a-wa'); if (!el) return; const m = waModo(); el.innerHTML = [['kiosco', 'Ventana de WhatsApp del kiosco'], ['app', 'WhatsApp de escritorio'], ['web', 'WhatsApp Web en este navegador'], ['', 'Como venga (wa.me)']].map(([k, t]) => `<button class="pil ${m === k ? 'on' : ''}" onclick="waElegir('${k}')">${t}</button>`).join(''); }
@@ -1363,7 +1361,7 @@ async function setModo(m) {
   else if (!await confirmar('¿Volver el POS a modo PRUEBA para todos los locales? Deja de facturar de verdad.')) return;
   const { error } = await sb.rpc('pos_set_modo', { p_modo: m });
   if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
-  location.reload();
+  _sinAviso = Date.now(); location.reload();
 }
 async function pruebaBorrar() {
   const p = PRUEBA || {};
@@ -2026,169 +2024,23 @@ async function gwAsociar(nro) {
 }
 function onTab(k) { if (k !== 'remitos') rmModo('lista'); if (k === 'remitos') cargarRemitos(); if (k === 'etiquetas') { etRender(); setTimeout(() => document.getElementById('et-q').focus(), 50); } if (k === 'pedidos') pdVista(LOCAL === 'oficina' ? 'piden' : PD.vista); if (k === 'comprobantes') cargarComprobantes(); if (k === 'vales') cargarVales(); if (k === 'promociones') cargarPromos(); if (k === 'online') cargarOnline(); if (k === 'caja') cargarCaja(); if (k === 'ajustes') cargarAjustes(); if (k === 'vender') setTimeout(() => document.getElementById('v-q').focus(), 50); }
 
-// ═══ Títulos de tabla como en Excel (JP 19-nov) ═══
-// Tocar el título ordena (▲ menor a mayor, ▼ mayor a menor, otra vez sin orden). El embudo abre el filtro: ordenar, buscar y tildar valores.
-// Vale para todas las tablas del módulo menos los comprobantes impresos, el ticket y las que se editan. El orden y los filtros de cada
-// tabla quedan mientras no se recargue el POS, aunque la tabla se vuelva a dibujar (al buscar, cambiar de fecha, etc.).
-const XL = {}, XL_COL = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
-const XL_FUERA = '.a4, .hoja, .ticket, .tk-det, .no-xl, #dlg, #xl-pop';
-const XL_EMB = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>';
-const XL_OJO = '<svg class="ojo" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg>';
-let XL_ARR = 0;   // cuándo terminó el último arrastre de un borde (para que no ordene al soltar)
-const xlTit = th => th.dataset.xlT != null ? th.dataset.xlT : th.textContent.replace(/\s+/g, ' ').trim();
-function xlClave(t) { const c = t.parentElement && t.parentElement.closest('[id]'); return (c ? c.id : '') + '|' + [...t.tHead.rows[0].cells].map(xlTit).join('|'); }
-// el valor de una celda: su texto principal (sin la línea chica de abajo ni los botones)
-function xlValor(td) { if (!td) return ''; if (td.dataset.sort != null) return td.dataset.sort; const c = td.cloneNode(true); c.querySelectorAll('.mini, button, .xl-no').forEach(x => x.remove());
-  return ((c.textContent || '').trim() ? c.textContent : td.textContent).replace(/\s+/g, ' ').trim(); }
-// fechas (dd/mm/aaaa, dd/mm hh:mm) y números o plata ($ 1.234,50) se ordenan por su valor; el resto, alfabético con los números en orden
-function xlNum(v) {
-  const m = v.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?:\s+(\d{1,2}):(\d{2}))?/);
-  if (m) return Number((m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : '0000') + m[2].padStart(2, '0') + m[1].padStart(2, '0') + (m[4] || '0').padStart(2, '0') + (m[5] || '00'));
-  const x = v.replace(/US\$|\$|\s/g, ''); if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$|^-?\d+(,\d+)?$/.test(x)) return Number(x.replace(/\./g, '').replace(',', '.'));
-  return null;
-}
-function xlCmp(a, b) { const na = xlNum(a), nb = xlNum(b); return na != null && nb != null ? na - nb : XL_COL.compare(a, b); }
-// los renglones de la tabla agrupados: el renglón y su detalle desplegado van juntos; los totales quedan abajo
-function xlGrupos(t) { const g = [], pie = [];
-  for (const r of t.tBodies[0].rows) {
-    if (/\b(nivel1|tot|total|xl-pie)\b/.test(r.className)) { pie.push(r); continue; }
-    const det = /\b(tr-det|on-det)\b/.test(r.className) || (r.cells.length === 1 && r.cells[0].colSpan > 1);
-    if (det && g.length) g[g.length - 1].push(r); else g.push([r]);
+// ═══ Tablas tipo Excel (JP 19-nov): la pieza común _shared/adorno-tablas.js, que se carga al final de la página ═══
+// Toma sola toda tabla con títulos: títulos fijos al bajar, renglones alternados, ordenar, filtrar, ocultar y ancho de columnas
+// (reemplaza a los títulos «XL» propios del POS). Acá solo se marcan las excepciones del POS ANTES de que la pieza las vea
+// (este observador se crea primero, así corre primero):
+//  · el ticket que se arma (renglones, seña), los comprobantes impresos o en vista previa y los cartelitos: data-tt="no" (no se tocan)
+//  · las planillas donde se escriben cantidades o precios: data-tt="fijo" (solo títulos fijos y renglones alternados, sin reordenar)
+const TT_NO = '.renglones, .sena-box, .tk-det, .a4, .hoja, .ticket, #dlg';
+function ttMarcar(raiz) {
+  const ts = raiz.tagName === 'TABLE' ? [raiz] : raiz.getElementsByTagName ? [...raiz.getElementsByTagName('table')] : [];
+  for (const t of ts) {
+    if (t.dataset.tt) continue;
+    if (t.closest(TT_NO)) t.dataset.tt = 'no';
+    else if (t.tBodies[0] && t.tBodies[0].querySelector('input:not([type=checkbox]):not([type=radio]), select, textarea')) t.dataset.tt = 'fijo';
   }
-  return { g, pie }; }
-function xlAplicar(t) {
-  const tb = t.tBodies[0]; if (!tb) return; const st = XL[t.dataset.xlK] || { f: {} }; const { g, pie } = xlGrupos(t);
-  let n = 0; g.forEach(gr => { if (gr[0].dataset.xlI == null) gr[0].dataset.xlI = n; n++; });   // el orden en que llegó (para «sin orden»)
-  const fs = Object.keys(st.f);
-  for (const gr of g) { const ok = fs.every(i => st.f[i].has(xlValor(gr[0].cells[i]))); gr.forEach(x => x.classList.toggle('xl-oculta', !ok)); }
-  if (st.o != null) g.sort((a, b) => { const va = xlValor(a[0].cells[st.o]), vb = xlValor(b[0].cells[st.o]); if (!va !== !vb) return va ? -1 : 1; return st.d * xlCmp(va, vb) || a[0].dataset.xlI - b[0].dataset.xlI; });
-  else g.sort((a, b) => a[0].dataset.xlI - b[0].dataset.xlI);
-  const fr = document.createDocumentFragment(); g.forEach(gr => gr.forEach(x => fr.appendChild(x))); pie.forEach(x => fr.appendChild(x)); tb.appendChild(fr);
-  const hs = st.h || new Set(), nc = t.tHead.rows[0].cells.length;   // columnas ocultas
-  for (const r of [t.tHead.rows[0], ...tb.rows]) if (r.cells.length === nc) for (let j = 0; j < nc; j++) r.cells[j].classList.toggle('xl-col-oculta', hs.has(j));
-  xlAnchos(t, st);
-  t._xlN = tb.rows.length; t._xlA = tb.rows[0];
 }
-// anchos a mano: la tabla pasa a anchos fijos (la suma de las columnas que se ven)
-function xlAnchos(t, st) {
-  const ths = [...t.tHead.rows[0].cells];
-  if (!st.w || !Object.keys(st.w).length) { if (t.classList.contains('xl-fijo')) { t.classList.remove('xl-fijo'); t.style.width = ''; t.style.minWidth = ''; ths.forEach(th => { th.style.width = ''; }); } return; }
-  t.classList.add('xl-fijo'); let tot = 0;
-  ths.forEach(th => { const i = +th.dataset.xlCol, px = Math.max(40, st.w[i] || 120); th.style.width = px + 'px'; if (!(st.h && st.h.has(i))) tot += px; });
-  t.style.width = tot + 'px'; t.style.minWidth = '0';
-}
-function xlFijar(t, st) {   // la primera vez que se cambia un ancho se toman los que tiene ahora
-  if (st.w && Object.keys(st.w).length) return;
-  st.w = {}; [...t.tHead.rows[0].cells].forEach(th => { const w = th.getBoundingClientRect().width; st.w[+th.dataset.xlCol] = w ? Math.ceil(w) + 6 : 120; });
-}
-function xlAncho(e, t, i, th) {
-  e.preventDefault(); e.stopPropagation(); const k = t.dataset.xlK, st = XL[k] = XL[k] || { f: {} };
-  xlFijar(t, st); const x0 = e.clientX, w0 = st.w[i] || th.getBoundingClientRect().width; document.body.classList.add('xl-arrastra');
-  const mov = ev => { st.w[i] = Math.max(40, Math.round(w0 + ev.clientX - x0)); xlAnchos(t, st); };
-  const fin = () => { document.removeEventListener('pointermove', mov); document.removeEventListener('pointerup', fin); document.body.classList.remove('xl-arrastra'); XL_ARR = Date.now(); xlGuardar(); xlTodas(k); };
-  document.addEventListener('pointermove', mov); document.addEventListener('pointerup', fin);
-}
-function xlAjustar(t, i) {   // doble clic en el borde: la columna al ancho de su contenido
-  const k = t.dataset.xlK, st = XL[k] = XL[k] || { f: {} }; xlFijar(t, st); const nc = t.tHead.rows[0].cells.length; let m = 40;
-  for (const r of [t.tHead.rows[0], ...t.tBodies[0].rows]) if (r.cells.length === nc && !r.classList.contains('xl-oculta')) m = Math.max(m, r.cells[i].scrollWidth + 6);
-  st.w[i] = Math.min(700, m); XL_ARR = Date.now(); xlGuardar(); xlTodas(k);
-}
-// los anchos y las columnas ocultas se recuerdan en esta PC
-const XL_LS = 'pos_xl_columnas';
-function xlGuardar() { try { const g = {}; Object.keys(XL).forEach(k => { const st = XL[k], w = st.w && Object.keys(st.w).length ? st.w : null, h = st.h && st.h.size ? [...st.h] : null; if (w || h) g[k] = { w, h }; }); localStorage.setItem(XL_LS, JSON.stringify(g)); } catch (e) {} }
-try { const g = JSON.parse(localStorage.getItem(XL_LS) || '{}'); Object.keys(g).forEach(k => { XL[k] = { f: {}, w: g[k].w || null, h: new Set(g[k].h || []) }; }); } catch (e) {}
-function xlPintar(t) {
-  const st = XL[t.dataset.xlK] || { f: {} };
-  t.tHead.querySelectorAll('th.xl-th').forEach(th => { const i = +th.dataset.xlC; th.classList.toggle('xl-fon', !!st.f[i]); th.classList.toggle('xl-oon', st.o === i); th.querySelector('.xl-o').textContent = st.o === i ? (st.d === 1 ? '▲' : '▼') : ''; });
-  let av = t.previousElementSibling; if (!(av && av.classList.contains('xl-aviso'))) av = null;
-  const k = t.dataset.xlK, nf = Object.keys(st.f).length, hs = st.h ? [...st.h].sort((a, b) => a - b) : [];
-  if (!nf && !hs.length) { if (av) av.remove(); return; }
-  const ths = [...t.tHead.rows[0].cells], nom = i => { const th = ths.find(x => +x.dataset.xlCol === i); return (th && th.dataset.xlT) || 'columna ' + (i + 1); };
-  let h = '';
-  if (nf) { const { g } = xlGrupos(t), vis = g.filter(gr => !gr[0].classList.contains('xl-oculta')).length;
-    h += `<span>${XL_EMB} Filtrado: se ven <b>${vis}</b> de ${g.length}</span><button type="button" class="xl-q">✕ Quitar filtros</button>`; }
-  if (hs.length) h += `<span class="xl-hs">${XL_OJO} Columnas ocultas:</span>${hs.map(i => `<button type="button" class="xl-mos" data-i="${i}" title="Volver a mostrar la columna «${esc(nom(i))}»">${esc(nom(i))} · mostrar</button>`).join('')}${hs.length > 1 ? '<button type="button" class="xl-mos" data-i="todas">Mostrar todas</button>' : ''}`;
-  if (!av) { av = document.createElement('div'); av.className = 'xl-aviso'; t.before(av); }
-  av.innerHTML = h;
-  const q = av.querySelector('.xl-q'); if (q) q.onclick = () => { st.f = {}; xlTodas(k); };
-  av.querySelectorAll('.xl-mos').forEach(b => { b.onclick = () => { if (b.dataset.i === 'todas') st.h.clear(); else st.h.delete(+b.dataset.i); xlGuardar(); xlTodas(k); }; });
-}
-function xlTodas(k) { document.querySelectorAll('table[data-xl]').forEach(t => { if (t.dataset.xlK === k) { xlAplicar(t); xlPintar(t); } }); }
-function xlOrden(t, i, d) { const k = t.dataset.xlK, st = XL[k] = XL[k] || { f: {} };
-  if (d === undefined) d = st.o !== i ? 1 : st.d === 1 ? -1 : 0;
-  if (d) { st.o = i; st.d = d; } else { st.o = null; st.d = 0; }
-  xlTodas(k); }
-function xlArmar(t) {
-  t.dataset.xl = '1'; let col = 0;
-  [...t.tHead.rows[0].cells].forEach(th => { const i = col; col += th.colSpan || 1; const tx = xlTit(th); th.dataset.xlT = tx; th.dataset.xlCol = i;
-    if ((th.colSpan || 1) === 1) {   // el borde derecho del título: arrastrar agranda o achica la columna
-      if (getComputedStyle(th).position === 'static') th.style.position = 'relative';
-      const g = document.createElement('span'); g.className = 'xl-r'; g.title = 'Arrastrá para agrandar o achicar la columna · doble clic: al ancho de lo que tiene';
-      g.addEventListener('pointerdown', e => xlAncho(e, t, i, th)); g.addEventListener('dblclick', e => { e.stopPropagation(); xlAjustar(t, i); }); g.addEventListener('click', e => e.stopPropagation());
-      th.appendChild(g);
-    }
-    if (!tx || th.colSpan > 1 || th.querySelector('input, button, select')) return;
-    th.classList.add('xl-th'); th.dataset.xlC = i;
-    th.insertAdjacentHTML('beforeend', `<span class="xl-o" aria-hidden="true"></span><button type="button" class="xl-f" title="Filtrar u ordenar por «${esc(tx)}»" aria-label="Filtrar ${esc(tx)}">${XL_EMB}</button>`);
-    th.addEventListener('click', e => { if (e.target.closest('.xl-r')) return; if (e.target.closest('.xl-f')) { e.stopPropagation(); xlPop(t, i, th); return; } if (Date.now() - XL_ARR < 400) return; xlOrden(t, i); });
-  });
-  t.dataset.xlK = xlClave(t); xlAplicar(t); xlPintar(t);
-}
-// el filtro de una columna, como el de Excel
-function xlPop(t, i, th) {
-  xlCerrar(); const k = t.dataset.xlK, st = XL[k] = XL[k] || { f: {} };
-  const otros = Object.keys(st.f).filter(j => +j !== i), cnt = new Map();   // como en Excel: los valores de lo que dejan ver los otros filtros
-  xlGrupos(t).g.forEach(gr => { if (!otros.every(j => st.f[j].has(xlValor(gr[0].cells[j])))) return; const v = xlValor(gr[0].cells[i]); cnt.set(v, (cnt.get(v) || 0) + 1); });
-  const vals = [...cnt.keys()].sort(xlCmp), sel = st.f[i], MAX = 400;
-  const p = document.createElement('div'); p.id = 'xl-pop'; p.className = 'xl-pop';
-  p.innerHTML = `<div class="xl-ord"><button type="button" data-d="1">▲ Menor a mayor</button><button type="button" data-d="-1">▼ Mayor a menor</button></div>
-    <input class="xl-bus" placeholder="Buscar en «${esc(th.dataset.xlT)}»" autocomplete="off">
-    <label class="xl-v xl-todo"><input type="checkbox"> <b>Seleccionar todo</b></label>
-    <div class="xl-vals">${vals.slice(0, MAX).map((v, j) => `<label class="xl-v"><input type="checkbox" data-j="${j}"${!sel || sel.has(v) ? ' checked' : ''}> <span>${esc(v || '(vacías)')}</span><span class="n">${cnt.get(v)}</span></label>`).join('')}${vals.length > MAX ? '<div class="mini">… y ' + (vals.length - MAX) + ' más: usá el buscador</div>' : ''}</div>
-    <div class="xl-cols"><button type="button" class="xl-ocu">${XL_OJO} Ocultar columna</button>${st.w && Object.keys(st.w).length ? '<button type="button" class="xl-anc">↔ Anchos de siempre</button>' : ''}</div>
-    <div class="xl-pie"><button type="button" class="btn chico xl-limpiar">Quitar filtro</button><span class="spacer"></span><button type="button" class="btn chico primary xl-ok">Aplicar</button></div>`;
-  document.body.appendChild(p);
-  const r = th.getBoundingClientRect(); p.style.top = (r.bottom + window.scrollY + 4) + 'px';
-  p.style.left = Math.max(window.scrollX + 8, Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - p.offsetWidth - 8)) + 'px';
-  const bus = p.querySelector('.xl-bus'), todo = p.querySelector('.xl-todo input'), cajas = [...p.querySelectorAll('.xl-vals input')];
-  const visibles = () => cajas.filter(c => c.closest('.xl-v').style.display !== 'none');
-  const sync = () => { const v = visibles(); todo.checked = v.length > 0 && v.every(c => c.checked); todo.indeterminate = !todo.checked && v.some(c => c.checked); };
-  bus.oninput = () => { const q = bus.value.trim().toLowerCase(); cajas.forEach(c => { const hay = !q || String(vals[c.dataset.j]).toLowerCase().includes(q); c.closest('.xl-v').style.display = hay ? '' : 'none'; if (q) c.checked = hay; }); sync(); };
-  todo.onchange = () => { visibles().forEach(c => { c.checked = todo.checked; }); sync(); };
-  cajas.forEach(c => { c.onchange = sync; }); sync();
-  p.querySelectorAll('.xl-ord button').forEach(b => { b.onclick = () => { xlOrden(t, i, Number(b.dataset.d)); xlCerrar(); }; });
-  p.querySelector('.xl-limpiar').onclick = () => { delete st.f[i]; xlTodas(k); xlCerrar(); };
-  p.querySelector('.xl-ocu').onclick = () => { st.h = st.h || new Set(); const vis = [...t.tHead.rows[0].cells].filter(x => !st.h.has(+x.dataset.xlCol) && x.dataset.xlT).length;
-    if (vis <= 1) { toast('Tiene que quedar al menos una columna a la vista', 'error'); return; } st.h.add(i); xlGuardar(); xlTodas(k); xlCerrar(); };
-  const anc = p.querySelector('.xl-anc'); if (anc) anc.onclick = () => { st.w = null; xlGuardar(); xlTodas(k); xlCerrar(); };
-  p.querySelector('.xl-ok').onclick = () => { const q = bus.value.trim();
-    const ok = new Set(visibles().filter(c => c.checked).map(c => vals[c.dataset.j]));
-    if (!q) vals.slice(MAX).forEach(v => { if (!sel || sel.has(v)) ok.add(v); });
-    if (ok.size === vals.length) delete st.f[i]; else st.f[i] = ok;
-    xlTodas(k); xlCerrar(); };
-  bus.onkeydown = e => { if (e.key === 'Enter') p.querySelector('.xl-ok').click(); };
-  setTimeout(() => bus.focus(), 30);
-}
-function xlCerrar() { const p = document.getElementById('xl-pop'); if (p) p.remove(); }
-document.addEventListener('mousedown', e => { const p = document.getElementById('xl-pop'); if (p && !p.contains(e.target) && !e.target.closest('.xl-f')) xlCerrar(); }, true);
-document.addEventListener('keydown', e => { if (e.key === 'Escape') xlCerrar(); });
-// cada tabla nueva que se dibuja recibe los títulos de Excel (y su orden y filtros, si ya tenía)
-function xlEscanear(cambiadas) {
-  document.querySelectorAll('table:not([data-xl])').forEach(t => {
-    if (!t.tHead || t.tHead.rows.length !== 1 || t.tBodies.length !== 1 || t.tHead.rows[0].cells.length < 2 || t.closest(XL_FUERA)) return;
-    if (t.tBodies[0].querySelector('input:not([type=checkbox]):not([type=radio]), select, textarea')) return;   // las que se editan, no
-    if (t.tBodies[0].rows.length < 2 && !XL[xlClave(t)]) return;
-    xlArmar(t);
-  });
-  (cambiadas || []).forEach(t => { const tb = t.tBodies[0]; if (t.isConnected && tb && (t._xlN !== tb.rows.length || t._xlA !== tb.rows[0])) { xlAplicar(t); xlPintar(t); } });
-}
-let _xlRaf = 0; const _xlCamb = new Set();
-function xlObservar() {
-  new MutationObserver(recs => { for (const r of recs) { const t = r.target.closest && r.target.closest('table[data-xl]'); if (t) _xlCamb.add(t); }
-    if (!_xlRaf) _xlRaf = requestAnimationFrame(() => { _xlRaf = 0; const ts = [..._xlCamb]; _xlCamb.clear(); xlEscanear(ts); }); }).observe(document.body, { childList: true, subtree: true });
-  xlEscanear();
-}
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', xlObservar); else xlObservar();
+new MutationObserver(recs => { for (const r of recs) for (const n of r.addedNodes) if (n.nodeType === 1) ttMarcar(n); }).observe(document.documentElement, { childList: true, subtree: true });
+if (document.body) ttMarcar(document.body); else document.addEventListener('DOMContentLoaded', () => ttMarcar(document.body));
 
 // ═══ Vender · productos ════════════════════════════════════════════════
 let _vT = null;
@@ -2885,7 +2737,7 @@ function pdRender() {
     { const nb = lista.filter(x => Number(x.falta) > 0).length, nc = lista.filter(pdChico).length; document.getElementById('pd-stat').textContent = (solo ? nb + (nb === 1 ? ' artículo' : ' artículos') + ' bajo mínimo' : lista.length + ' artículos con mínimo') + (nc ? ' · ' + nc + ' no ' + (nc === 1 ? 'llega' : 'llegan') + ' a la cantidad para pedir' : ''); }
     if (!lista.length) { box.innerHTML = pdBorBanner() + `<div class="empty">${PD.falta.length ? 'Nada bajo mínimo en ' + esc(LOCALES[LOCAL]) + (PD.prov ? ' para ' + PD_NOM[PD_DEST[PD.prov]] : '') + '.' : 'Todavía no hay mínimos cargados para ' + esc(LOCALES[LOCAL]) + ': cargalos en la pestaña Mínimos.'}</div>`; pdMarcados(); return; }
     const grupos = []; for (const x of lista) { const k = PD_K(x); let g = grupos.find(z => z.k === k); if (!g) { g = { k, items: [] }; grupos.push(g); } g.items.push(x); }
-    box.innerHTML = pdBorBanner() + `<table class="pd-t"><thead><tr><th></th><th>Artículo</th><th>Otras sucursales</th><th class="num">Stock</th><th class="num">En tránsito</th><th class="num">Ya pedido</th><th class="num">Mínimo</th><th class="num" title="Se pide solo si lo que falta llega a este número (chiquitaje). Vacío = se pide siempre.">Pedir desde</th><th class="num">Falta</th><th class="num">Pedir</th></tr></thead><tbody>` +
+    box.innerHTML = pdBorBanner() + `<table class="pd-t pd-falta" data-tt="fijo" data-tt-cebra="no"><thead><tr><th></th><th>Artículo</th><th>Otras sucursales</th><th class="num">Stock</th><th class="num">En tránsito</th><th class="num">Ya pedido</th><th class="num">Mínimo</th><th class="num" title="Se pide solo si lo que falta llega a este número (chiquitaje). Vacío = se pide siempre.">Pedir desde</th><th class="num">Falta</th><th class="num">Pedir</th></tr></thead><tbody>` +
       grupos.map(g => `<tr class="pd-prov"><td colspan="10">${g.k === 'oficina' ? 'Oficina (depósito) · lo que Oficina ya compró · ordenado por proveedor' : PD_NOM[PD_DEST[g.k]] + ' · se le pide directo al proveedor'} · ${g.items.filter(x => Number(x.falta) > 0).length} bajo mínimo</td></tr>` +
         g.items.map((x, i) => { const junto = x.grupo ? g.items.filter(z => z.grupo === x.grupo && z.sku !== x.sku).map(z => z.sku) : []; const prim = junto.length && (i === 0 || g.items[i - 1].grupo !== x.grupo);
           const pv = (x.proveedor || 'Sin proveedor cargado'); const sub = g.k === 'oficina' && (i === 0 || (g.items[i - 1].proveedor || 'Sin proveedor cargado').toUpperCase() !== pv.toUpperCase());
@@ -6055,6 +5907,7 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=234"></script>
+<script src="manual.js?v=235"></script>
+<script src="adorno-tablas.js?v=e33931fe"></script>
 </body>
 </html>
