@@ -89,7 +89,7 @@ window.ADORNO_ASISTENTE = (function () {
     return '';
   }
   function pestanas() {
-    const els = [...document.querySelectorAll('#tabs > button, nav.tabs > button, .tabs > button, .nav-item[data-tab], .tabs .tab[data-tab]')];
+    const els = [...document.querySelectorAll('#tabs > button, nav.tabs > button, .tabs > button, .nav-item[data-tab], .tabs .tab[data-tab], .ab-tabs > button:not(.ab-fijo):not(.ab-hamb):not(.kebab-tabs-btn):not(.ab-manual):not(.ab-espejo)')];
     const out = [];
     els.forEach((el) => { const lb = limpiar(el.getAttribute('title') || (el.querySelector('.lb') && el.querySelector('.lb').textContent) || el.textContent); if (lb && !out.some((o) => o.lb === lb)) out.push({ lb, el }); });
     return out;
@@ -5908,6 +5908,6 @@ document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { co
 
 </script>
 <script src="manual.js?v=235"></script>
-<script src="adorno-tablas.js?v=e33931fe"></script>
+<script src="adorno-tablas.js?v=abc48a63"></script>
 </body>
 </html>
