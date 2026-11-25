@@ -4491,8 +4491,11 @@ async function celGuardar() {
   c.celular = v; if (data) { c.ficha = data; if (data.globalid) c.globalid = data.globalid; }
   toast('WhatsApp guardado en la ficha', 'success'); vRender();
 }
-// Después de emitir (o desde el comprobante abierto): espera el PDF y abre el chat de WhatsApp con el mensaje y el link listos
-async function compWa(id, tel, nombre) {
+// Después de emitir (o desde el comprobante abierto): espera el PDF y lo manda por el WhatsApp DEL LOCAL con el sistema de Clientes
+// (JP 25-nov: «tiene que ir al módulo de clientes, donde pusimos el sistema de mensajes»): Edge wa-enviar, accion 'comprobante'.
+// Queda en la charla de la pestaña WhatsApp del CRM. Si el local no tiene el WhatsApp conectado (Oficina) o la clienta no escribió
+// en 24 h y Meta todavía no aprobó la plantilla, abre el WhatsApp de esta PC como antes (wa.me con el link del PDF).
+async function compWa(id, tel, nombre, confirmado) {
   const n = pdWaNum(tel); if (!n) { toast('Ese WhatsApp no parece válido', 'error'); return; }
   const head = document.querySelector('#ov .m-head'); let bar = document.getElementById('pv-wa');
   if (!bar && head) { bar = document.createElement('div'); bar.id = 'pv-wa'; bar.className = 'pv-wa'; head.after(bar); }
@@ -4500,15 +4503,35 @@ async function compWa(id, tel, nombre) {
   pinta('<span>Preparando el PDF para mandarlo por WhatsApp…</span>');
   let c = null;
   for (let k = 0; k < 30; k++) {
-    const { data } = await sb.from('pos_comprobantes').select('tipo,letra,punto_venta,numero,pdf_url').eq('id', id).maybeSingle();
+    const { data } = await sb.from('pos_comprobantes').select('tipo,letra,punto_venta,numero,pdf_url,es_prueba').eq('id', id).maybeSingle();
     if (data && data.pdf_url) { c = data; break; }
     await _esp(3000); if (head && !document.getElementById('pv-wa')) return;   // cerraron la ventana
   }
   if (!c) { pinta('<span>El PDF todavía no está listo. Abrí el comprobante desde Comprobantes y mandalo con el botón de WhatsApp.</span>'); toast('El PDF todavía no está: mandalo después desde Comprobantes', 'error'); return; }
   const que = c.tipo === 'PR' ? 'presupuesto' : c.tipo === 'NC' ? 'nota de crédito' : c.tipo === 'RE' ? 'remito' : c.tipo === 'MA' ? 'comprobante' : 'factura';
-  const link = 'https://wa.me/' + n + '?text=' + encodeURIComponent('Hola' + (nombre ? ' ' + pila(nombre) : '') + '! Te mandamos tu ' + que + ' de Claudia Adorno: ' + c.pdf_url + ' ¡Gracias por tu compra!');
-  pinta(`<span>Se abrió el chat de WhatsApp con el comprobante: falta tocar Enviar.</span><a class="btn" href="${esc(link)}" target="_blank" rel="noopener">Abrir de nuevo</a>`);
-  waAbrir(link);
+  const porPC = motivo => {   // el camino de antes: el WhatsApp de esta PC, con el link del PDF
+    const link = 'https://wa.me/' + n + '?text=' + encodeURIComponent('Hola' + (nombre ? ' ' + pila(nombre) : '') + '! Te mandamos tu ' + que + ' de Claudia Adorno: ' + c.pdf_url + ' ¡Gracias por tu compra!');
+    pinta(`<span>${motivo ? esc(motivo) + ' ' : ''}Se abrió el chat de WhatsApp de esta PC con el comprobante: falta tocar Enviar.</span><a class="btn" href="${esc(link)}" target="_blank" rel="noopener">Abrir de nuevo</a>`);
+    waAbrir(link);
+  };
+  window._compWaPC = () => porPC('');
+  // en modo prueba también le llega DE VERDAD a la clienta (desde el número del local): se manda solo si lo confirman
+  if (c.es_prueba && !confirmado) {
+    window._compWaSi = () => compWa(id, tel, nombre, true);
+    pinta(`<span>Es un comprobante de PRUEBA: si lo mandás, le llega de verdad al ${esc(String(tel))} desde el WhatsApp del local.</span><button class="btn" onclick="_compWaSi()">Mandar igual</button>`);
+    return;
+  }
+  pinta('<span>Mandando por el WhatsApp del local…</span>');
+  let r = null, err = null;
+  try {
+    const { data, error } = await sb.functions.invoke('wa-enviar', { body: { accion: 'comprobante', comprobante_id: id, celular: String(tel), ...(nombre ? { nombre: pila(nombre) } : {}) } });
+    if (error) { try { err = await error.context.json(); } catch (e) { err = { error: error.message || String(error) }; } } else r = data;
+  } catch (e) { err = { error: (e && e.message) || String(e) }; }
+  if (r && r.ok) { pinta('<span>✓ Mandado por el WhatsApp del local. Queda en la charla de la clienta, en la pestaña WhatsApp de Clientes.</span>'); toast('Comprobante mandado por WhatsApp', 'success'); return; }
+  if (err && err.sin_numero) { porPC('Este local no tiene el WhatsApp conectado al sistema.'); return; }
+  if (err && err.fuera_24h) { porPC('La clienta no le escribió al local en las últimas 24 h y Meta todavía no aprobó la plantilla de comprobantes.'); return; }
+  const msg = (err && err.error) || 'No se pudo mandar por el WhatsApp del local';
+  pinta(`<span>${esc(msg)}</span><button class="btn" onclick="_compWaPC()">Por el WhatsApp de la PC</button>`); toast(msg, 'error');
 }
 async function compWaPedir(id) {
   const x = window._pv; let cel = '';
@@ -6177,7 +6200,7 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=240"></script>
+<script src="manual.js?v=241"></script>
 <script src="adorno-tablas.js?v=abc48a63"></script>
 </body>
 </html>
