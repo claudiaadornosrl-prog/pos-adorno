@@ -569,7 +569,7 @@ window.ADORNO_SSO = (function () {
 <meta name="theme-color" content="#3D7C88">
 <link rel="stylesheet" href="/hub/banner.css?v=4"><!-- banner común de los módulos (infra, 11-nov-2026) -->
 <title>🧾 POS · Claudia Adorno</title>
-<meta name="application-title" content="v305">
+<meta name="application-title" content="v306">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-192-v2.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧾%3C/text%3E%3C/svg%3E">
@@ -6240,16 +6240,31 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=246"></script>
+<script src="manual.js?v=247"></script>
 <script src="adorno-tablas.js?v=abc48a63"></script>
 <script>
 (function () {
-  var V = 'v305';
+  var V = 'v306';
   setInterval(function () {
     var m = document.querySelector('meta[name="application-title"]'), st = window.ADORNO_VERSION; if (!m) return;
     var t = V + (st && st.vieja ? ' · hay una nueva' : '');
     if (m.getAttribute('content') !== t) m.setAttribute('content', t);
   }, 5000);
+})();
+// (25-nov, JP: «sigue sin aparecer la versión») Chrome todavía no lee application-title (lo tiene apagado; Edge sí) y en la ventana
+// de la app instalada muestra el título de la página SOLO si empieza con el nombre de la app: si no, deja «POS Claudia Adorno» solo.
+// Con el POS instalado, el título arranca con ese nombre; /hub/version.js le agrega « · v305» al final como siempre.
+(function () {
+  if (!window.matchMedia || !(matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: window-controls-overlay)').matches)) return;
+  var BASE = 'POS Claudia Adorno', VER = / · (v\d+( vieja)?|versión vieja)$/;
+  function fijar() {
+    var t = document.title; if (t.indexOf(BASE) === 0) return;
+    var suf = (t.match(VER) || [''])[0], sin = t.slice(0, t.length - suf.length);
+    var nuevo = BASE + (/PRUEBA/.test(sin) ? ' · PRUEBA' : '') + suf;
+    if (document.title !== nuevo) document.title = nuevo;
+  }
+  function vigilar() { var el = document.querySelector('title'); if (el) new MutationObserver(fijar).observe(el, { childList: true, characterData: true, subtree: true }); fijar(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vigilar); else vigilar();
 })();
 </script>
 </body>
