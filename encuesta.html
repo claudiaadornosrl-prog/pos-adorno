@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Claudia Adorno · ¿Qué tal te atendimos?</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* (25-nov-2026, JP) Encuesta propia de un toque: la genera _generar.py desde _encuesta.html (no editar encuesta.html a mano) */
+  :root { --blanco:#FFFFFF; --escondite:#EDEAE4; --arena:#E9E2D5; --beige:#C8B89A; --greige:#95867B; --noble:#43464A; --oscuro:#1C1612; --panel:#F7F3EC; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--escondite); color:var(--oscuro); font-family:'Jost',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif; }
+  .caja { max-width:560px; margin:24px auto; background:var(--blanco); border-radius:28px; overflow:hidden; }
+  .tapa { background:#4A3F35 url('https://cdn.shopify.com/s/files/1/0827/7635/9129/files/mails-fondo-teca.jpg?v=1789414736&width=900') center/cover; padding:26px; }
+  .panel { background:rgba(250,247,242,.93); border-radius:22px; padding:30px 24px; text-align:center; }
+  .panel img { width:170px; height:auto; display:block; margin:0 auto; }
+  .raya { width:40px; height:1px; background:var(--beige); margin:16px auto; }
+  .donde { font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--greige); min-height:12px; }
+  h1 { margin:10px 0 0; font-family:'Cormorant Garamond',Georgia,serif; font-weight:400; font-size:30px; line-height:1.2; }
+  .cuerpo { padding:28px 26px 30px; text-align:center; }
+  .sub { margin:6px 0 18px; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--greige); min-height:14px; }
+  .ops { display:flex; gap:8px; }
+  .op { flex:1; border:1px solid var(--arena); background:var(--blanco); border-radius:999px; padding:16px 6px 14px; cursor:pointer; font-family:inherit; transition:all .15s; }
+  .op .p { display:block; font-size:13px; letter-spacing:.3em; color:var(--beige); line-height:1; }
+  .op .t { display:block; font-size:11px; letter-spacing:.05em; color:var(--noble); padding-top:9px; line-height:1.3; }
+  .op.on { background:var(--oscuro); border-color:var(--oscuro); }
+  .op.on .t { color:var(--blanco); }
+  .op:disabled { cursor:default; opacity:.6; }
+  .listo { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; color:var(--noble); margin:18px 0 4px; min-height:26px; }
+  .chico { font-size:12px; color:var(--greige); }
+  .error { color:#9a3412; }
+  .com { margin-top:22px; display:none; }
+  .com textarea { width:100%; min-height:78px; border:1px solid var(--arena); border-radius:22px; padding:12px 16px; font-family:inherit; font-size:14px; color:var(--oscuro); resize:vertical; outline:none; }
+  .com textarea:focus { border-color:var(--beige); }
+  .btn { display:inline-block; margin-top:12px; background:var(--oscuro); color:var(--blanco); border:none; border-radius:999px; padding:13px 30px; font-family:inherit; font-size:11px; letter-spacing:.18em; text-transform:uppercase; cursor:pointer; }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .pie { background:var(--arena); padding:20px 26px 24px; text-align:center; font-size:11px; line-height:20px; color:var(--greige); }
+  .pie a { color:var(--oscuro); text-decoration:none; letter-spacing:.12em; text-transform:uppercase; font-size:10px; }
+  @media (max-width:420px) { .op .t { font-size:10px; } h1 { font-size:26px; } .caja { margin:0; border-radius:0; } }
+</style>
+</head>
+<body>
+<div class="caja">
+  <div class="tapa"><div class="panel">
+    <img src="https://jfwtiagteuwmyvblgwms.supabase.co/storage/v1/object/public/marca/atelier-logo-der.png" alt="Claudia Adorno Atelier">
+    <div class="raya"></div>
+    <div class="donde" id="donde"></div>
+    <h1 id="tit">¿Qué tal te atendimos?</h1>
+  </div></div>
+  <div class="cuerpo">
+    <div class="sub" id="sub"></div>
+    <div class="ops" id="ops"></div>
+    <div class="listo" id="listo"></div>
+    <div class="chico" id="chico"></div>
+    <div class="com" id="com">
+      <div class="chico" style="margin-bottom:8px">¿Querés contarnos algo más? (opcional)</div>
+      <textarea id="txt" maxlength="1000" placeholder="Lo que quieras decirnos"></textarea>
+      <button class="btn" id="btn-com" onclick="enviarComentario()">Enviar</button>
+    </div>
+  </div>
+  <div class="pie" id="pie">Claudia Adorno SRL</div>
+</div>
+<script>
+  const SUPA = 'https://jfwtiagteuwmyvblgwms.supabase.co', KEY = 'sb_publishable_udSPma98Sw9eskeeLCgdCw_S2vIX0Fk';
+  const LOC = {"alcorta": {"donde": "Tu compra en Alcorta", "wa": "5491169784643", "tel": "+54 9 11 6978 4643", "wa_label": "WhatsApp Alcorta"}, "unicenter": {"donde": "Tu compra en Unicenter", "wa": "5491169784741", "tel": "+54 9 11 6978 4741", "wa_label": "WhatsApp Unicenter"}, "oficina": {"donde": "Tu compra online", "wa": "5491169784561", "tel": "+54 9 11 6978 4561", "wa_label": "WhatsApp Compra Online"}, "libertador": {"donde": "Tu compra en Atelier Libertador", "wa": "5491169784643", "tel": "+54 9 11 6978 4643", "wa_label": "WhatsApp Alcorta"}};
+  const OPS = [[1, '●', 'No es lo que esperaba'], [2, '●●', 'Podría mejorar'], [3, '●●●', 'Ya con ganas de volver']];   // mismo orden que en el mail
+  const q = new URLSearchParams(location.search), T = (q.get('t') || '').trim();
+  let elegido = [1, 2, 3].includes(Number(q.get('p'))) ? Number(q.get('p')) : 0, guardado = 0, ocupado = false;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function rpc(fn, body) {
+    const r = await fetch(SUPA + '/rest/v1/rpc/' + fn, { method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }
+  function aviso(t) { $('tit').textContent = 'Uy'; $('sub').textContent = ''; $('ops').innerHTML = ''; $('listo').innerHTML = '<span class="error">' + esc(t) + '</span>'; $('chico').textContent = ''; $('com').style.display = 'none'; }
+  function pintar() {
+    $('ops').innerHTML = OPS.map(([v, p, t]) => `<button class="op ${v === (guardado || elegido) ? 'on' : ''}" ${ocupado ? 'disabled' : ''} onclick="elegir(${v})"><span class="p">${p}</span><span class="t">${t}</span></button>`).join('');
+    if (guardado) {
+      $('tit').textContent = '¡Gracias por contarnos!';
+      $('sub').textContent = 'Tu respuesta ya quedó guardada';
+      $('listo').textContent = guardado === 3 ? 'Nos alegra mucho. Te esperamos.' : guardado === 2 ? 'Gracias: lo vamos a tener en cuenta.' : 'Lamentamos que no haya sido lo que esperabas.';
+      $('chico').textContent = 'Si te equivocaste, tocá otra opción.';
+      $('com').style.display = 'block';
+    } else {
+      $('tit').textContent = '¿Qué tal te atendimos?';
+      $('sub').textContent = ocupado ? 'Guardando…' : 'Un toque alcanza';
+    }
+  }
+  async function guardar(p) {
+    ocupado = true; elegido = p; pintar();
+    try {
+      const r = await rpc('pos_encuesta_responder', { p_codigo: T, p_puntaje: p, p_comentario: null });
+      ocupado = false;
+      if (!r || !r.ok) { aviso((r && r.error) || 'No pudimos guardar tu respuesta. Probá de nuevo en un rato.'); return; }
+      guardado = p; history.replaceState(null, '', '?t=' + encodeURIComponent(T));
+    } catch (e) { ocupado = false; aviso('No pudimos guardar tu respuesta (revisá tu conexión) y probá de nuevo.'); return; }
+    pintar();
+  }
+  function elegir(v) { if (!ocupado && v !== guardado) guardar(v); }
+  async function enviarComentario() {
+    const t = $('txt').value.trim(); if (!t) { $('txt').focus(); return; }
+    $('btn-com').disabled = true;
+    try {
+      const r = await rpc('pos_encuesta_responder', { p_codigo: T, p_puntaje: null, p_comentario: t });
+      if (!r || !r.ok) throw new Error((r && r.error) || 'error');
+      $('com').innerHTML = '<div class="listo">Recibimos tu comentario. ¡Gracias!</div>';
+    } catch (e) { $('btn-com').disabled = false; alert('No pudimos mandar tu comentario. Probá de nuevo.'); }
+  }
+  // guarda recién cuando la página se ve (los revisores automáticos de links de algunos correos no la muestran)
+  function cuandoSeVea(fn) {
+    if (document.visibilityState === 'visible') return fn();
+    const h = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', h); fn(); } };
+    document.addEventListener('visibilitychange', h);
+  }
+  (async () => {
+    if (T.length < 32) { aviso('Este link no es válido.'); return; }
+    let v = null;
+    try { v = await rpc('pos_encuesta_ver', { p_codigo: T }); } catch (e) { aviso('No pudimos abrir la encuesta (revisá tu conexión).'); return; }
+    if (!v) { aviso('Este link no es válido.'); return; }
+    const l = LOC[v.local] || LOC.alcorta;
+    $('donde').textContent = l.donde;
+    $('pie').innerHTML = `<a href="https://wa.me/${l.wa}">${esc(l.wa_label)} · ${esc(l.tel)}</a><br>Claudia Adorno SRL`;
+    if (v.cerrada) { aviso('Esta encuesta ya cerró. ¡Gracias igual!'); return; }
+    if (elegido) { pintar(); cuandoSeVea(() => guardar(elegido)); return; }
+    if (v.puntaje) guardado = v.puntaje;
+    pintar();
+  })();
+</script>
+</body>
+</html>

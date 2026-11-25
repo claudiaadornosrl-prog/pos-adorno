@@ -1098,6 +1098,7 @@ tr.pdv-cambio > td { font-weight: 700; } tr.pdv-cambio > td .mini { font-weight:
         <label>Tipo <select id="c-tipo" onchange="cargarComprobantes()"><option value="">Todos</option><option value="FC">Facturas</option><option value="NC">Notas de crédito</option><option value="MA">Facturas manuales</option><option value="PR">Presupuestos</option><option value="RE">Remitos</option></select></label>
         <label>Buscar <input id="c-q" placeholder="lo que sea: cliente, artículo, pago, importe…" oninput="cDebounce()"></label>
         <button class="pil" id="c-sv" onclick="cSinVerif()" title="Facturas con un pago de Point, QR, transferencia o link que se emitió «sin verificar»: para verificarlo cuando llega el comprobante del cliente">Pagos sin verificar<span class="badge" id="c-sv-n" style="display:none"></span></button>
+        <button class="pil" id="c-enc" onclick="cEncuestas()" style="display:none" title="Lo que contestaron las clientas en la encuesta de un toque del mail y del WhatsApp: por vendedora, con los comentarios">Encuestas</button>
         <span class="stat" id="c-stat"></span>
       </div>
       <div id="c-lista"></div>
@@ -5821,8 +5822,46 @@ let _cT; function cDebounce() { clearTimeout(_cT); _cT = setTimeout(cargarCompro
 let COMPS = [];
 // (JP 19-nov) pagos que se emitieron «sin verificar» (medios verificables): cartel en la lista y pastilla para verlos todos
 let C_SV = false, PG_PEND = {};
-function cSinVerif() { C_SV = !C_SV; cargarComprobantes(); }
+function cSinVerif() { C_SV = !C_SV; if (C_SV) C_ENC = false; cargarComprobantes(); }
+// ═══ Encuestas de un toque (JP 25-nov, «Sí, atada a la factura»): cada comprobante que sale por mail o WhatsApp lleva su encuesta
+// (pos-adorno/encuesta.html); acá se ve qué contestaron, por quién atendió, con los comentarios. Solo admin, la oficina que ve
+// todo y las encargadas con su usuario personal (pos_encuestas_puedo); la cuenta del local no la ve.
+let C_ENC = false, ENC_PUEDO = null;
+function cEncuestas() { C_ENC = !C_ENC; if (C_ENC) C_SV = false; cargarComprobantes(); }
+async function encPuedo() {
+  if (ENC_PUEDO === null) { try { const { data } = await sb.rpc('pos_encuestas_puedo'); ENC_PUEDO = !!data; } catch (e) { ENC_PUEDO = false; } }
+  const b = document.getElementById('c-enc'); if (b) { b.style.display = ENC_PUEDO ? '' : 'none'; b.classList.toggle('on', C_ENC && ENC_PUEDO); }
+  if (!ENC_PUEDO) C_ENC = false; return ENC_PUEDO;
+}
+const ENC_OP = { 1: ['●', 'No es lo que esperaba', 'red'], 2: ['●●', 'Podría mejorar', 'amber'], 3: ['●●●', 'Ya con ganas de volver', 'green'] };
+const encNom = n => { n = String(n || '').trim(); if (!n) return 'Sin dato'; return n.includes(',') ? tit(n.split(',')[1].trim().split(/\s+/)[0]) + ' ' + tit(n.split(',')[0]) : tit(n); };
+async function cargarEncuestas() {
+  const hoy = new Date(), dIn = document.getElementById('c-desde').value, hIn = document.getElementById('c-hasta').value, q = document.getElementById('c-q').value.trim();
+  // las fechas de Comprobantes arrancan en hoy y las respuestas llegan días después: con «hoy a hoy» (o vacías) van los últimos 30 días
+  const hoyS = hoyAR(), def = (!dIn && !hIn) || (dIn === hoyS && hIn === hoyS);
+  const d = def ? new Date(hoy.getTime() - 30 * 864e5).toISOString().slice(0, 10) : (dIn || '2026-01-01'), h = def ? hoyS : (hIn || hoyS);
+  const { data, error } = await sb.rpc('pos_encuestas_listar', { p_desde: d, p_hasta: h, p_local: esTodos() ? null : LOCAL, p_prueba: MODO === 'prueba' });
+  if (error) { toast(error.message.replace(/^.*?: /, ''), 'error'); return; }
+  let filas = data || [];
+  if (q) filas = filas.filter(x => coincide(q, [x.cliente_nombre, x.vendedora, x.comentario, fmtNum(x.punto_venta, x.numero)].join(' ')));
+  const resp = filas.filter(x => x.puntaje);
+  const por = {}; filas.forEach(x => { const k = encNom(x.vendedora); const p = por[k] || (por[k] = { env: 0, 1: 0, 2: 0, 3: 0 }); p.env++; if (x.puntaje) p[x.puntaje]++; });
+  const cel = (n, t) => `<td class="num">${n ? `<b>${n}</b> <span class="mini">${Math.round(n * 100 / t)} %</span>` : '<span class="mini">—</span>'}</td>`;
+  const resumen = Object.entries(por).sort((a, b) => b[1].env - a[1].env).map(([k, p]) => { const r = p[1] + p[2] + p[3];
+    return `<tr><td><b>${esc(k)}</b></td>${cel(p[3], r || 1)}${cel(p[2], r || 1)}${cel(p[1], r || 1)}<td class="num">${r} de ${p.env}</td></tr>`; }).join('');
+  document.getElementById('c-stat').textContent = (MODO === 'prueba' ? 'De prueba · ' : '') + filas.length + ' encuestas enviadas · ' + resp.length + ' respondidas' + (filas.length ? ' (' + Math.round(resp.length * 100 / filas.length) + ' %)' : '') + ' · ' + fechaAR(d) + ' a ' + fechaAR(h);
+  document.getElementById('c-lista').innerHTML = !filas.length ? `<div class="empty">Todavía no hay encuestas en estas fechas${esTodos() ? '' : ' en ' + esc(LOCALES[LOCAL])}.</div>` :
+    `<h3 style="margin:4px 0 8px">Por quién atendió</h3><table><thead><tr><th>Atendió</th><th class="num">Ya con ganas de volver</th><th class="num">Podría mejorar</th><th class="num">No es lo que esperaba</th><th class="num">Respondieron</th></tr></thead><tbody>${resumen}</tbody></table>
+    <h3 style="margin:18px 0 8px">Respuestas</h3>` + (resp.length ? `<table><thead><tr><th>Cuándo</th><th>Comprobante</th><th>Cliente</th><th>Atendió</th><th>Respuesta</th><th>Comentario</th></tr></thead><tbody>` +
+    resp.map(x => { const o = ENC_OP[x.puntaje];
+      return `<tr><td class="mini">${movFecha(x.respondida_at)}${x.cambios ? '<div title="Cambió la opción después de tocarla">cambió ' + x.cambios + (x.cambios === 1 ? ' vez' : ' veces') + '</div>' : ''}</td>
+        <td><a href="#" onclick="verComprobante(${x.comprobante_id});return false">${TIPO_NOM[x.tipo] || x.tipo}${x.tipo === 'RE' ? '' : ' ' + esc(x.letra)} ${fmtNum(x.punto_venta, x.numero)}</a>${esTodos() ? '<div class="mini">' + esc(LOCALES[x.local] || x.local) + '</div>' : ''}<div class="mini">por ${esc(x.canal === 'whatsapp' ? 'WhatsApp' : x.canal === 'mail+whatsapp' ? 'mail y WhatsApp' : 'mail')}</div></td>
+        <td>${esc(x.cliente_nombre || '')}</td><td class="mini">${esc(encNom(x.vendedora))}</td>
+        <td><span class="chip ${o[2]}">${o[0]} ${o[1]}</span></td><td>${x.comentario ? esc(x.comentario) : '<span class="mini">—</span>'}</td></tr>`; }).join('') + '</tbody></table>'
+    : '<div class="empty">Ninguna respuesta todavía.</div>');
+}
 async function cargarComprobantes() {
+  if (await encPuedo() && C_ENC) { const sv = document.getElementById('c-sv'); if (sv) sv.classList.remove('on'); return cargarEncuestas(); }
   const d = document.getElementById('c-desde').value, h = document.getElementById('c-hasta').value, tipo = document.getElementById('c-tipo').value, q = document.getElementById('c-q').value.trim();
   try { PG_PEND = {}; const rs = await Promise.all((esTodos() ? Object.keys(LOCALES) : [LOCAL]).map(l => sb.rpc('pos_pagos_pendientes', { p_local: l }))); rs.forEach(r => (r.data || []).forEach(x => { PG_PEND[x.comprobante_id] = x; })); } catch (e) { PG_PEND = {}; }
   { const n = Object.keys(PG_PEND).length, b = document.getElementById('c-sv-n'); if (b) { b.textContent = n || ''; b.style.display = n ? '' : 'none'; } const pl = document.getElementById('c-sv'); if (pl) pl.classList.toggle('on', C_SV); }
@@ -6200,7 +6239,7 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=241"></script>
+<script src="manual.js?v=242"></script>
 <script src="adorno-tablas.js?v=abc48a63"></script>
 </body>
 </html>
