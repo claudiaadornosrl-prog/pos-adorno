@@ -3231,7 +3231,9 @@ async function pdWaPrep0(id) {
     const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
     window._pdFile = new File([buf], (p.archivo || 'Pedido_' + id) + '_ClaudiaAdorno.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     // se sube a la carpeta del pedido (la misma donde el servidor deja el del mail) y el link va al final del texto
-    const ruta = (p.local || LOCAL) + '/pedidos/' + id + '/' + window._pdFile.name;
+    // (25-nov, Guardián) el bucket es público: el nombre lleva un código al azar para que no se pueda adivinar cambiando los números
+    // (el archivo que se comparte o se baja sigue con el nombre lindo, sin el código)
+    const ruta = (p.local || LOCAL) + '/pedidos/' + id + '/' + window._pdFile.name.replace(/\.xlsx$/, '') + '_' + (crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('')) + '.xlsx';
     const { error: eu } = await sb.storage.from('comprobantes').upload(ruta, window._pdFile, { upsert: true, contentType: window._pdFile.type });
     if (eu) { console.warn('Excel del pedido (subir):', eu.message); return; }
     if (window._pdFileId !== id) return;
@@ -6149,7 +6151,7 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=238"></script>
+<script src="manual.js?v=239"></script>
 <script src="adorno-tablas.js?v=abc48a63"></script>
 </body>
 </html>
