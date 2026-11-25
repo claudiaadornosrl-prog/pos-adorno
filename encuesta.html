@@ -35,6 +35,9 @@
   .com textarea:focus { border-color:var(--beige); }
   .btn { display:inline-block; margin-top:12px; background:var(--oscuro); color:var(--blanco); border:none; border-radius:999px; padding:13px 30px; font-family:inherit; font-size:11px; letter-spacing:.18em; text-transform:uppercase; cursor:pointer; }
   .btn:disabled { opacity:.5; cursor:default; }
+  .btn.sec { background:var(--blanco); color:var(--oscuro); border:1px solid var(--oscuro); }
+  .acc { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .op.solo { flex:0 1 260px; margin:0 auto; cursor:default; }
   .pie { background:var(--arena); padding:20px 26px 24px; text-align:center; font-size:11px; line-height:20px; color:var(--greige); }
   .pie a { color:var(--oscuro); text-decoration:none; letter-spacing:.12em; text-transform:uppercase; font-size:10px; }
   @media (max-width:420px) { .op .t { font-size:10px; } h1 { font-size:26px; } .caja { margin:0; border-radius:0; } }
@@ -54,10 +57,11 @@
     <div class="listo" id="listo"></div>
     <div class="chico" id="chico"></div>
     <div class="com" id="com">
-      <div class="chico" style="margin-bottom:8px">¿Querés contarnos algo más? (opcional)</div>
+      <div class="chico" style="margin-bottom:8px">¿Querés dejarnos un comentario? Es opcional: si no, cerrá la ventana.</div>
       <textarea id="txt" maxlength="1000" placeholder="Lo que quieras decirnos"></textarea>
-      <button class="btn" id="btn-com" onclick="enviarComentario()">Enviar</button>
+      <div class="acc"><button class="btn" id="btn-com" onclick="enviarComentario()">Enviar comentario</button><button class="btn sec" onclick="cerrar()">Cerrar</button></div>
     </div>
+    <div id="fin"></div>
   </div>
   <div class="pie" id="pie">Claudia Adorno SRL</div>
 </div>
@@ -66,7 +70,9 @@
   const LOC = {"alcorta": {"donde": "Tu compra en Alcorta", "wa": "5491169784643", "tel": "+54 9 11 6978 4643", "wa_label": "WhatsApp Alcorta"}, "unicenter": {"donde": "Tu compra en Unicenter", "wa": "5491169784741", "tel": "+54 9 11 6978 4741", "wa_label": "WhatsApp Unicenter"}, "oficina": {"donde": "Tu compra online", "wa": "5491169784561", "tel": "+54 9 11 6978 4561", "wa_label": "WhatsApp Compra Online"}, "libertador": {"donde": "Tu compra en Atelier Libertador", "wa": "5491169784643", "tel": "+54 9 11 6978 4643", "wa_label": "WhatsApp Alcorta"}};
   const OPS = [[1, '●', 'No es lo que esperaba'], [2, '●●', 'Podría mejorar'], [3, '●●●', 'Ya con ganas de volver']];   // mismo orden que en el mail
   const q = new URLSearchParams(location.search), T = (q.get('t') || '').trim();
-  let elegido = [1, 2, 3].includes(Number(q.get('p'))) ? Number(q.get('p')) : 0, guardado = 0, ocupado = false;
+  // (25-nov, JP) la PRIMERA opción que toca queda fija: después solo se ve «Elegiste …», un comentario opcional (uno) y Cerrar
+  let elegido = [1, 2, 3].includes(Number(q.get('p'))) ? Number(q.get('p')) : 0, guardado = 0, ya = false, comentado = false, ocupado = false;
+  const OP = Object.fromEntries(OPS.map(o => [o[0], o]));
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   async function rpc(fn, body) {
@@ -75,15 +81,18 @@
     return r.json();
   }
   function aviso(t) { $('tit').textContent = 'Uy'; $('sub').textContent = ''; $('ops').innerHTML = ''; $('listo').innerHTML = '<span class="error">' + esc(t) + '</span>'; $('chico').textContent = ''; $('com').style.display = 'none'; }
+  const finCerrar = t => { $('com').style.display = 'none'; $('fin').innerHTML = `<div class="listo">${t}</div><button class="btn sec" onclick="cerrar()">Cerrar</button>`; };
   function pintar() {
-    $('ops').innerHTML = OPS.map(([v, p, t]) => `<button class="op ${v === (guardado || elegido) ? 'on' : ''}" ${ocupado ? 'disabled' : ''} onclick="elegir(${v})"><span class="p">${p}</span><span class="t">${t}</span></button>`).join('');
     if (guardado) {
+      const o = OP[guardado];
       $('tit').textContent = '¡Gracias por contarnos!';
-      $('sub').textContent = 'Tu respuesta ya quedó guardada';
-      $('listo').textContent = guardado === 3 ? 'Nos alegra mucho. Te esperamos.' : guardado === 2 ? 'Gracias: lo vamos a tener en cuenta.' : 'Lamentamos que no haya sido lo que esperabas.';
-      $('chico').textContent = 'Si te equivocaste, tocá otra opción.';
-      $('com').style.display = 'block';
+      $('sub').textContent = ya ? 'Ya habías respondido' : 'Tu respuesta quedó guardada';
+      $('ops').innerHTML = `<div class="op on solo"><span class="p">${o[1]}</span><span class="t">${o[2]}</span></div>`;
+      $('listo').textContent = 'Elegiste «' + o[2] + '».';
+      $('chico').textContent = guardado === 3 ? 'Nos alegra mucho. Te esperamos.' : guardado === 2 ? 'Gracias: lo vamos a tener en cuenta.' : 'Lamentamos que no haya sido lo que esperabas.';
+      if (comentado) finCerrar('Ya recibimos tu comentario. ¡Gracias!'); else $('com').style.display = 'block';
     } else {
+      $('ops').innerHTML = OPS.map(([v, p, t]) => `<button class="op ${v === elegido ? 'on' : ''}" ${ocupado ? 'disabled' : ''} onclick="elegir(${v})"><span class="p">${p}</span><span class="t">${t}</span></button>`).join('');
       $('tit').textContent = '¿Qué tal te atendimos?';
       $('sub').textContent = ocupado ? 'Guardando…' : 'Un toque alcanza';
     }
@@ -94,20 +103,23 @@
       const r = await rpc('pos_encuesta_responder', { p_codigo: T, p_puntaje: p, p_comentario: null });
       ocupado = false;
       if (!r || !r.ok) { aviso((r && r.error) || 'No pudimos guardar tu respuesta. Probá de nuevo en un rato.'); return; }
-      guardado = p; history.replaceState(null, '', '?t=' + encodeURIComponent(T));
+      guardado = Number(r.puntaje) || p; ya = !!r.ya; comentado = !!r.comentado;   // si ya había respondido, vale la primera
+      history.replaceState(null, '', '?t=' + encodeURIComponent(T));
     } catch (e) { ocupado = false; aviso('No pudimos guardar tu respuesta (revisá tu conexión) y probá de nuevo.'); return; }
     pintar();
   }
-  function elegir(v) { if (!ocupado && v !== guardado) guardar(v); }
+  function elegir(v) { if (!ocupado && !guardado) guardar(v); }
   async function enviarComentario() {
     const t = $('txt').value.trim(); if (!t) { $('txt').focus(); return; }
     $('btn-com').disabled = true;
     try {
       const r = await rpc('pos_encuesta_responder', { p_codigo: T, p_puntaje: null, p_comentario: t });
       if (!r || !r.ok) throw new Error((r && r.error) || 'error');
-      $('com').innerHTML = '<div class="listo">Recibimos tu comentario. ¡Gracias!</div>';
+      comentado = true; finCerrar('Recibimos tu comentario. ¡Gracias!');
     } catch (e) { $('btn-com').disabled = false; alert('No pudimos mandar tu comentario. Probá de nuevo.'); }
   }
+  // Cerrar: el navegador deja cerrar la pestaña que abrió el link del mail; si no la deja (algunas apps de correo), avisa
+  function cerrar() { try { window.close(); } catch (e) {} setTimeout(() => { $('com').style.display = 'none'; $('fin').innerHTML = '<div class="listo">Listo. Ya podés cerrar esta ventana.</div>'; }, 300); }
   // guarda recién cuando la página se ve (los revisores automáticos de links de algunos correos no la muestran)
   function cuandoSeVea(fn) {
     if (document.visibilityState === 'visible') return fn();
@@ -123,8 +135,8 @@
     $('donde').textContent = l.donde;
     $('pie').innerHTML = `<a href="https://wa.me/${l.wa}">${esc(l.wa_label)} · ${esc(l.tel)}</a><br>Claudia Adorno SRL`;
     if (v.cerrada) { aviso('Esta encuesta ya cerró. ¡Gracias igual!'); return; }
+    if (v.puntaje) { guardado = v.puntaje; ya = true; comentado = !!v.comentario; pintar(); return; }   // ya respondió: no se vuelve a elegir
     if (elegido) { pintar(); cuandoSeVea(() => guardar(elegido)); return; }
-    if (v.puntaje) guardado = v.puntaje;
     pintar();
   })();
 </script>

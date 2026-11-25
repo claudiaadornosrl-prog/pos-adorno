@@ -1,12 +1,14 @@
 // Service Worker · network-first para HTML, cache-first para assets
-const CACHE_VERSION = 'pos-v303';
+const CACHE_VERSION = 'pos-v304';
 const CACHE_ASSETS = ['fonts/URWGothic-Book.ttf', './', './index.html', './manual.js', './manifest.webmanifest', './adorno-tablas.js?v=abc48a63'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_VERSION).then(c => c.addAll(CACHE_ASSETS)).catch(err => console.warn('[SW]', err)));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE_VERSION).map(k => caches.delete(k)))));
+  // (25-nov-2026, Infra) los módulos comparten el dominio y las cachés: borrar SOLO las viejas propias (prefijo de CACHE_VERSION)
+  const PROPIO = (CACHE_VERSION.match(/^(.+?-)v[0-9]/) || [, CACHE_VERSION])[1];
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith(PROPIO) && k !== CACHE_VERSION).map(k => caches.delete(k)))));
   self.clients.claim();
 });
 self.addEventListener('fetch', e => {
