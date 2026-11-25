@@ -68,7 +68,7 @@
 <script>
   const SUPA = 'https://jfwtiagteuwmyvblgwms.supabase.co', KEY = 'sb_publishable_udSPma98Sw9eskeeLCgdCw_S2vIX0Fk';
   const LOC = {"alcorta": {"donde": "Tu compra en Alcorta", "wa": "5491169784643", "tel": "+54 9 11 6978 4643", "wa_label": "WhatsApp Alcorta"}, "unicenter": {"donde": "Tu compra en Unicenter", "wa": "5491169784741", "tel": "+54 9 11 6978 4741", "wa_label": "WhatsApp Unicenter"}, "oficina": {"donde": "Tu compra online", "wa": "5491169784561", "tel": "+54 9 11 6978 4561", "wa_label": "WhatsApp Compra Online"}, "libertador": {"donde": "Tu compra en Atelier Libertador", "wa": "5491169784643", "tel": "+54 9 11 6978 4643", "wa_label": "WhatsApp Alcorta"}};
-  const OPS = [[1, '●', 'No es lo que esperaba'], [2, '●●', 'Podría mejorar'], [3, '●●●', 'Ya con ganas de volver']];   // mismo orden que en el mail
+  const OPS = [[1, '●', 'No es lo que esperaba'], [2, '●●', 'Conforme'], [3, '●●●', 'Ya con ganas de volver']];   // mismo orden que en el mail
   const q = new URLSearchParams(location.search), T = (q.get('t') || '').trim();
   // (25-nov, JP) la PRIMERA opción que toca queda fija: después solo se ve «Elegiste …», un comentario opcional (uno) y Cerrar
   let elegido = [1, 2, 3].includes(Number(q.get('p'))) ? Number(q.get('p')) : 0, guardado = 0, ya = false, comentado = false, ocupado = false;
@@ -89,7 +89,7 @@
       $('sub').textContent = ya ? 'Ya habías respondido' : 'Tu respuesta quedó guardada';
       $('ops').innerHTML = `<div class="op on solo"><span class="p">${o[1]}</span><span class="t">${o[2]}</span></div>`;
       $('listo').textContent = 'Elegiste «' + o[2] + '».';
-      $('chico').textContent = guardado === 3 ? 'Nos alegra mucho. Te esperamos.' : guardado === 2 ? 'Gracias: lo vamos a tener en cuenta.' : 'Lamentamos que no haya sido lo que esperabas.';
+      $('chico').textContent = guardado === 3 ? 'Nos alegra mucho. Te esperamos.' : guardado === 2 ? '¡Gracias! Nos alegra que estés conforme.' : 'Lamentamos que no haya sido lo que esperabas.';
       if (comentado) finCerrar('Ya recibimos tu comentario. ¡Gracias!'); else $('com').style.display = 'block';
     } else {
       $('ops').innerHTML = OPS.map(([v, p, t]) => `<button class="op ${v === elegido ? 'on' : ''}" ${ocupado ? 'disabled' : ''} onclick="elegir(${v})"><span class="p">${p}</span><span class="t">${t}</span></button>`).join('');

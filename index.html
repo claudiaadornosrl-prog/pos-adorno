@@ -569,7 +569,7 @@ window.ADORNO_SSO = (function () {
 <meta name="theme-color" content="#3D7C88">
 <link rel="stylesheet" href="/hub/banner.css?v=4"><!-- banner común de los módulos (infra, 11-nov-2026) -->
 <title>🧾 POS · Claudia Adorno</title>
-<meta name="application-title" content="v304">
+<meta name="application-title" content="v305">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-192-v2.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧾%3C/text%3E%3C/svg%3E">
@@ -5834,7 +5834,7 @@ async function encPuedo() {
   const b = document.getElementById('c-enc'); if (b) { b.style.display = ENC_PUEDO ? '' : 'none'; b.classList.toggle('on', C_ENC && ENC_PUEDO); }
   if (!ENC_PUEDO) C_ENC = false; return ENC_PUEDO;
 }
-const ENC_OP = { 1: ['●', 'No es lo que esperaba', 'red'], 2: ['●●', 'Podría mejorar', 'amber'], 3: ['●●●', 'Ya con ganas de volver', 'green'] };
+const ENC_OP = { 1: ['●', 'No es lo que esperaba', 'red'], 2: ['●●', 'Conforme', 'amber'], 3: ['●●●', 'Ya con ganas de volver', 'green'] };
 const encNom = n => { n = String(n || '').trim(); if (!n) return 'Sin dato'; return n.includes(',') ? tit(n.split(',')[1].trim().split(/\s+/)[0]) + ' ' + tit(n.split(',')[0]) : tit(n); };
 async function cargarEncuestas() {
   const hoy = new Date(), dIn = document.getElementById('c-desde').value, hIn = document.getElementById('c-hasta').value, q = document.getElementById('c-q').value.trim();
@@ -5852,7 +5852,7 @@ async function cargarEncuestas() {
     return `<tr><td><b>${esc(k)}</b></td>${cel(p[3], r || 1)}${cel(p[2], r || 1)}${cel(p[1], r || 1)}<td class="num">${r} de ${p.env}</td></tr>`; }).join('');
   document.getElementById('c-stat').textContent = (MODO === 'prueba' ? 'De prueba · ' : '') + filas.length + ' encuestas enviadas · ' + resp.length + ' respondidas' + (filas.length ? ' (' + Math.round(resp.length * 100 / filas.length) + ' %)' : '') + ' · ' + fechaAR(d) + ' a ' + fechaAR(h);
   document.getElementById('c-lista').innerHTML = !filas.length ? `<div class="empty">Todavía no hay encuestas en estas fechas${esTodos() ? '' : ' en ' + esc(LOCALES[LOCAL])}.</div>` :
-    `<h3 style="margin:4px 0 8px">Por quién atendió</h3><table><thead><tr><th>Atendió</th><th class="num">Ya con ganas de volver</th><th class="num">Podría mejorar</th><th class="num">No es lo que esperaba</th><th class="num">Respondieron</th></tr></thead><tbody>${resumen}</tbody></table>
+    `<h3 style="margin:4px 0 8px">Por quién atendió</h3><table><thead><tr><th>Atendió</th><th class="num">Ya con ganas de volver</th><th class="num">Conforme</th><th class="num">No es lo que esperaba</th><th class="num">Respondieron</th></tr></thead><tbody>${resumen}</tbody></table>
     <h3 style="margin:18px 0 8px">Respuestas</h3>` + (resp.length ? `<table><thead><tr><th>Cuándo</th><th>Comprobante</th><th>Cliente</th><th>Atendió</th><th>Respuesta</th><th>Comentario</th></tr></thead><tbody>` +
     resp.map(x => { const o = ENC_OP[x.puntaje];
       return `<tr><td class="mini">${movFecha(x.respondida_at)}${x.cambios ? '<div title="Cambió la opción después de tocarla">cambió ' + x.cambios + (x.cambios === 1 ? ' vez' : ' veces') + '</div>' : ''}</td>
@@ -6240,11 +6240,11 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=245"></script>
+<script src="manual.js?v=246"></script>
 <script src="adorno-tablas.js?v=abc48a63"></script>
 <script>
 (function () {
-  var V = 'v304';
+  var V = 'v305';
   setInterval(function () {
     var m = document.querySelector('meta[name="application-title"]'), st = window.ADORNO_VERSION; if (!m) return;
     var t = V + (st && st.vieja ? ' · hay una nueva' : '');
