@@ -6239,7 +6239,24 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=242"></script>
+<script src="manual.js?v=243"></script>
 <script src="adorno-tablas.js?v=abc48a63"></script>
+<style>.ab-banner .ab-nombre .ab-ver { margin-left: 8px; font-size: 11px; font-weight: 400; letter-spacing: .02em; opacity: .7; white-space: nowrap; }
+.ab-banner .ab-nombre .ab-ver.vieja { opacity: 1; background: #fed7aa; color: #9a3412; font-weight: 500; padding: 2px 10px; border-radius: 999px; cursor: pointer; }</style>
+<script>
+(function () {
+  var V = 'v302';
+  function poner() {
+    var n = document.querySelector('.ab-banner .ab-nombre'); if (!n) return;
+    var s = n.querySelector('.ab-ver');
+    if (!s) { s = document.createElement('span'); s.className = 'ab-ver'; n.appendChild(s); s.onclick = function (e) { if (s.classList.contains('vieja')) { e.stopPropagation(); location.reload(); } }; }
+    var st = window.ADORNO_VERSION, vieja = !!(st && st.vieja), t = V + (vieja ? ' · hay una nueva' : '');
+    if (s.textContent !== t) s.textContent = t;
+    s.classList.toggle('vieja', vieja);
+    s.title = vieja ? 'Hay una versión más nueva' + (st.nueva ? ' (' + st.nueva + ')' : '') + ': tocá acá para recargar' : 'Versión del POS que está abierta';
+  }
+  setTimeout(poner, 300); setInterval(poner, 4000);
+})();
+</script>
 </body>
 </html>
