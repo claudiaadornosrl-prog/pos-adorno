@@ -3562,7 +3562,7 @@ function etImprimirWin() {
   setTimeout(() => { try { w.focus(); w.print(); } catch (e) { toast('No pude abrir el diálogo de impresión', 'error'); } }, 400);
 }
 // Movimientos manuales (JP 6-nov): entrada, baja o ajuste con motivo; solo encargada/admin con legajo; quedan en el libro con quién y por qué
-const MOV_NOM = { alta: 'Entrada', baja: 'Baja', ajuste: 'Ajuste', traslado_entrada: 'Entró por traslado', traslado_salida: 'Salió por traslado' };
+const MOV_NOM = { alta: 'Entrada', baja: 'Baja', ajuste: 'Ajuste', traslado_entrada: 'Entró por traslado', traslado_salida: 'Salió por traslado', compra: 'Entró por compra', inicial: 'Saldo inicial' };   // (25-nov) «compra» = recepción de un remito de proveedor en Compras
 const COD_LOCAL = { alcorta: 'ALC', unicenter: 'UNI', oficina: 'OFI', libertador: 'ATE' };
 const remNum = c => (COD_LOCAL[c.local] || String(c.local || '').slice(0, 3).toUpperCase()) + ' ' + (c.letra === 'R' ? String(c.punto_venta).padStart(5, '0') + '-' + String(c.numero).padStart(8, '0') : fmtNum(c.punto_venta, c.numero));   // único: la numeración es por local
 const trNum = c => 'TR-' + String(c.id).padStart(6, '0');   // número único de la mercadería en tránsito
@@ -3572,17 +3572,17 @@ async function cargarMovimientos() {
   let qm = sb.from('stock_movimientos').select('*').in('tipo', ['alta', 'baja', 'ajuste', 'inicial', 'compra', 'traslado_entrada', 'traslado_salida']).order('id', { ascending: false });
   // con un motivo fijo elegido se trae toda la tirada de ese motivo (hasta 2.000), no solo los últimos 200
   if (!esTodos()) qm = qm.eq('local', LOCAL);   // (JP 19-nov) «Todos los locales»: todos los movimientos
-  qm = MOV_FILTRO && MOV_FILTRO !== 'Otro' && MOV_FILTRO !== 'Traslado' ? qm.like('ref', MOV_FILTRO + '%').limit(2000) : qm.limit(MOV_FILTRO ? 1000 : 200);
+  qm = MOV_FILTRO === 'Compra' ? qm.eq('tipo', 'compra').limit(2000) : MOV_FILTRO && MOV_FILTRO !== 'Otro' && MOV_FILTRO !== 'Traslado' ? qm.like('ref', MOV_FILTRO + '%').limit(2000) : qm.limit(MOV_FILTRO ? 1000 : 200);
   const { data, error } = await qm;
   if (error) { toast(error.message, 'error'); return; }
-  const motDe = m => MOV_MOTIVOS.find(t => (m.ref || '') === t || (m.ref || '').startsWith(t + ' · ')) || (String(m.tipo).startsWith('traslado') ? 'Traslado' : 'Otro');
+  const motDe = m => m.tipo === 'compra' ? 'Compra' : MOV_MOTIVOS.find(t => (m.ref || '') === t || (m.ref || '').startsWith(t + ' · ')) || (String(m.tipo).startsWith('traslado') ? 'Traslado' : 'Otro');
   MOVS = data || [];
   // los movimientos que nacieron de un remito de traslado: se trae el remito para mostrar su número y el de la mercadería en tránsito
   const REM = {}; { const ids = [...new Set(MOVS.filter(m => m.comprobante_id).map(m => m.comprobante_id))]; if (ids.length) { const { data: rr } = await sb.from('pos_comprobantes').select('id,local,destino_local,punto_venta,numero').in('id', ids); (rr || []).forEach(r => { REM[r.id] = r; }); } }
   const remTxt = m => { const r = REM[m.comprobante_id]; return r ? 'Remito ' + remNum(r) + ' · Tránsito ' + trNum(r) : ''; };
   const lista = (data || []).filter(m => (!q || (m.sku + ' ' + (m.ref || '') + ' ' + (m.usuario_email || '') + ' ' + remTxt(m)).toUpperCase().includes(q)) && (!MOV_FILTRO || motDe(m) === MOV_FILTRO));
   document.getElementById('rm-stat').textContent = lista.length + (lista.length === 1 ? ' movimiento' : ' movimientos') + (MOV_FILTRO ? ' · ' + lista.reduce((t, m) => t + Number(m.cantidad), 0) + ' unidades netas' : '');
-  document.getElementById('rm-lista').innerHTML = `<div class="pils mov-mot" style="margin-bottom:10px"><span class="mini" style="align-self:center;margin-right:4px">Motivo:</span>${['', ...MOV_MOTIVOS, 'Traslado'].map(t => `<button type="button" class="pil ${MOV_FILTRO === t ? 'on' : ''}" onclick="movFiltrar('${t}')">${t || 'Todos'}</button>`).join('')}</div>` + (STOCK_FUENTE === 'libro' ? '' : '<div class="mini" style="margin-bottom:8px">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</div>') +
+  document.getElementById('rm-lista').innerHTML = `<div class="pils mov-mot" style="margin-bottom:10px"><span class="mini" style="align-self:center;margin-right:4px">Motivo:</span>${['', ...MOV_MOTIVOS, 'Traslado', 'Compra'].map(t => `<button type="button" class="pil ${MOV_FILTRO === t ? 'on' : ''}" onclick="movFiltrar('${t}')">${t || 'Todos'}</button>`).join('')}</div>` + (STOCK_FUENTE === 'libro' ? '' : '<div class="mini" style="margin-bottom:8px">Hasta el cierre del año el stock que se muestra viene del Dragonfish: el movimiento queda anotado en el libro.</div>') +
     (lista.length ? `<table><thead><tr><th>Cuándo</th><th>Qué</th><th>Artículo</th><th class="num">Cantidad</th><th>Motivo</th><th>Quién</th><th></th></tr></thead><tbody>` +
     lista.map(m => `<tr class="${m.anulado_at ? 'dim' : ''}"><td class="mini">${movFecha(m.creado_at)}</td><td>${esc(MOV_NOM[m.tipo] || m.tipo)}${esTodos() ? '<div><span class="chip gray">' + esc(LOCALES[m.local] || m.local) + '</span></div>' : ''}</td><td><b>${esc(m.sku)}</b><div class="mini">${esc((ARTS.find(a => a.sku === m.sku) || {}).descripcion || '')}</div></td><td class="num ${Number(m.cantidad) < 0 ? 'rojo' : ''}"><b>${Number(m.cantidad) > 0 ? '+' : ''}${Number(m.cantidad)}</b>${m.detalle ? '<div class="mini">' + esc(m.detalle) + '</div>' : ''}</td><td>${m.ref ? '<div>' + esc(m.ref) + '</div>' : ''}${m.comprobante_id ? (REM[m.comprobante_id] ? `<a href="#" onclick="verComprobante(${m.comprobante_id});return false" title="Ver el remito"><b>Remito ${esc(remNum(REM[m.comprobante_id]))}</b></a><div class="mini">Tránsito <b>${trNum(REM[m.comprobante_id])}</b> · ${esc(LOCALES[REM[m.comprobante_id].local] || '')} → ${esc(LOCALES[REM[m.comprobante_id].destino_local] || '')}</div>` : `<a href="#" onclick="verComprobante(${m.comprobante_id});return false">Ver el remito</a>`) : ''}${m.anulado_at ? '<div><span class="chip red">Anulado</span> <span class="mini">' + esc(pila(m.anulado_por)) + ' · ' + esc(m.anulado_motivo || '') + '</span></div>' : ''}</td><td class="mini">${esc((m.usuario_email || '').split('@')[0])}</td><td class="acc">${!m.anulado_at && !m.comprobante_id && ['alta', 'baja', 'ajuste'].includes(m.tipo) ? `<button class="btn ico" onclick="movCorregir(${m.id})" title="Corregir: anula este movimiento y abre uno nuevo con lo mismo para cambiarlo" aria-label="Corregir">${_i('edit')}</button><button class="btn ico peligro" onclick="movAnular(${m.id})" title="Anular: restablece el stock y deja la línea marcada" aria-label="Anular">${_i('anular')}</button>` : ''}${!m.anulado_at && Number(m.cantidad) > 0 ? `<button class="btn ico" onclick="etDesdeMov('${esc(m.sku)}', ${Number(m.cantidad)})" title="Imprimir las etiquetas de este movimiento (${Number(m.cantidad)})" aria-label="Etiquetas">${_i('print')}</button>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : `<div class="empty">Todavía no hay movimientos${esTodos() ? '' : ' en ' + esc(LOCALES[LOCAL])}.</div>`);
@@ -4240,15 +4240,15 @@ function usarCliente(c) {
 function quitarCliente() { T.cliente = null; if (T.tipo === 'FC' && T.letra === 'A') vTipo('FC', 'B'); vRender(); document.getElementById('v-cli-doc').focus(); }
 // Desplegable con las 5 coincidencias mientras escribe (JP 6-nov): nombre, DNI o CUIT; Enter toma la primera
 const cuitGuion = d => d.length === 11 ? d.slice(0, 2) + '-' + d.slice(2, 10) + '-' + d.slice(10) : d;
-const cuitFiltro = d => `cuit.ilike.%${d}%` + (d.length === 11 ? `,cuit.ilike.%${cuitGuion(d)}%` : '');
+const cuitesDe = d => d.length === 11 ? [d, cuitGuion(d)] : [d];   // el CUIT puede estar guardado con o sin guiones
 let _cliSugT, _cliSug = [];
 function cliSugCerrar() { const b = document.getElementById('v-cli-sug'); if (b) { b.style.display = 'none'; b.innerHTML = ''; } _cliSug = []; }
 function cliSugerir() {
   clearTimeout(_cliSugT); const q = document.getElementById('v-cli-doc').value.trim(); if (q.length < 3 || q.includes('@') || q.includes('"')) { cliSugCerrar(); return; }
   _cliSugT = setTimeout(async () => {
     const dig = q.replace(/\D/g, ''); const soloNum = dig.length === q.replace(/[\s.-]/g, '').length;
-    let qq = sb.from('clientes').select('*').order('ultima_compra_fecha', { ascending: false, nullsFirst: false }).limit(5);
-    qq = soloNum ? qq.or(`dni.ilike.${dig}%,${cuitFiltro(dig)}`) : qq.ilike('nombre_completo', `%${q}%`);
+    // (25-nov, Clientes con OK de JP) por la función con índice: con la sesión del local (RLS) el ilike directo no usa los índices
+    const qq = sb.rpc('crm_buscar_clientes', soloNum ? { p_dni_empieza: dig, p_cuit_contiene: cuitesDe(dig), p_orden: 'ultima', p_limite: 5 } : { p_texto: q, p_campos: ['nombre'], p_orden: 'ultima', p_limite: 5 });
     const { data } = await qq; if (document.getElementById('v-cli-doc').value.trim() !== q) return;
     _cliSug = data || []; const b = document.getElementById('v-cli-sug'); if (!b) return;
     if (!_cliSug.length) { b.style.display = ''; b.innerHTML = `<div class="mini" style="padding:6px 10px">Ningún cliente con «${esc(q)}»${soloNum && dig.length >= 7 ? ' · Enter para darlo de alta' : ''}</div>`; return; }
@@ -4262,7 +4262,7 @@ async function cliBuscar(txt) {
   const inp = document.getElementById('v-cli-doc'); const s = String(txt ?? inp.value).trim(); if (!s) return; inp.value = '';
   const dni = parseDNI(s); const dig = (dni ? dni.doc : s).replace(/\D/g, '');
   if (dig.length < 7) { toast('Escribí el DNI (7 u 8 dígitos) o el CUIT (11)', 'error'); inp.focus(); return; }
-  const { data, error } = await sb.from('clientes').select('*').or(`dni.eq.${dig},${cuitFiltro(dig)}`).order('fecha_alta', { ascending: false }).limit(1);
+  const { data, error } = await sb.rpc('crm_buscar_clientes', { p_dni: dig, p_cuit_contiene: cuitesDe(dig), p_orden: 'alta', p_limite: 1 });
   if (error) { toast(error.message, 'error'); return; }
   if (data && data.length) {
     usarCliente(data[0]);
@@ -4449,7 +4449,7 @@ function buscarPorNombre() {
 }
 async function buscarClientesNombre() {
   const q = document.getElementById('cl-q').value.trim(); const box = document.getElementById('cl-res'); if (q.length < 3) return;
-  const { data, error } = await sb.from('clientes').select('*').ilike('nombre_completo', `%${q}%`).order('ultima_compra_fecha', { ascending: false, nullsFirst: false }).limit(15);
+  const { data, error } = await sb.rpc('crm_buscar_clientes', { p_texto: q, p_campos: ['nombre'], p_orden: 'ultima', p_limite: 15 });
   if (error) { box.innerHTML = `<div class="mini">${esc(error.message)}</div>`; return; }
   _clLista = data || [];
   box.innerHTML = _clLista.map((c, i) => `<button class="cl-it" onclick="elegirDeLista(${i})">${`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`}<span><b>${esc(c.nombre_completo || (c.apellido + ' ' + c.nombre))}</b><div class="mini">${c.cuit ? 'CUIT ' + esc(c.cuit) : c.dni ? 'DNI ' + esc(c.dni) : 'sin documento'}${c.email ? ' · ' + esc(c.email) : ''}${c.localidad ? ' · ' + esc(c.localidad) : ''}</div></span></button>`).join('') || '<div class="mini">No encontré clientes con ese nombre.</div>';
@@ -5664,8 +5664,9 @@ function autVentana() {
     modal(`<div class="m-head"><h3>Pedir autorización</h3><span class="spacer"></span><button class="btn ico" onclick="autCancelar()" aria-label="Cerrar">${_i('x')}</button></div>
       <div class="mini">${esc(resumen)}</div>
       <div class="aut-caja" id="aut-caja"><div class="mini"><span class="spin"></span>Buscando…</div></div>
-      <div class="aut-clave"><input id="aut-mail" type="email" data-adorno-superior placeholder="Usuario (mail)" autocomplete="off"><input id="aut-pass" type="password" data-adorno-superior placeholder="Clave" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();autClave()}"></div>
-      <div class="m-foot"><span class="spacer"></span><button class="btn" onclick="autCancelar()">Cancelar</button><button class="btn primary" onclick="autClave()">Autorizar con clave</button></div>`);
+      <div class="aut-clave"><input id="aut-mail" type="email" data-adorno-superior placeholder="Usuario (mail)" autocomplete="off"><input id="aut-pass" type="password" data-adorno-superior placeholder="Clave" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();autClave()}"><input id="aut-cod" type="text" inputmode="numeric" maxlength="6" placeholder="Código del celular" autocomplete="one-time-code" style="display:none;flex:0 0 170px" onkeydown="if(event.key==='Enter'){event.preventDefault();autClave()}"></div>
+      <div class="mini" id="aut-cod-txt" style="display:none;margin-top:6px">Esta cuenta tiene el código del celular: escribí los 6 números que muestra ahora la app de autenticación.</div>
+      <div class="m-foot"><span class="spacer"></span><button class="btn" onclick="autCancelar()">Cancelar</button><button class="btn primary" id="aut-btn" onclick="autClave()">Autorizar con clave</button></div>`);
     sb.rpc('pos_presentes_aut', { p_local: LOCAL, p_accion: accion, p_pct: AUT.extra && AUT.extra.pct != null ? AUT.extra.pct : null }).then(({ data, error }) => { if (!AUT || AUT.fin) return; if (error) { toast(error.message, 'error'); } AUT.lista = data || []; autLista(AUT.camMsg); });   // los movimientos de stock los autoriza solo la encargada (o un admin)
 }
 function autFin(v) { if (!AUT || AUT.fin) return; AUT.fin = true; clearInterval(AUT.poll); caraCamOff(); const r = AUT.resolve; AUT = null; cerrarModal(); r(v); }
@@ -5712,9 +5713,33 @@ async function autClave() {
   if (verComo()) { toast('Modo «Ver como»: acá se autorizaría con usuario y clave. No se manda nada.', 'success'); return; }
   if (!AUT) return; const mail = document.getElementById('aut-mail').value.trim(), pass = document.getElementById('aut-pass').value;
   if (!mail || !pass) { toast('Cargá el usuario y la clave de quien autoriza', 'error'); return; }
-  const sb2 = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { error } = await sb2.auth.signInWithPassword({ email: mail, password: pass });
-  if (error) { toast('Usuario o clave incorrectos', 'error'); document.getElementById('aut-pass').value = ''; return; }
+  // (25-nov, JP: «tienen que estar los tres caminos habilitados») una cuenta con el código del celular (MFA) lo pone acá también:
+  // sin él la base frena todo lo que haga esa cuenta («Falta el código del celular»). Primero la clave; si la cuenta lo pide, aparece la casilla.
+  const ci = document.getElementById('aut-cod');
+  let sb2 = AUT.sb2 && AUT.sb2Mail === mail ? AUT.sb2 : null;
+  if (!sb2) {
+    sb2 = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { error } = await sb2.auth.signInWithPassword({ email: mail, password: pass });
+    if (error) { toast('Usuario o clave incorrectos', 'error'); document.getElementById('aut-pass').value = ''; return; }
+    const { data: nivel } = await sb2.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (nivel && nivel.nextLevel === 'aal2' && nivel.currentLevel !== 'aal2') {
+      AUT.sb2 = sb2; AUT.sb2Mail = mail;
+      if (ci) { ci.style.display = ''; ci.value = ''; ci.focus(); }
+      const ct = document.getElementById('aut-cod-txt'); if (ct) ct.style.display = '';
+      const bt = document.getElementById('aut-btn'); if (bt) bt.textContent = 'Autorizar con el código';
+      return;
+    }
+  }
+  if (AUT.sb2 && AUT.sb2 === sb2) {
+    const cod = String(ci ? ci.value : '').replace(/\D/g, '');
+    if (cod.length !== 6) { toast('Escribí el código de 6 números de la app del celular', 'error'); if (ci) ci.focus(); return; }
+    const { data: fs, error: ef } = await sb2.auth.mfa.listFactors();
+    const f = !ef && fs && (fs.totp || []).find(x => x.status === 'verified');
+    if (!f) { toast('No encontré el código del celular de esa cuenta', 'error'); return; }
+    const { error: ev } = await sb2.auth.mfa.challengeAndVerify({ factorId: f.id, code: cod });
+    if (ev) { toast('El código no es correcto o ya cambió: probá con el que muestra ahora la app', 'error'); if (ci) { ci.value = ''; ci.focus(); } return; }
+    AUT.sb2 = null;
+  }
   const { data, error: e2 } = await sb2.rpc('pos_autorizacion_clave', { p_local: LOCAL, p_accion: AUT.accion, p_detalle: { resumen: AUT.resumen, pedido_por: PERFIL.nombre, pedido_por_email: PERFIL.email, ...(AUT.extra || {}) } });
   try { await sb2.auth.signOut({ scope: 'local' }); } catch (e) {}
   if (e2) { toast(e2.message.replace(/^.*?: /, ''), 'error'); return; }
@@ -6151,7 +6176,7 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=239"></script>
+<script src="manual.js?v=240"></script>
 <script src="adorno-tablas.js?v=abc48a63"></script>
 </body>
 </html>
