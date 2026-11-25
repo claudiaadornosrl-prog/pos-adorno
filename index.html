@@ -176,6 +176,10 @@ window.ADORNO_ASISTENTE = (function () {
   .asist-bts{display:flex;gap:8px;margin-top:9px} .asist-bt{border:0;border-radius:999px;padding:7px 16px;font:inherit;font-weight:600;cursor:pointer}
   .asist-bt.si{background:var(--accent,#d97757);color:#fff} .asist-bt.no{background:transparent;color:var(--muted,#5f5e5a);border:0.5px solid var(--border,#d3d1c7)}
   .asist-bt:disabled{opacity:.6;cursor:default} a.asist-bt{text-decoration:none;display:inline-block} .asist-fin{margin-top:8px;font-size:13px} .asist-fin.ok{color:#166534} .asist-fin.mal{color:#991b1b}
+  .asist-lst{align-self:stretch;background:var(--bg,#fafaf9);border:0.5px solid var(--border,#d3d1c7);border-radius:12px;padding:9px 10px} .asist-lst b.t{display:block;font-size:13px;margin-bottom:6px}
+  .asist-lst .tw{overflow-x:auto;max-height:190px;overflow-y:auto;border-radius:8px} .asist-lst table{border-collapse:collapse;font-size:11.5px;width:100%} .asist-lst th{position:sticky;top:0;background:var(--surface,#fff);text-align:left;font-weight:600;padding:4px 6px;white-space:nowrap}
+  .asist-lst td{padding:3px 6px;white-space:nowrap;border-top:0.5px solid var(--border,#e7e5e0)} .asist-lst td.n,.asist-lst th.n{text-align:right} .asist-lst tr:nth-child(even) td{background:rgba(0,0,0,.025)}
+  .asist-lst .nt{font-size:11.5px;color:var(--muted,#5f5e5a);margin-top:6px} .asist-lst .asist-bts{flex-wrap:wrap} .asist-lst .asist-bt{padding:6px 13px;font-size:13px}
   .asist-resalta{outline:3px solid var(--accent,#d97757)!important;outline-offset:2px;border-radius:8px;transition:outline-color 1.2s}
   @media (max-width:600px){.asist-panel{right:calc(8px + env(safe-area-inset-right,0px));left:calc(8px + env(safe-area-inset-left,0px));width:auto;bottom:calc(92px + env(safe-area-inset-bottom,0px));max-height:66vh;max-height:66dvh}}
   /* (28-oct, JP) en celular y tablet: cara redonda flotante, despegada del borde (en iPhone la barra de Safari se achica abajo y tapaba el busto) */
@@ -395,6 +399,73 @@ window.ADORNO_ASISTENTE = (function () {
     { const ir = d.querySelector && d.querySelector('a.asist-ir'); if (ir) ir.addEventListener('click', (ev) => { const sg = sinGuardar(); if (sg && !window.confirm('Ojo: ' + sg + '. Si salís ahora, se pierde. ¿Salgo igual?')) ev.preventDefault(); }); }
     l.appendChild(d); l.scrollTop = l.scrollHeight; return d;
   }
+  // (24-nov-2026, charla de Clodi) listados a pedido: la Edge manda listado {titulo, columnas:[{clave,titulo,tipo}], filas, notas, formato}
+  function lstValor(c, v, crudo) {
+    if (v === null || v === undefined || v === '') return '';
+    if (c.tipo === 'plata') { const n = Number(v); return crudo ? n : '$ ' + Math.round(n).toLocaleString('es-AR'); }
+    if (c.tipo === 'numero') { const n = Number(v); return crudo ? n : n.toLocaleString('es-AR'); }
+    return String(v);
+  }
+  function lstTotales(L) {   // fila de totales para las columnas de plata y número (sin «Días con venta»)
+    const sum = L.columnas.some((c) => c.tipo === 'plata'); if (!sum || L.filas.length < 2) return null;
+    const t = {}; let primera = true;
+    for (const c of L.columnas) {
+      if ((c.tipo === 'plata' || c.tipo === 'numero') && c.clave !== 'dias' && c.clave !== 'ticket_promedio') t[c.clave] = L.filas.reduce((s, f) => s + (Number(f[c.clave]) || 0), 0);
+      else if (primera && c.tipo === 'texto') { t[c.clave] = L.recortado ? 'Total de los renglones' : 'Total'; primera = false; }
+    }
+    return t;
+  }
+  function lstTabla(L, hasta, conTotal) {
+    const n = (c) => (c.tipo === 'plata' || c.tipo === 'numero') ? ' class="n"' : '';
+    const filas = (hasta ? L.filas.slice(0, hasta) : L.filas).map((f) => '<tr>' + L.columnas.map((c) => `<td${n(c)}>${esc(lstValor(c, f[c.clave]))}</td>`).join('') + '</tr>').join('');
+    const t = conTotal ? lstTotales(L) : null;
+    const pie = t ? '<tr class="tot">' + L.columnas.map((c) => `<td${n(c)}><b>${esc(lstValor(c, t[c.clave]))}</b></td>`).join('') + '</tr>' : '';
+    return `<table><thead><tr>${L.columnas.map((c) => `<th${n(c)}>${esc(c.titulo)}</th>`).join('')}</tr></thead><tbody>${filas}${pie}</tbody></table>`;
+  }
+  function lstArchivo(L) { return (L.titulo || 'Listado').replace(/[\\/:*?"<>|·]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90); }
+  function lstVentana(L, imprimir) {   // tabla completa en otra ventana; con imprimir abre el cuadro para «Guardar como PDF»
+    const w = window.open('', '_blank'); if (!w) { log('err', 'El navegador bloqueó la ventana: permití las ventanas emergentes para este sitio.'); return; }
+    const hoy = new Date().toLocaleDateString('es-AR');
+    w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(lstArchivo(L))}</title><style>
+      body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#1a1a1a;margin:24px;background:#fff} h1{font-size:18px;margin:0 0 2px} .s{color:#5f5e5a;font-size:12px;margin-bottom:14px}
+      table{border-collapse:collapse;font-size:12px;width:100%} th{background:#f1efe8;text-align:left;padding:6px 8px;position:sticky;top:0} td{padding:5px 8px;border-top:1px solid #e7e5e0}
+      .n{text-align:right;white-space:nowrap} tr:nth-child(even) td{background:#fafaf9} tr.tot td{border-top:2px solid #1a1a1a;background:#fff} .nt{margin-top:12px;font-size:11.5px;color:#5f5e5a}
+      @media print{body{margin:10mm} th{position:static} .np{display:none}} .np{margin-bottom:14px} .np button{border:0;border-radius:999px;padding:7px 16px;background:#d97757;color:#fff;font:inherit;font-weight:600;cursor:pointer}
+      </style></head><body><div class="np"><button onclick="print()">Imprimir o guardar como PDF</button></div><h1>${esc(L.titulo || 'Listado')}</h1><div class="s">Claudia Adorno · armado por Clodi el ${hoy} · ${L.filas.length} renglones</div>
+      ${lstTabla(L, 0, true)}${(L.notas || []).length ? '<div class="nt">' + L.notas.map(esc).join('<br>') + '</div>' : ''}</body></html>`);
+    w.document.close(); if (imprimir) setTimeout(() => { try { w.focus(); w.print(); } catch (_) {} }, 400);
+  }
+  let _xlsx = null;
+  function lstSheetJS() {   // se carga solo la primera vez que alguien baja un Excel
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    if (!_xlsx) _xlsx = new Promise((ok, mal) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.integrity = 'sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA=='; s.crossOrigin = 'anonymous'; s.onload = () => window.XLSX ? ok(window.XLSX) : mal(new Error('sin XLSX')); s.onerror = () => { _xlsx = null; mal(new Error('no cargó')); }; document.head.appendChild(s); });
+    return _xlsx;
+  }
+  function lstBajar(nombre, blob) { const a = document.createElement('a'); a.href = URL_.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(() => { URL_.revokeObjectURL(a.href); a.remove(); }, 1500); }
+  const URL_ = window.URL;
+  async function lstExcel(L) {
+    const t = lstTotales(L);
+    const aoa = [[L.titulo || 'Listado'], [], L.columnas.map((c) => c.titulo), ...L.filas.map((f) => L.columnas.map((c) => lstValor(c, f[c.clave], true))), ...(t ? [L.columnas.map((c) => lstValor(c, t[c.clave], true))] : [])];
+    try {
+      const X = await lstSheetJS(); const ws = X.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = L.columnas.map((c, i) => ({ wch: Math.min(48, Math.max(c.titulo.length, ...L.filas.slice(0, 200).map((f) => String(lstValor(c, f[c.clave])).length)) + 2) }));
+      L.columnas.forEach((c, i) => { if (c.tipo !== 'plata') return; for (let r = 3; r < aoa.length; r++) { const k = X.utils.encode_cell({ r, c: i }); if (ws[k] && typeof ws[k].v === 'number') ws[k].z = '"$" #,##0'; } });
+      const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Listado'); X.writeFile(wb, lstArchivo(L) + '.xlsx');
+    } catch (_) {   // sin internet para la librería: CSV que Excel abre igual (punto y coma, con BOM)
+      const csv = aoa.map((r) => r.map((v) => { let s = String(v ?? ''); if (typeof v === 'string' && /^[=+\-@]/.test(s)) s = "'" + s; return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(';')).join('\r\n');
+      lstBajar(lstArchivo(L) + '.csv', new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+    }
+  }
+  function mostrarListado(L) {
+    if (!L || !Array.isArray(L.columnas) || !Array.isArray(L.filas)) return;
+    const l = panel.querySelector('.asist-log'), d = document.createElement('div'); d.className = 'asist-lst';
+    const vacio = !L.filas.length;
+    d.innerHTML = `<b class="t">${esc(L.titulo || 'Listado')}</b>` + (vacio ? '<div class="nt">No hay renglones para mostrar.</div>' : `<div class="tw">${lstTabla(L, 8, false).replace('<table>', '<table data-tt="no">')}</div>`)
+      + `<div class="nt">${vacio ? '' : L.filas.length + ' renglones' + (L.filas.length > 8 ? ' (acá van los primeros 8)' : '') + '. '}${(L.notas || []).map(esc).join(' ')}</div>`
+      + (vacio ? '' : `<div class="asist-bts"><button class="asist-bt si" data-l="ver">Ver completo</button><button class="asist-bt si" data-l="xls">Excel</button><button class="asist-bt si" data-l="pdf">PDF</button></div>`);
+    d.addEventListener('click', (ev) => { const b = ev.target.closest('[data-l]'); if (!b) return; const a = b.dataset.l; if (a === 'ver') lstVentana(L, false); else if (a === 'pdf') lstVentana(L, true); else lstExcel(L); });
+    l.appendChild(d); l.scrollTop = l.scrollHeight;
+  }
   async function prepararAccion(acc, porVoz) {   // completa el formulario del módulo; se envía SOLO con el botón Enviar
     const def = acciones().find((x) => x.nombre === acc.nombre);
     if (!def) { log('err', 'Eso no lo puedo preparar en esta pantalla.'); return; }
@@ -432,6 +503,7 @@ window.ADORNO_ASISTENTE = (function () {
       if (!r.ok || !j.ok) throw new Error(j.error || ('Error ' + r.status));
       if (j.ir_modulo && j.ir_modulo.llevar && !j.accion && irUrl(j.ir_modulo)) { const sg = sinGuardar(); if (sg) { j.ir_modulo.llevar = false; j.respuesta = 'No te llevo todavía porque ' + sg + '. Cuando termines, tocá el botón para ir a ' + (j.ir_modulo.nombre || 'ese módulo') + '.'; } }
       hist.push({ q, a: j.respuesta }); log('a', j);
+      if (j.listado) mostrarListado(j.listado);
       if (j.pestana && !j.accion) irA(j.pestana);
       if (j.ir_modulo && j.ir_modulo.llevar && !j.accion) irModulo(j.ir_modulo);
       if (porVoz || siempreVoz()) leer(j.respuesta);
@@ -1395,7 +1467,7 @@ async function init() {
   MEDIOS = m || []; PV = pv || [];
   pMontar(); dMontar();
   if (tp) { TOPE.valor = Number(tp.valor_num) || TOPE.valor; TOPE.at = tp.actualizado_at; TOPE.error = tp.error; }
-  await cargarArticulos();
+  await cargarArticulos(); artsReloj();
   vRender();
   setTimeout(async () => { if (esTodos()) return; try { const eq = await caraEquipo(); if (eq.some(e => e.cara)) caraPrecalentar().catch(() => {}); } catch (e) {} }, 2500);   // (JP 19-nov) que la primera factura no espere a la cámara
   document.getElementById('v-q').addEventListener('input', vBuscarDebounce);
@@ -1451,13 +1523,13 @@ async function cambiarLocal(l) { LOCAL = l; todosUI(); if (soloVer()) toast('Est
 async function cargarArticulos() {
   // Catálogo del local en memoria (≈5.000 filas): búsqueda instantánea y escaneo sin ir a la base.
   if (esTodos()) { ARTS = []; return; }   // «Todos los locales»: no se vende
-  const out = []; let desde = 0;
+  const out = []; let desde = 0; ARTS_TOPE = null; _artsUlt = Date.now();
   for (;;) {
-    const { data, error } = await sb.from('stock_articulos').select('sku,descripcion,descripcion_adicional,stock,precio,material,proveedor,discontinuado').eq('local', LOCAL).order('sku').range(desde, desde + 999);   // con orden fijo: sin él las páginas vienen mezcladas (repetidos y faltantes)
+    const { data, error } = await sb.from('stock_articulos').select(ARTS_COLS).eq('local', LOCAL).order('sku').range(desde, desde + 999);   // con orden fijo: sin él las páginas vienen mezcladas (repetidos y faltantes)
     if (error) { toast('No pude cargar el catálogo: ' + error.message, 'error'); break; }
     out.push(...(data || [])); if (!data || data.length < 1000) break; desde += 1000;
   }
-  const vistos = new Set(); ARTS = out.filter(a => !/^SE[ÑN]A$/i.test(a.sku) && !vistos.has(a.sku) && vistos.add(a.sku)); ARTS_AT = Date.now();
+  const vistos = new Set(); ARTS = out.filter(a => !/^SE[ÑN]A$/i.test(a.sku) && !vistos.has(a.sku) && vistos.add(a.sku)); ARTS_AT = Date.now(); artsTope(out);
   // artículos reservados por señas vigentes del local: se restan del stock que ve la vendedora
   try { const { data: rv } = await sb.rpc('pos_reservas', { p_local: LOCAL }); RESERVAS = Object.fromEntries((rv || []).map(r => [r.sku, Number(r.cantidad)])); } catch (e) { RESERVAS = {}; }
   cargarTerminales().then(pRender);
@@ -1466,6 +1538,73 @@ async function cargarArticulos() {
   cargarParamsPedidos(); cargarTC();
   if (!Object.keys(IMGS).length) { let d2 = 0; for (;;) { const { data } = await sb.from('stock_imagenes').select('sku,url').order('sku').range(d2, d2 + 999); (data || []).forEach(r => { IMGS[r.sku] = r.url; }); if (!data || data.length < 1000) break; d2 += 1000; } }
   document.getElementById('v-stat').textContent = ARTS.length ? ARTS.length.toLocaleString('es-AR') + ' artículos' : '';
+}
+// ═══ Catálogo al día (JP 25-nov): sin recargar la página, el POS trae lo que cambió en stock_articulos ═══
+// Altas, precios, descripciones, discontinuados y stock. Cada 3 minutos con la pestaña a la vista, al volver a la pestaña
+// y cuando se busca o se escanea algo que no está. Trae solo las filas con updated_at más nuevo que lo último que vio (con 2 min de margen).
+const ARTS_COLS = 'sku,descripcion,descripcion_adicional,stock,precio,material,proveedor,discontinuado,updated_at';
+let ARTS_TOPE = null, _artsOcup = false, _artsUlt = 0, _artsReloj = false;
+function artsTope(rows) { for (const r of rows) if (r.updated_at && (!ARTS_TOPE || new Date(r.updated_at) > new Date(ARTS_TOPE))) ARTS_TOPE = r.updated_at; }
+function artsFila(r) { const a = Object.assign({}, r); a.stock_fisico = Number(r.stock); a.reservado = RESERVAS[r.sku] || 0; a.stock = a.stock_fisico - a.reservado; return a; }
+function artsReloj() {
+  if (_artsReloj) return; _artsReloj = true;
+  setInterval(() => { if (document.visibilityState === 'visible') artsAlDia(); }, 180000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - _artsUlt > 60000) artsAlDia(); });
+}
+async function artsAlDia(forzar) {   // devuelve cuántos artículos cambiaron o entraron
+  if (_artsOcup || !LOCAL || esTodos() || !ARTS_TOPE) return 0;
+  if (!forzar && Date.now() - _artsUlt < 30000) return 0;
+  _artsOcup = true; _artsUlt = Date.now(); const loc = LOCAL;
+  try {
+    const desde = new Date(new Date(ARTS_TOPE).getTime() - 120000).toISOString(), out = []; let d = 0;
+    for (;;) {
+      const { data, error } = await sb.from('stock_articulos').select(ARTS_COLS).eq('local', loc).gt('updated_at', desde).order('sku').range(d, d + 999);
+      if (error) return 0; out.push(...(data || [])); if (!data || data.length < 1000) break; d += 1000;
+    }
+    if (loc !== LOCAL) return 0;
+    return artsMezclar(out, true);
+  } catch (e) { return 0; } finally { _artsOcup = false; }
+}
+async function artsTraerSku(q) {   // escaneo de un código que no está en memoria: lo busca en la base (artículo recién dado de alta)
+  if (!LOCAL || esTodos() || !q || /\s/.test(q) || /^SE[ÑN]A$/i.test(q)) return null; const loc = LOCAL;
+  try {
+    const { data } = await sb.from('stock_articulos').select(ARTS_COLS).eq('local', loc).ilike('sku', q.replace(/[\\%_]/g, '\\$&')).limit(1);
+    if (!data || !data.length || loc !== LOCAL) return null;
+    artsMezclar(data, false); return ARTS.find(x => x.sku === data[0].sku) || null;
+  } catch (e) { return null; }
+}
+function artsMezclar(rows, tope) {
+  const idx = new Map(ARTS.map((a, i) => [a.sku, i])), px = []; let n = 0;
+  for (const r of rows) {
+    if (!r.sku || /^SE[ÑN]A$/i.test(r.sku)) continue;
+    const i = idx.get(r.sku), v = i != null ? ARTS[i] : null, a = artsFila(r);
+    if (!v) { ARTS.push(a); idx.set(r.sku, ARTS.length - 1); n++; continue; }
+    if (['precio', 'stock', 'descripcion', 'descripcion_adicional', 'discontinuado', 'material', 'proveedor'].some(k => String(v[k] ?? '') !== String(a[k] ?? ''))) n++;
+    if (Number(v.precio) !== Number(a.precio)) px.push({ sku: a.sku, antes: Number(v.precio) || 0, ahora: Number(a.precio) || 0 });
+    if (Number(v.stock) !== Number(a.stock)) delete _fStock[a.sku];
+    Object.assign(v, a);   // el mismo objeto: no se pierden referencias ni el «flash» del stock
+  }
+  if (tope) artsTope(rows);
+  if (!n) return 0;
+  // el ticket que se está armando: los renglones con el precio de lista toman el precio nuevo; los que se cambiaron a mano quedan como están.
+  // No se tocan la nota de crédito, el comprobante que se modifica ni lo que viene de un presupuesto, un remito o una seña.
+  const avisos = [], libre = T.tipo !== 'NC' && !T.presu_id && !T.modif && !T.nc_de && !T.remito && !T.sena_usar;
+  let tk = false;   // el ticket se redibuja solo si cambió un precio (el stock solo no: no le saca el foco a quien está escribiendo una cantidad)
+  for (const it of T.items) {
+    const a = ARTS[idx.get(it.sku)]; if (!a || it.fijo || it.max) continue;
+    it.stock = Number(a.stock);
+    const p = px.find(z => z.sku === it.sku); if (!p || !libre) continue;
+    if (!it.pxE && r2(it.precio_unit) === r2(p.antes)) {
+      it.precio_unit = p.ahora; tk = true;
+      if (it.descuento_monto > 0) { it.descuento_monto = Math.min(p.ahora, it.descuento_monto); it.descuento_pct = p.ahora ? it.descuento_monto / p.ahora * 100 : 0; }
+      avisos.push(it.sku + ': ' + plata(p.antes) + ' → ' + plata(p.ahora));
+    } else avisos.push(it.sku + ': ahora ' + plata(p.ahora) + ' (en el ticket quedó el que se puso a mano)');
+  }
+  if (tk) vRender();
+  if (avisos.length) toast('Cambió el precio de ' + avisos.join(' · '), 'success');
+  const st = document.getElementById('v-stat'); if (st) st.textContent = ARTS.length.toLocaleString('es-AR') + ' artículos';
+  if (document.getElementById('v-q') && document.getElementById('v-q').value.trim()) vBuscar(); else if (FICHA) vFicha(FICHA);
+  return n;
 }
 function foto(sku, cls) { if (sku === 'GIFT') return `<span class="foto gfm ${cls || ''}" title="Gift card"><img src="logo-ca.png" alt=""></span>`;   // (JP 10-nov) la tarjetita negra en chiquito
   const u = IMGS[sku]; return u ? `<img class="foto ${cls || ''}" src="${esc(u)}" alt="" loading="lazy" onclick="event.stopPropagation(); verFoto('${esc(u)}')" title="Ver más grande">` : `<span class="foto sin ${cls || ''}" aria-hidden="true"></span>`; }
@@ -2078,6 +2217,7 @@ function vBuscar() {
     + (res.length > 5 ? `<div class="mini" style="padding:8px">… y ${res.length - 5} más: seguí escribiendo para afinar.</div>` : '')
     : '<div class="empty">No encontré nada con «' + esc(q) + '».</div>';
   vFicha(res.length ? res[0].sku : null);
+  if (!res.length) artsAlDia();   // si entró algo, artsMezclar vuelve a buscar
 }
 // Ficha del producto a la izquierda: foto grande, detalle, stock acá y en los otros locales, precio
 let FICHA = null, _fStock = {};
@@ -2172,7 +2312,8 @@ function vEscanear() {
   if (/^SE[ÑN]A$/.test(q)) { inp.value = ''; vSenaIniciar(); return; }   // Enter sobre "seña": abre la seña del POS (no el artículo SEÑA del Dragon)
   const a = ARTS.find(x => x.sku.toUpperCase() === q);
   if (a) { vAgregar(a.sku); inp.value = ''; vBuscar(); }
-  else { clearTimeout(_vT); vBuscar(); const first = document.querySelector('#v-lista .prod'); if (first && ARTS.filter(x => (x.sku + ' ' + x.descripcion).toUpperCase().includes(q)).length === 1) { first.click(); inp.value = ''; vBuscar(); } }
+  else { clearTimeout(_vT); vBuscar(); const first = document.querySelector('#v-lista .prod'); if (first && ARTS.filter(x => (x.sku + ' ' + x.descripcion).toUpperCase().includes(q)).length === 1) { first.click(); inp.value = ''; vBuscar(); }
+    else if (!first) artsTraerSku(q).then(b => { if (!b || inp.value.trim().toUpperCase() !== q) return; vAgregar(b.sku); inp.value = ''; vBuscar(); toast('Artículo nuevo en el sistema: ' + b.sku + ' ya está en el ticket', 'success'); }); }
 }
 // Sonidos del ticket: dos tonos cortos generados por el navegador (sin archivos). 'mas' sube, 'menos' baja.
 let _ac = null;
@@ -3258,7 +3399,7 @@ function etEnter() {
   const inp = document.getElementById('et-q'); let q = inp.value.trim().toUpperCase();
   let m = q.match(/^(\d+)\s*[+*X]?$/); if (m) { ET.pend = Number(m[1]); inp.value = ''; document.getElementById('et-res').innerHTML = ''; etPend(); return; }
   m = q.match(/^(\d+)\s*[+*X\s]\s*(.+)$/); if (m && !ARTS.find(x => x.sku.toUpperCase() === q)) { ET.pend = Number(m[1]); q = m[2].trim(); inp.value = q; }
-  const a = ARTS.find(x => x.sku.toUpperCase() === q); if (a) etAgregar(a.sku); else { etBuscar(); const b = document.querySelector('#et-res .prod'); if (b) b.click(); else toast('No encontré ' + q, 'error'); }
+  const a = ARTS.find(x => x.sku.toUpperCase() === q); if (a) etAgregar(a.sku); else { etBuscar(); const b = document.querySelector('#et-res .prod'); if (b) b.click(); else artsTraerSku(q).then(n => { if (n) etAgregar(n.sku); else toast('No encontré ' + q, 'error'); }); }
 }
 function etPend() { const c = document.getElementById('et-pend'); if (!c) return; c.style.display = ET.pend ? '' : 'none'; c.textContent = ET.pend ? ET.pend + ' ×' : ''; }
 function etAgregar(sku, cant) {
@@ -5971,7 +6112,7 @@ function pedirTexto(msg, valor) {
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; { const g = document.getElementById('dlg'); if (g && g.style.display === 'flex') { const n = g.querySelector('#dlg-no'); if (n) n.click(); return; } } if (document.getElementById('ov').style.display !== 'none') cerrarModal(); else { const r = document.getElementById('rm-ov'); if (r && r.style.display !== 'none' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '')) cargarRemitos(); } });
 
 </script>
-<script src="manual.js?v=236"></script>
+<script src="manual.js?v=237"></script>
 <script src="adorno-tablas.js?v=abc48a63"></script>
 </body>
 </html>
